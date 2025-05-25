@@ -1,0 +1,4141 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.json">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Blokjesspel met Levens</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2&amp;display=swap" rel="stylesheet"/>
+<style>
+
+@keyframes fromTop {
+  from { transform: translateY(-100vh); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes fromRight {
+  from { transform: translateX(100vw); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes fromBottom {
+  from { transform: translateY(100vh); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes fromLeft {
+  from { transform: translateX(-100vw); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.start-button {
+  opacity: 0;
+  position: relative;
+  animation-fill-mode: forwards;
+}
+
+
+
+html, body {
+  background-color: black;
+  background-size: cover;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: black;
+  background-size: cover;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1500px;
+  flex-grow: 1;
+  overflow: hidden;
+  height: calc(100vh - 240px);
+}
+.orange-line.top-line {
+  position: absolute;
+  top: 17.3vh;
+  height: 6px;
+  width: 100%;
+  background-color: #DE6911;
+  z-index: 10;
+}
+
+.orange-line.bottom-line {
+  position: absolute;
+  top: 71.5vh; /* als canvas 600px hoog is */
+  height: 6px;
+  width: 100%;
+  background-color: #DE6911;
+  z-index: 10;
+}
+.canvas-wrapper {
+  
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+ /* max-height: calc(100vh - 250px); */
+ /* voorkomt canvas die te veel ruimte inneemt op mobiel */
+  
+  display: flex;
+  justify-content: center;
+  position: relative;
+  top: 0vh;
+  height: 54vh;
+  align-items: center;
+}
+
+.gameCanvas {
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  width: auto; /* hierdoor past breedte zich aan aan hoogte */
+  display: block;
+  background-color: black; /* optioneel: voor zwarte stroken links/rechts */
+}
+
+.backgroundLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /*background: url('https://i.ibb.co/PvF0HV3L/blockpartyof5.png') no-repeat center center;
+*/
+  background: url('https://iili.io/3hoKrlI.png') no-repeat center center;
+
+
+
+  background-size: cover;
+  z-index: 0;
+}
+
+canvas {
+  position: relative;
+  z-index: 1;
+  display: block;
+  /*border: 4px solid #FFC934;
+  */
+  border: none;
+  background-color: transparent;
+
+ /* background-color: #112339; /* ← bijvoorbeeld een donkerblauw */
+ 
+ width: 100%;
+  height: auto;
+}
+.grid {
+ position: absolute;
+  /*top: calc(10 * 50px); /* Alleen vanaf het 10e blok verticaal tekenen */
+  /*left: calc(10 * 50px); /* Alleen vanaf het 10e blok horizontaal tekenen */
+  /*width: calc(10 * 50px); /* 10 kolommen */
+  /*height: calc(10 * 50px); /* 10 rijen */
+  pointer-events: none;
+  z-index: 2;
+
+  background-image: 
+    repeating-linear-gradient(
+      to right,
+      #223344 0px,
+      #223344 0px,
+      transparent 0px,
+      transparent 0px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      #223344 0px,
+      #223344 0px,
+      transparent 0px,
+      transparent 0px
+    );
+  opacity: 0.0;
+  border-radius: 0px;
+}
+    .orange-line {
+  height: 4px;
+  width: 100%;
+  background-color: #DE6911; /* De oranje kleur */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); /* Optionele subtiele schaduw */
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px; /* ruimte tussen de knoppen */
+  margin: 0 auto 10px auto; /* centreren en marge onderaan */
+}
+
+.controls button {
+  margin-right: 0px; /* ruimte tussen knoppen */
+}
+
+.controls button:last-child {
+  margin-right: 0; /* geen marge na de laatste knop */
+}
+
+    .controls .up    { grid-area: up; }
+    .controls .down  { grid-area: down; }
+    .controls .left  { grid-area: left; }
+    .controls .right { grid-area: right; }
+    .controls .reset { grid-area: reset; }
+
+    .controls button {
+        flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0px;
+  font-size: 20px;
+  border: none;
+  border: 2px solid #DE6911;
+  box-shadow: 0 0 10px #DE6911;
+  
+  border-radius: 10px; /* of gewoon: 0 voor scherpe hoeken */
+  width: 70px;
+  height: 70px;
+
+  background-color: transparent; /* transparante achtergrondkleur */
+  color: #2b2b2b;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  background-image: none; /* geen achtergrondafbeelding */
+  transition: transform 0.2s ease, background-color 0.3s ease;
+  outline: none;
+}
+
+
+
+    .controls button:active {
+      transform: scale(0.95);
+    }
+
+
+    .info-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 4vh); height: 17vh;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  margin: 5px auto 0px auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Elke cel: standaard styling */
+.info-cell {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-weight: 700;
+  color: #DE6911;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #DE6911;
+  box-shadow: 0 0 6px #DE6911;
+  border-radius: 10px;
+  height: 100%;
+  text-align: center;
+  font-size: 1.2rem;
+  line-height: 100%;
+}
+
+/* Specifieke inhoud: Levens */
+#livesDisplay {
+  flex-direction: column;
+  gap: 4px;
+}
+#livesDisplay .info-line {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Pauze knop */
+#pauseButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+#pauseButton img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .info-container {
+    gap: 6px;
+  }
+
+  .info-cell {
+  height: 100%;
+    font-size: 1.2rem;
+    height: 100%;
+    line-height: 100%;
+  }
+}
+
+#livesDisplay {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.info-line {
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #DE6911;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #DE6911;
+  box-shadow: 0 0 6px #DE6911;
+  border-radius: 10px;
+  text-align: center;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+#livesDisplay .info-line,
+#scoreDisplay .info-line {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+
+
+
+    .pop {
+  animation: popEffect 0.6s ease;
+}
+
+#pauseButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+}
+
+
+
+@keyframes popEffect {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.combo-message {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5em 1em;
+  border-radius: 1em;
+  box-shadow: 0 0 10px #000;
+  animation: fadeInOut 1s ease;
+}
+
+.celebration-image {
+  position: absolute;
+  z-index: 9999;  /* Zorg ervoor dat het boven andere elementen komt */
+  object-fit: cover;  /* Zorg ervoor dat de afbeelding de cel vult zonder uit te rekken */
+  pointer-events: none;  /* Zorg ervoor dat de afbeelding geen andere interactie blokkeert */
+  transition: transform 0.2s ease; /* Optioneel, je kunt hier een animatie aan toevoegen als je wilt */
+}
+
+@keyframes fadeInOut {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+    .info:first-child {
+      text-align: left;
+    }
+
+    .info:last-child {
+      text-align: right;
+    }
+
+    .block {
+  width: 40px; /* Pas de breedte aan naar je voorkeur */
+  height: 40px; /* Pas de hoogte aan naar je voorkeur */
+  background-color: #00FF00; /* Groen, kan je aanpassen */
+  border-radius: 50%; /* Maak het blokje cirkelvormig */
+  display: inline-block;
+  box-shadow: 0 0 8px white; /* Voeg een witte schaduw toe voor een randachtig effect */
+  transition: background-color 0.3s, transform 0.2s ease; /* Animaties bij hover */
+}
+
+    /* Media Queries voor kleinere apparaten (zoals mobiele telefoons) 
+    @media (max-width: 768px) {
+      .controls {
+        width: 80vmin;
+        height: 80vmin;
+      }
+
+      .controls button {
+        width: 25vw;
+        height: 25vw;
+        font-size: 5rem;
+        padding: 0; 
+      }
+
+      .info {
+        font-size: 1.2rem;
+        width: 30vw;
+      }
+
+      .info-container {
+        margin-top: 0px; 
+      }
+    }*/
+
+/* Media Query voor kleinere schermen (zoals mobiel): 600 --> 768 */
+@media (max-width: 768px) {
+
+
+
+  .info-container {
+    flex-direction: row; /* Ze blijven naast elkaar */
+    padding: 10px;
+  }
+
+  .info {
+  
+    font-size: 1.1rem; /* Maak de tekst iets kleiner voor mobiel */
+    margin: 0 5px; /* Kleinere marge voor mobiel */
+  }
+
+ 
+
+  /* 
+  .info:nth-child(2) {
+    width: 60%; 
+  }
+  */
+
+
+  /*
+  .controls {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 15px 15px 0 0;
+  width: 100%;
+  max-width: 400px;
+}
+*/
+
+
+body {
+  background-color: black;
+  background-size: cover;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+}
+
+.vertical-controls,
+.horizontal-controls {
+
+  position: fixed; 
+  
+  top: 74vh;
+  height: 12vh;
+  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;           /* Geen padding buiten de knoppen */
+  background: none;     /* Geen achtergrond */
+  border: none;         /* Geen rand */
+  box-shadow: none;     /* Geen schaduw rond de hele container */
+}
+
+.vertical-controls button,
+.horizontal-controls button {
+  height: 90%;
+  aspect-ratio: 1 / 1;
+  max-height: 100%;
+  flex: 1;
+}
+.vertical-controls button.reset,
+.horizontal-controls button.reset {
+  height: 90%;
+  aspect-ratio: 1.4 / 1;
+  max-height: 100%;
+  flex: 1.4;
+}
+
+    .info {
+  white-space: nowrap;    /* Nooit afbreken naar een nieuwe lijn */
+  overflow: hidden;       /* Als te groot: niet tonen buiten blokje */
+  text-overflow: ellipsis; /* Eventueel ... als het echt niet past */
+  text-align: center;
+  font-size: 32px;         /* Startgrootte, mag je aanpassen */
+}
+
+#dropButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+#renewCell {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+#renewCell:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 8px #DE6911;
+}
+
+#dropButton img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+
+
+
+#startOverlay {
+  position: relative;
+  z-index: 1;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 5vh;
+  z-index: 99999;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+}
+
+#startOverlay .content-box {
+  width: 90vw;
+  max-width: 340px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: none;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.8rem;
+  max-height: 90vh;
+  position: absolute;
+  bottom: min(15vh, 250px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+#startOverlay .button-container {
+  margin-bottom: 6vh;  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 360px;
+  padding: 1rem 0.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  max-height: 42vh;
+}
+
+#startOverlay .intro-image {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: url('https://i.ibb.co/1YdV4rPy/Chat-GPT-Image-4-mei-2025-22-54-41.png') no-repeat center top;
+  background-size: contain;
+  margin-top: auto;
+  max-height: 45vh;
+}
+
+#startOverlay .button-container button {
+  background: #DE6911;
+  color: #FFE680;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 8px #C35A10;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+#startOverlay .button-container button {
+  background: #DE6911;
+  color: #FFE680;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 8px #C35A10;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+#startOverlay .button-container button {
+  background: #DE6911;
+  color: #FFE680;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 8px #C35A10;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#startOverlay .button-container button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 12px #FFA94D;
+}
+
+#colorChoiceModal {
+  z-index: 100000 !important;
+}
+
+.challenge-cell {
+  position: relative;
+  border: 2px solid #DE6911;
+  border-radius: 10px;
+  color: #FFE680;
+  box-shadow: 0 0 10px #DE6911;
+  background-image: url("https://iili.io/3kjXPee.png");
+  background-size: cover;
+  background-position: center;
+  padding: 10px;
+  text-align: center;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  transition: filter 0.3s ease;
+}
+
+.challenge-cell.inactive {
+  filter: grayscale(100%);
+}
+
+.challenge-content {
+  z-index: 1;
+}
+
+.challenge-title {
+  color: #DE6911;
+  font-weight: bold;
+  font-size: 1.1rem;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+
+.challenge-stats {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  font-size: 0.9rem;
+  align-items: center;
+}
+
+.challenge-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clock-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
+
+/* .info:nth-child(2) {
+  width: 100%;
+  text-align: center;
+  font-size: 1.5rem;
+  padding: 1rem;
+} */
+
+  
+
+@media (max-height: 640px) {
+  .button-container button {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.5rem;
+  }
+}
+}
+
+
+.bg-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+  background-color: black;
+  z-index: -1;
+
+  object-position: center;
+}
+
+
+.bg-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+  background-color: black;
+  z-index: -1;
+
+  object-position: center;
+}
+
+#startOverlay .content-box {
+  position: relative;
+  z-index: 2;
+  position: absolute;
+  bottom: min(15vh, 250px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+
+.bg-wrapper {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+  z-index: -1;
+}
+.bg-wrapper .bg-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+
+@media (max-height: 700px) {
+
+
+@media (max-height: 0px) {
+  
+
+
+@media (min-height: 650px) {
+  
+
+
+.info-cell * {
+  max-height: 100%;
+  object-fit: contain;
+}
+
+</style>
+</head>
+<body>
+<div id="tutorialOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.9); z-index: 99999; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 5vh;">
+<img id="tutorialImage" src="" style="max-width: 90vw; max-height: 80vh; border: 4px solid #DE6911; border-radius: 12px;"/>
+<button id="tutorialNextButton" style="
+          margin-top: 1rem;
+          background: #DE6911;
+          color: white;
+          border: none;
+          padding: 0.6rem 1.2rem;
+          border-radius: 12px;
+          font-size: 1rem;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 0 10px #DE6911;
+          transition: transform 0.2s ease;
+        ">Next</button>
+</div>
+<div id="startOverlay">
+<div class="bg-wrapper"><img alt="Achtergrond" class="bg-image" src="https://i.ibb.co/1YdV4rPy/Chat-GPT-Image-4-mei-2025-22-54-41.png"/></div>
+<div class="content-box">
+<!-- Debugtekst bovenaan -->
+<div id="loadingText" style="position: fixed; top: 4px; left: 4px; color: yellow; font-size: 14px; z-index: 10000;">
+  Bezig met laden...
+</div>
+
+<div class="button-container">
+  <button id="continueButton" class="start-button fromLeft main-button" onclick="continueWithScore()" disabled>
+    Continue the party
+  </button>
+  <button id="teachButton" onclick="startTutorialFromIntro()" class="start-button fromLeft main-button" disabled>
+    Teach me how to party!
+  </button>
+  <button id="partyTogetherButton" onclick="showStartImageBeforeGame()" class="start-button fromLeft main-button" disabled>
+    Let’s throw this party together!
+  </button>
+  <button id="proPlannerButton" onclick="startAtLevel10()" class="start-button fromLeft main-button" disabled>
+    Professional party planner in the house!
+  </button>
+</div>
+
+</div>
+</div>
+<div class="info-container">
+<div class="info-cell" id="livesDisplay">
+<span id="livesText">5 ❤️</span>
+</div>
+<div class="info-cell" id="howToPartyCell" style="cursor: pointer; display: flex; justify-content: center; align-items: center;">
+<img alt="How to party" src="https://i.ibb.co/Cs9BY3fX/howparty.png" style="max-height: 24px; width: auto; object-fit: contain;"/>
+</div>
+<div class="info-cell" id="scoreDisplay">
+<span id="scoreValue">0</span>
+</div>
+<div class="info-cell" id="multicolorDisplay" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6px;">
+<div style="display: flex; align-items: center; gap: 4px;">
+<div id="multicolorCount" style="font-size: 1.1rem; line-height: 1; margin-top: 10px;">0</div>
+<img alt="Multicolor" src="https://i.ibb.co/ZzJMrz5X/square-format-transparent-background-designify-3.png" style="height: 20px;"/>
+</div>
+</div>
+<div class="info-cell" id="pauseCell">
+<button id="pauseButton">
+<img alt="Pause" src="https://iili.io/3WU7KQV.png"/>
+</button>
+</div>
+<div class="info-cell" id="levelDisplay" style="cursor: pointer;" title="Klik voor challenge overzicht">
+<span id="levelValue">1</span>
+</div>
+<div class="info-cell" id="renewCell" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6px;">
+<div style="display: flex; align-items: center; gap: 4px;">
+<div id="renewCounter" style="font-size: 1.1rem; line-height: 1; margin-top: 10px;">0</div>
+<img alt="Next Star" src="https://i.ibb.co/3mstpchL/Skip-Blok-en-Gouden-Blok.png" style="height: 20px; object-fit: contain;"/>
+</div>
+<div id="renewBarWrapper" style="width: 100%; height: 5px; background: #444; border-radius: 3px; margin-top: 2px;">
+<div id="renewBar" style="height: 100%; width: 0%; background: #DE6911; border-radius: 3px;"></div>
+</div>
+</div>
+<div class="info-cell" id="dropCell">
+<button id="dropButton">
+<img alt="DROP BLOCK" src="https://i.ibb.co/k23jpzXH/blockdropok.png"/>
+</button>
+</div>
+<div class="info-cell" id="nextBlockDisplay" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6px;">
+<div style="display: flex; align-items: center; gap: 4px;">
+<img alt="Next Star" src="https://i.ibb.co/5gkcvjmv/Volgend-Ster-Schijnt-Helder.png" style="height: 20px;"/>
+<div id="nextBlockPreview" style="display: flex; gap: 2px;"></div>
+</div>
+</div>
+</div>
+
+
+<div class="orange-line top-line"></div>
+
+
+<div id="container">
+<div class="canvas-wrapper">
+<div class="backgroundLayer"></div> <!-- Achtergrond voor het spel -->
+<canvas height="1540" id="gameCanvas" width="1540"></canvas> <!-- Het speelveld -->
+<div class="grid"></div> <!-- Subtiele grid laag boven de achtergrond -->
+</div>
+
+
+<div class="orange-line bottom-line"></div>
+
+</div>
+<!-- Voor verticale blokjes (⬆️ - reset - ⬇️) -->
+<div class="controls vertical-controls">
+<button class="up" onclick="moveGridH(1)">
+<img alt="Up" src="https://iili.io/3Xvyt7S.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+<button class="reset" onclick="resetGrid()">
+<img alt="Reset" src="https://iili.io/3XL22Rt.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+<button class="down" onclick="moveGridH(-1)">
+<img alt="Down" src="https://iili.io/3X8Hdtn.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+</div>
+<!-- Voor horizontale blokjes (⬅️ - reset - ➡️) -->
+<div class="controls horizontal-controls">
+<button class="left" onclick="moveGrid(1)">
+<img alt="Left" src="https://iili.io/3XvDVMQ.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+<button class="reset" onclick="resetGrid()">
+<img alt="Reset" src="https://iili.io/3XL22Rt.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+<button class="right" onclick="moveGrid(-1)">
+<img alt="Right" src="https://iili.io/3XvbLrB.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+</div>
+
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const gridCols = 10;
+    const gridRows = 10;
+    const blockSize = 50;
+    const extraRowsAbove = 10;
+    const extraRowsBelow = 10;
+    const extraColsLeft = 10;
+    const extraColsRight = 10;
+    const blockImage = new Image();
+    blockImage.src = "https://i.ibb.co/jvgtN2YZ/vraagtwit.png";
+
+    const specialImage = new Image();
+    specialImage.src = "https://iili.io/3Xex59j.png";
+
+    const specialImage2 = new Image();
+    specialImage2.src = "https://iili.io/3XeXn6X.png";
+    
+    const multicolorImage = new Image();
+    multicolorImage.src = "https://i.ibb.co/ZzJMrz5X/square-format-transparent-background-designify-3.png";
+
+    const visibleCols = 30;
+    let gridOffsetX = 0;
+  
+    let tutorialStep = 0;
+
+    let challenge1Done = false;
+let challenge2Done = false;
+let challenge3Done = false;
+let challenge4Done = false;
+let challengeLocked = false;
+
+    let challengeActive = false; // Is de challenge momenteel actief?
+let challengeLevel = 15; // Welk level activeert de challenge?
+let challenge2SuccessImageShown = false;
+let challenge2PendingMulticolors = 0;
+
+let challengeHeartCount = 0;
+let challengeHeartTarget = 10;
+let challengeBlockLimit = 50;
+let challengeHeartOverrideCounter = 0;
+let preventHeartReward = false;
+let challengeBlockCounter = 0; // Teller voor aantal geplaatste blokken tijdens de challenge
+let challengeRewardGiven = false; // Is de beloning al gegeven?
+
+let challenge2Active = false;
+let challenge2Level = 20;
+let challenge2MultiCount = 0;
+let challenge2BlockLimit = 50;
+let challenge2MultiTarget = 13; // vrij te spelen multicolor
+let challenge2BlockCounter = 0;
+let challenge2RewardGiven = false;
+
+let challenge3Active = false;
+let challenge3Started = false;
+let challenge3Failed = false;
+let challenge3Success = false;
+let challenge3Count = 0;
+let challenge3Limit = 100;
+let challenge3Level = 25;
+
+let challenge4Active = false;
+let challenge4Level = 30;
+let challenge4Limit = 100;
+let challenge4Count = 0;
+let challenge4FullFieldMoments = 0;
+let challenge4Success = false;
+let challenge4RewardGiven = false;
+
+let challenge5Active = false;
+let challenge5Done = false;
+let challenge5Success = false;
+let challenge5BlockCounter = 0;
+let challenge5StartImageShown = false;
+let challenge5SuccessImageShown = false;
+
+let challenge5StartLevel = 35;
+
+
+let challenge5RequiredBlocks = 30; // <<< wijzigbaar
+
+let challenge5Started = false;
+
+    let level3ImageShown = false;
+let level4ImageShown = false;
+let level5ImageShown = false;
+let level6ImageShown = false;
+let level7ImageShown = false;
+let level8ImageShown = false;
+
+    const maxOffset = 10;
+    let divaCountdown = 10;  // Startwaarde voor de diva-timer
+    let blockCounter = 0;
+    let level2ImageShown = false;
+    let level1FixedColor = null;
+    const level1FixedLength = 1;
+
+    let level6Triggered = false;
+let level7Triggered = false;
+let level8Triggered = false;
+let level9Triggered = false;
+let level10Triggered = false;
+let forcedNextBlock = null;
+
+let heartFreed = false;
+
+    let level = 1;
+    let bigGroupCount = 0;
+    let pauseUsesLeft = 10;
+    let nextBlockColor = null;
+    const nextBlockDisplay = document.getElementById("nextBlockDisplay");
+
+    const multicolorSpawnChance = 1 / 20; // frequentie multicolor
+    let blockSpawnCount = 0;
+let renewTokenCount = 0;
+const renewBar = document.getElementById("renewBar");
+const renewCounter = document.getElementById("renewCounter");
+
+let nextBlock = null;
+
+let multicolorCount = 0;
+const multicolorDisplay = document.getElementById("multicolorCount");
+
+let nextBlockIsMulticolor = false;
+
+    let resetImages = {
+  "#4A90E2": "https://iili.io/3XQzaYg.png",
+  "#7ED321": "https://iili.io/3XQTDrP.png",
+  "#F8E71C": "https://iili.io/3XQoz8b.png",
+  "#DEDEDE": "https://iili.io/3XQdJzg.png",
+  "#9B51E0": "https://iili.io/3XQBOKu.png",
+  "#50E3C2": "https://iili.io/3XQF8Qe.png",
+  "#FF6F61": "https://iili.io/3XQK89p.png"
+};
+let originalResetImage = "https://iili.io/3XL22Rt.png";
+let resetButtonElements = document.querySelectorAll(".reset img");
+
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+    updateControls();});
+
+    const images = [
+  Object.assign(new Image(), { src: "https://i.ibb.co/5Wf0HDJy/een-1.png" }),
+  Object.assign(new Image(), { src: "https://i.ibb.co/1JzmHXmH/twee-1.png"}),
+  Object.assign(new Image(), { src: "https://i.ibb.co/V09z900X/drie-1.png"}),
+  Object.assign(new Image(), { src: "https://i.ibb.co/SDvrwV9F/vier-1.png"}),
+  Object.assign(new Image(), { src: "https://i.ibb.co/kgj3mwHr/vijf-2.png"})
+];
+    const field = Array.from({ length: gridRows }, () => Array(gridCols).fill(null));
+    const colors = [
+"#4A90E2", // Blauw
+  "#7ED321", // Groen
+  "#F8E71C", // Geel
+  "#DEDEDE", // Rood
+  "#9B51E0", // Paars
+  "#50E3C2", // Turkoois
+  "#FF6F61"  // Koraalroze
+
+
+];
+let markedForRemoval = [];
+let disappearingBlocks = [];
+    let lives = 5;
+    let score = 0;
+    const livesDisplay = document.getElementById("livesDisplay");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    let gridOffsetY = 0;
+    const maxOffsetY = 10;
+
+    let useVertical = true;
+
+
+
+    let isPaused = false;
+const pauseButton = document.getElementById('pauseButton');
+const imgElement = pauseButton.querySelector('img');
+
+// Zet de oorspronkelijke tekst in de knop (bijvoorbeeld 'Pauze')
+// <img src="https://iili.io/3Wuc4G2.png" alt="PAUSE" border="0">
+// <img src="https://iili.io/3WulcMl.png" alt="RESUME" border="0">
+
+// pauseButton.textContent = 'BREAK ?';
+
+
+// HERNIEUW BLOKJE
+//const dropButton = document.getElementById('dropButton');
+//dropButton.addEventListener('click', () => {
+//  if (useVertical) {
+//    fallingBlock = createBlock(directionToggle ? "down" : "up");
+//  } else {
+//    fallingBlock = createBlockH(directionToggle ? "right" : "left");
+//  }
+//});
+
+const renewCell = document.getElementById("renewCell");
+
+renewCell.addEventListener("click", () => {
+  if (renewTokenCount < 1) {
+    console.log("Niet genoeg tokens!");
+    return;
+  }
+
+  renewTokenCount--;
+  updateRenewDisplay();
+
+  // Nieuw blok met dezelfde richting als het vorige
+  fallingBlock = useVertical
+    ? createBlock(fallingBlock.direction)
+    : createBlockH(fallingBlock.direction);
+
+  drawGrid();
+  drawFallingBlock();
+});
+
+const dropButton = document.getElementById('dropButton');
+
+dropButton.addEventListener('click', () => {
+  if (useVertical) {
+    if (fallingBlock.direction === "down") {
+      while (!blockWouldCollide(fallingBlock) && fallingBlock.y < gridRows) {
+        fallingBlock.y++;
+      }
+      fallingBlock.y--; // terug omhoog om niet door vloer te zakken
+    } else if (fallingBlock.direction === "up") {
+      while (!blockWouldCollide(fallingBlock) && fallingBlock.y > 0) {
+        fallingBlock.y--;
+      }
+      fallingBlock.y++; // terug omlaag om niet in blok te zitten
+    }
+    update();
+    drawGrid();
+    drawFallingBlock();
+  } else {
+    if (fallingBlock.direction === "right") {
+      while (!blockWouldCollideH(fallingBlock) && fallingBlock.x < gridCols) {
+        fallingBlock.x++;
+      }
+      fallingBlock.x--; // terug om niet in muur of blok te zitten
+    } else if (fallingBlock.direction === "left") {
+      while (!blockWouldCollideH(fallingBlock) && fallingBlock.x > 0) {
+        fallingBlock.x--;
+      }
+      fallingBlock.x++; // terug om niet in muur of blok te zitten
+    }
+    updateH();
+    drawGrid();
+    drawFallingBlock();
+  }
+});
+
+/*
+pauseButton.addEventListener('click', () => {
+  if (!isPaused) {
+    if (pauseUsesLeft <= 0) {
+      console.log("Geen pauzes meer over!");
+      return;
+    }
+    pauseGame();
+      saveTestScore();
+    imgElement.src = 'https://iili.io/3WU10aS.png';
+    pauseUsesLeft--;
+    updatePauseDisplay();
+    isPaused = true;
+  } else {
+    resumeGame();
+    imgElement.src = 'https://iili.io/3WU7KQV.png';
+    isPaused = false;
+  }
+});
+*/
+
+
+let gamePaused = true;
+
+function startGame() {
+  document.getElementById('startOverlay').style.display = 'none';
+  gamePaused = false;
+  pauseUsesLeft = 10;
+  updatePauseDisplay();
+}
+
+function startAtLevel10() {
+  localStorage.removeItem("testScore");
+  score = 0;
+  updateScoreDisplay();
+  level = 10;
+  document.getElementById('startOverlay').style.display = 'none';
+  gamePaused = false;
+  pauseUsesLeft = 10;
+  updatePauseDisplay();
+  updateScoreDisplay();
+}
+
+function pauseGame() {
+  gamePaused = true;
+  console.log('Game gepauzeerd');
+  // Stop timers of animaties hier (bijvoorbeeld clearInterval voor timers)
+  // Als je timers hebt:
+  // clearInterval(gameInterval);
+  // Als je animaties hebt:
+  // stopAnimations();
+}
+
+function resumeGame() {
+  gamePaused = false;
+  console.log('Game hervat');
+  // Start timers of animaties opnieuw (bijvoorbeeld setInterval voor timers)
+  // Als je timers hebt:
+  // gameInterval = setInterval(updateGame, 1000 / ); // Pas de interval aan
+  // Als je animaties hebt:
+  // startAnimations();
+}
+
+
+function positionGrid() {
+  const canvas = document.getElementById("gameCanvas");
+  const grid = document.querySelector(".grid");
+
+  const canvasSize = canvas.clientWidth;   // of .clientHeight als je liever verticaal baseert
+  const unit = canvasSize / 30;            // 1 blok = 1/30 van canvas
+  const offset = unit * 10;                // 10 blokken marge voor scrollruimte
+  const visibleSize = unit * 10;           // 10x10 raster
+
+  grid.style.width = `${visibleSize}px`;
+  grid.style.height = `${visibleSize}px`;
+  grid.style.left = `${offset}px`;
+  grid.style.top = `${offset}px`;
+}
+
+window.addEventListener("resize", positionGrid);
+window.addEventListener("load", positionGrid);
+
+
+
+function lightenColor(color, percent) {
+  let num = parseInt(color.slice(1), 16),
+      amt = Math.round(2.55 * percent * 100),
+      R = (num >> 16) + amt,
+      G = (num >> 8 & 0x00FF) + amt,
+      B = (num & 0x0000FF) + amt;
+  return "#" + (
+    0x1000000 +
+    (R<255?R<1?0:R:255)*0x10000 +
+    (G<255?G<1?0:G:255)*0x100 +
+    (B<255?B<1?0:B:255)
+  ).toString(16).slice(1);
+}
+
+function darkenColor(color, percent) {
+  return lightenColor(color, -percent);
+}
+
+function updatePauseDisplay() {
+  const pauseCell = document.getElementById('pauseCell');
+  pauseCell.title = `Pauzes over: ${pauseUsesLeft}`;
+
+  // Leeg de cel eerst
+  pauseCell.innerHTML = '';
+
+  // Maak wrapper voor cijfer + knop
+  const wrapper = document.createElement('div');
+  wrapper.style.display = 'flex';
+  wrapper.style.alignItems = 'center';
+  wrapper.style.justifyContent = 'center';
+  wrapper.style.gap = '4px';
+
+  // Teller
+  const countSpan = document.createElement('span');
+  countSpan.className = 'pause-count';
+  countSpan.textContent = pauseUsesLeft;
+  countSpan.style.fontFamily = "'Baloo Bhaina 2', sans-serif";
+  countSpan.style.paddingLeft = "25px";
+  countSpan.style.marginTop = "4px";
+  countSpan.style.fontSize = "1.2rem";
+  countSpan.style.fontWeight = "700";
+  countSpan.style.color = "#DE6911";
+  countSpan.style.textShadow = "0 0 3px black";
+  countSpan.style.lineHeight = "1";
+
+  // Pauzeknop
+  const button = document.createElement('button');
+  button.id = 'pauseButton';
+  button.style.all = 'unset';
+  button.style.display = 'flex';
+  button.style.alignItems = 'center';
+  button.style.justifyContent = 'center';
+  button.style.cursor = 'pointer';
+  button.style.height = '100%';
+  button.style.width = '100%';
+
+  const img = document.createElement('img');
+  img.src = isPaused
+    ? 'https://iili.io/3WU10aS.png'
+    : 'https://iili.io/3WU7KQV.png';
+  img.alt = 'Pause';
+  img.style.maxHeight = '100%';
+  img.style.maxWidth = '100%';
+  img.style.objectFit = 'contain';
+  img.style.filter = pauseUsesLeft === 0 ? 'grayscale(100%)' : 'none';
+
+  button.appendChild(img);
+
+  // Voeg teller + knop toe
+  wrapper.appendChild(countSpan);
+  wrapper.appendChild(button);
+  pauseCell.appendChild(wrapper);
+
+  // Herkoppel eventlistener (optioneel extra bescherming)
+  button.onclick = () => {
+    if (!isPaused) {
+      if (pauseUsesLeft <= 0) return;
+      
+      pauseUsesLeft--; //
+      pauseGame();
+      saveTestScore();
+      isPaused = true;
+    } else {
+      resumeGame();
+      isPaused = false;
+    }
+    updatePauseDisplay();
+  };
+}
+
+
+
+function updateNextBlockDisplay(color, length = 1) {
+  const previewContainer = document.getElementById("nextBlockPreview");
+  previewContainer.innerHTML = ''; // leegmaken
+
+  for (let i = 0; i < length; i++) {
+    const blockPreview = document.createElement("div");
+    blockPreview.style.width = "12px";
+    blockPreview.style.height = "12px";
+    blockPreview.style.backgroundColor = color;
+    blockPreview.style.borderRadius = "3px"; // afgerond maar geen cirkel
+    blockPreview.style.boxShadow = "0 0 4px white";
+    blockPreview.style.display = "inline-block";
+    blockPreview.style.flexShrink = "0";
+
+    previewContainer.appendChild(blockPreview);
+  }
+}
+
+
+function temporarilyChangeResetImage(color) {
+  const newImage = resetImages[color];
+  if (!newImage) return;
+
+  resetButtonElements.forEach(img => img.src = newImage);
+
+
+  
+  setTimeout(() => {
+    resetButtonElements.forEach(img => img.src = originalResetImage);
+  }, 5000);
+}
+
+
+function showHeartImageTemporarily() {
+  resetButtonElements.forEach(img => {
+    img.src = "https://i.ibb.co/KpP5dHn5/Hart-viert-feest.png" + Math.random(); // Hartbeeld, met cache-bypass
+  });
+
+  setTimeout(() => {
+    resetButtonElements.forEach(img => img.src = originalResetImage);
+  }, 5000);
+}
+
+function showDivaImageTemporarily() {
+
+  resetButtonElements.forEach(img => {
+  img.src = "https://iili.io/3hkyldg.png" + Math.random(); // ← dwing herladen af
+});
+
+  setTimeout(() => {
+    resetButtonElements.forEach(img => img.src = originalResetImage);
+  }, 5000); // afbeelding blijft 3 seconden zichtbaar
+}
+
+function updateLivesDisplay() {
+
+  document.getElementById("livesText").innerHTML = `${lives} <img src="https://i.ibb.co/hpTzVcJ/hart-wit.png" alt="Life" style="height: 20px; vertical-align: middle;">`;
+}
+
+function updateRenewDisplay() {
+  const fraction = blockSpawnCount / 10;
+  renewBar.style.width = `${fraction * 100}%`;
+  renewCounter.textContent = `${renewTokenCount} / 1`;
+}
+
+function updateRenewDisplay() {
+  const fraction = blockSpawnCount / 10;
+  renewBar.style.width = `${fraction * 100}%`;
+  renewCounter.textContent = `${renewTokenCount}`;
+}
+
+function updateScoreDisplay() {
+  const scoreValue = document.getElementById("scoreValue");
+  if (scoreValue) {
+    scoreValue.textContent = `${score}`;
+  }
+
+  const levelValue = document.getElementById("levelValue");
+  if (levelValue) {
+    levelValue.textContent = level;
+  }
+}
+
+
+// lengte van het blok
+    function randomBlockLength() {
+      return Math.floor(Math.random() * 3) + 1;
+    }
+
+///
+
+function resizeTextToFit(element) {
+    let fontSize = 32; // Begin met grootte 32px
+    element.style.fontSize = fontSize + "px";
+
+    while (element.scrollWidth > element.clientWidth && fontSize > 5) {
+        fontSize--;
+        element.style.fontSize = fontSize + "px";
+    }
+}
+
+// Pas het toe op alle .info elementen
+document.querySelectorAll('.info').forEach(resizeTextToFit);
+//resizeTextToFit(infoElements[1]);
+
+///
+
+function generateNextBlock() {
+  if (forcedNextBlock) {
+    const block = { ...forcedNextBlock };
+    forcedNextBlock = null;
+    return block;
+  }
+
+  if (challengeActive && challengeHeartOverrideCounter > 0) {
+  challengeHeartOverrideCounter--;
+
+  const color = colors[Math.floor(Math.random() * colors.length)];
+
+  return {
+    color: color, // willekeurige kleur
+    length: 1,
+    isSpecial: true,
+    isMulticolor: false,
+    isDiva: false,
+    divaCountdown: null
+  };
+}
+
+  let length = level <= 3 ? 1 : Math.floor(Math.random() * 3) + 1;
+
+  let color;
+
+  if (level <= 2) {
+  if (!level1FixedColor) {
+    level1FixedColor = colors[Math.floor(Math.random() * colors.length)];
+  }
+  color = level1FixedColor;
+} else {
+  color = colors[Math.floor(Math.random() * colors.length)];
+}
+
+  const allowSpecials = level >= 5;
+
+  const isSpecial = allowSpecials && level >= 5 && Math.random() < 1 / 20; // frequentie hartjes
+  let isMulticolor = false;
+
+// Challenge 2: forceer elke 3e blok een multicolor
+
+let forceChallenge2Multicolor = challenge2Active && challenge2BlockCounter % 3 === 2;
+if (forceChallenge2Multicolor) {
+  isMulticolor = true;
+  length = 1; // ← Zorg dat het blok 1 lang is
+} else {
+  isMulticolor = allowSpecials && level >= 7 && (nextBlockIsMulticolor || Math.random() < multicolorSpawnChance);
+}
+
+const isDiva = allowSpecials && level >= 6 && Math.random() < 1 / 10; // frequentie diva
+  const divaCountdown = isDiva ? 10 : null;
+
+  nextBlockIsMulticolor = false;
+  nextBlockColor = null;
+
+  return {
+    color,
+    length,
+    isSpecial,
+    isMulticolor,
+    isDiva,
+    divaCountdown
+  };
+}
+
+
+
+
+///
+
+function updateDivaCountdowns() {
+  for (let r = 0; r < gridRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      const block = field[r][c];
+      if (block && block.isDiva && block.divaCountdown > 1) {
+        block.divaCountdown--;
+      } else if (block && block.isDiva && block.divaCountdown === 1) {
+        // Diva wordt een normaal blok
+        block.isDiva = false;
+        block.divaCountdown = null;
+
+        // Check of ze nu in een groep zit
+        const tempGroup = [];
+        const visited = Array.from({ length: gridRows }, () => Array(gridCols).fill(false));
+        function dfs(r2, c2, color) {
+          if (
+            r2 < 0 || r2 >= gridRows ||
+            c2 < 0 || c2 >= gridCols ||
+            visited[r2][c2] ||
+            !field[r2][c2] ||
+            field[r2][c2].color !== color
+          ) return;
+          visited[r2][c2] = true;
+          tempGroup.push([r2, c2]);
+          dfs(r2+1, c2, color);
+          dfs(r2-1, c2, color);
+          dfs(r2, c2+1, color);
+          dfs(r2, c2-1, color);
+        }
+        dfs(r, c, block.color);
+        if (tempGroup.length >= 5) {
+          for (const [rr, cc] of tempGroup) {
+            disappearingBlocks.push({ r: rr, c: cc, scale: 1, opacity: 1 });
+          }
+
+
+          for (const [rr, cc] of tempGroup) {
+  const block = field[rr][cc];
+
+  if (block.isSpecial) {
+    lives++;
+    heartFreed = true;
+    if (challengeActive) {
+      challengeHeartCount++;
+    }
+  }
+
+  if (block.isMulticolor) {
+    multicolorCount++;
+    multicolorDisplay.textContent = multicolorCount;
+
+    if (challenge2Active) {
+      challenge2MultiCount++;
+    }
+  }
+
+  disappearingBlocks.push({ r: rr, c: cc, scale: 1, opacity: 1 });
+}
+
+  
+score += tempGroup.length * tempGroup.length;
+updateScoreDisplay();
+        }
+      }
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////// create block
+
+function createBlock(direction = "down") {
+ 
+  const block = forcedNextBlock || nextBlock;
+if (forcedNextBlock) forcedNextBlock = null;
+  nextBlock = generateNextBlock();
+  if (block.isDiva) showDivaImageTemporarily();
+  updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+
+  const startX = Math.floor(gridCols / 2 - Math.floor(block.length / 2));
+  const y = direction === "down" ? -extraRowsAbove : gridRows + extraRowsBelow;
+
+  blockCounter++;
+
+
+
+  if (challengeActive) {
+    challengeBlockCounter++;
+  }
+
+  if (challenge2Active) {
+  challenge2BlockCounter++;
+}
+
+if (challenge3Active) {
+    challenge3Count++;
+    updateChallenge3StatusCell();
+  }
+
+
+  if (challenge5Active) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  if (challenge5BlockCounter >= challenge5RequiredBlocks && !challenge5Done) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    updateChallenge5StatusCell();
+  }
+}
+
+
+
+  blockSpawnCount++;
+  if (blockSpawnCount >= 10) {
+    blockSpawnCount = 0;
+    renewTokenCount++;
+  }
+  updateRenewDisplay();
+
+  return {
+    x: startX,
+    y: y,
+    color: block.color,
+    length: block.length,
+    direction: direction,
+    isSpecial: block.isSpecial,
+    isMulticolor: block.isMulticolor,
+    isDiva: block.isDiva,
+    divaCountdown: block.divaCountdown
+  };
+
+  if (challenge5Active && !challenge5Done) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  if (challenge5BlockCounter >= challenge5RequiredBlocks) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    updateScoreDisplay();
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+  }
+  updateChallenge5StatusCell(); // ← deze toevoegen
+}
+
+}
+
+
+function createBlockH(direction = "right") {
+ 
+
+  const block = forcedNextBlock || nextBlock;
+if (forcedNextBlock) forcedNextBlock = null;
+  nextBlock = generateNextBlock();
+  updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+  if (block.isDiva) showDivaImageTemporarily();
+
+  const startY = Math.floor(gridRows / 2 - Math.floor(block.length / 2));
+  const x = direction === "right" ? -extraColsLeft : gridCols + extraColsRight;
+
+  blockCounter++;
+
+
+
+  if (challengeActive) {
+    challengeBlockCounter++;
+  }
+
+  if (challenge2Active) {
+  challenge2BlockCounter++;
+}
+
+if (challenge3Active) {
+    challenge3Count++;
+    updateChallenge3StatusCell();
+  }
+
+  if (challenge5Active) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  if (challenge5BlockCounter >= challenge5RequiredBlocks && !challenge5Done) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    updateChallenge5StatusCell();
+  }
+}
+
+
+
+  blockSpawnCount++;
+  if (blockSpawnCount >= 10) {
+    blockSpawnCount = 0;
+    renewTokenCount++;
+  }
+  updateRenewDisplay();
+
+  return {
+    x: x,
+    y: startY,
+    color: block.color,
+    length: block.length,
+    direction: direction,
+    isSpecial: block.isSpecial,
+    isMulticolor: block.isMulticolor,
+    isDiva: block.isDiva,
+    divaCountdown: block.divaCountdown
+  };
+
+  if (challenge5Active && !challenge5Done) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  if (challenge5BlockCounter >= challenge5RequiredBlocks) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    updateScoreDisplay();
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+  }
+  updateChallenge5StatusCell(); // ← deze toevoegen
+}
+
+}
+
+
+    
+    let directionToggle = true;
+    
+    nextBlock = generateNextBlock();
+updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+const stored = localStorage.getItem("testScore");
+if (stored !== null) {
+  score = parseInt(stored);
+  updateScoreDisplay();
+}
+let fallingBlock = createBlock("down");
+
+
+/////////////////////////////////////////////////////////////////////////////// movegrid
+
+
+
+
+function moveGrid(dir) {
+  const newOffset = gridOffsetX + dir;
+  
+  if (!useVertical) {
+    return; // Stop de functie direct als useControl false is
+  }
+
+  if (newOffset < -maxOffset || newOffset > maxOffset) return;
+
+  let canMove = true;
+
+  const newBlockX = fallingBlock.x - dir;
+  const blockEnd = newBlockX + fallingBlock.length;
+
+
+if (fallingBlock.y <0 && newBlockX+1 > 0 && blockEnd-1 < gridCols){
+gridOffsetX = newOffset;
+fallingBlock.x = newBlockX;
+//updateDisplay();
+}
+
+
+
+if (fallingBlock.y >gridRows && newBlockX+1 > 0 && blockEnd-1 < gridCols){
+gridOffsetX = newOffset;
+fallingBlock.x = newBlockX;
+//updateDisplay();
+}
+
+if (fallingBlock.y >=0 && newBlockX+1 > 0 && blockEnd-1 < gridCols){
+    const row = Math.floor(fallingBlock.y); // <-- Belangrijk: afronden
+    for (let i = 0; i < fallingBlock.length; i++) {
+    const col = newBlockX + i;
+    const row = fallingBlock.y;
+
+    if (field[row][col] !== null) {
+      canMove = false;
+      break; // Stop met controleren als er een blokje in de weg zit
+      return;
+    }
+  }
+
+  if (canMove) {
+    gridOffsetX = newOffset;
+    fallingBlock.x = newBlockX;
+//updateDisplay();
+}
+
+}
+  
+}
+
+
+function moveGridH(dir) {
+  const newOffset = gridOffsetY - dir;
+  
+  if (useVertical) {
+    return; // Stop de functie direct als useControl false is
+  }
+
+  if (newOffset < -maxOffsetY || newOffset > maxOffsetY) return; 
+  let canMove = true;
+
+  const newBlockY = fallingBlock.y - dir;
+  const blockEnd = newBlockY + fallingBlock.length;
+
+
+//if (fallingBlock.x <0 && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+ if (fallingBlock.x >gridCols && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+gridOffsetY = newOffset;
+fallingBlock.y = newBlockY;
+//updateDisplayH();
+}
+
+//if (fallingBlock.x >gridCols && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+    if (fallingBlock.x <0 && newBlockY+1 > 0 && blockEnd-1 < gridRows){    
+
+  // if (fallingBlock.x <0){
+gridOffsetY = newOffset;
+fallingBlock.y = newBlockY;
+//updateDisplayH();
+}
+
+if (fallingBlock.x >=0 && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+    const col = Math.floor(fallingBlock.x); // <-- Deze lijn toevoegen hier!
+    for (let i = 0; i < fallingBlock.length; i++) {
+    const row = newBlockY + i;
+  //  const row = fallingBlock.x;
+
+
+
+
+    if (field[row][col] !== null) {
+      canMove = false;
+      break; // Stop met controleren als er een blokje in de weg zit
+      return;
+    }
+  }
+
+  if (canMove) {
+    gridOffsetY = newOffset;
+    fallingBlock.y = newBlockY;
+//updateDisplayH();
+}
+
+}
+  
+}
+
+
+
+// behouden
+
+function updateDisplay() {
+  // Je kunt een HTML element gebruiken om de status weer te geven
+  document.getElementById('gridOffsetX').textContent = 'Grid Offset X: ' + gridOffsetX;
+  document.getElementById('fallingBlockX').textContent = 'Falling Block X: ' + fallingBlock.x;
+  document.getElementById('fallingBlockY').textContent = 'Falling Block Y: ' + fallingBlock.y;
+  document.getElementById('fallingBlockLength').textContent = 'Falling Block Length: ' + fallingBlock.length;
+  document.getElementById('canMove').textContent = 'Can Move: ' + (canMove ? 'Yes' : 'No');
+}
+
+function updateDisplayH() {
+  // Je kunt een HTML element gebruiken om de status weer te geven
+  document.getElementById('gridOffsetY').textContent = 'Grid Offset Y: ' + gridOffsetY;
+  document.getElementById('fallingBlockY').textContent = 'Falling Block Y: ' + fallingBlock.y;
+  document.getElementById('fallingBlockX').textContent = 'Falling Block X: ' + fallingBlock.x;
+  document.getElementById('fallingBlockLength').textContent = 'Falling Block Length: ' + fallingBlock.length;
+  document.getElementById('canMove').textContent = 'Can Move: ' + (canMove ? 'Yes' : 'No');
+}
+
+//    function moveGridH(dir) {
+//      const newOffsety = gridOffsetY + dir;
+//      if (newOffsety < -maxOffset || newOffsety > maxOffset) return;
+//
+//      const newBlockY = fallingBlock.y - dir;
+//      const blockEndY = newBlockY + fallingBlock.length;
+//      if (newBlockY < 0 || blockEndY > gridCols) return;
+//
+//      gridOffsetY = newOffsety;
+//      fallingBlock.y = newBlockY;
+//    }
+
+//function moveGridH(dir) {
+  //const newOffset = gridOffsetY - dir;  // Gebruik gridOffsetY voor verticale verschuiving
+  //if (newOffset < -maxOffsetY || newOffset > maxOffsetY) return; // Controleer of de verschuiving binnen de limieten blijft
+
+  //const newBlockY = fallingBlock.y - dir;  // Pas de y-positie van het vallende blok aan
+  //const blockEnd = newBlockY + fallingBlock.length;  // Bereken het einde van het blok na de verschuiving
+
+  // Zorg ervoor dat het blok niet buiten de verticale grenzen van het raster valt (behalve buiten de grenzen van het 10x10 grid)
+  //if (newBlockY < 0 || blockEnd > gridRows) return;
+
+  // Controleer of de nieuwe positie van het vallende blok bezet is binnen het 10x10 grid
+  //let canMove = true;
+
+  // Controleer de nieuwe verticale positie van het blok in de matrix, maar alleen als het zich binnen de grid bevindt
+  //if (newBlockY >= 0 && blockEnd <= gridRows) {
+    //for (let i = 0; i < fallingBlock.length; i++) {
+      //const row = newBlockY + i;  // Bepaal de rij van het vallende blok
+      //const col = fallingBlock.x; // Bepaal de kolom van het vallende blok
+
+      // Als er een blokje op die positie staat in de matrix (field), kunnen we niet verplaatsen
+      //if (field[row][col] !== null) {
+      //  canMove = false;
+     //   break;
+    //  }
+   // }
+  //}
+
+  // Alleen verplaatsen als er geen blokje op de nieuwe positie staat
+  //if (canMove) {
+    //gridOffsetY = newOffset;  // Werk de offset bij voor de verticale verschuiving
+
+    // Werk de y-positie van het vallende blok bij
+   // fallingBlock.y = newBlockY;
+ // }
+//}
+
+
+
+
+  
+
+///////////////////////////////////////////////////////////////////////////////////////////update
+
+    function update() {
+      if (lives <= 0) return;
+
+// naar beneden en dus stijgende y
+      if (fallingBlock.direction === "down") {
+        fallingBlock.y++;
+        if (fallingBlock.y >= gridRows || blockWouldCollide(fallingBlock)) {
+          if (fallingBlock.y <= 0) { // toegevoegd +1 *** ok ** terug weg
+            lives--;
+updateLivesDisplay();
+
+if (challenge3Active && !challenge3Failed) {
+  challenge3Failed = true;
+  challenge3Active = false;
+  showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding
+  updateChallenge3StatusCell();
+}
+            updateLivesDisplay();
+          } else {
+            for (let i = 0; i < fallingBlock.length; i++) {
+              const col = fallingBlock.x + i;
+              if (col >= 0 && col < gridCols) {
+                //if (fallingBlock.isDiva) showDivaImageTemporarily();
+                if (fallingBlock.isSpecial) showHeartImageTemporarily();
+                field[fallingBlock.y - 1][col] = {
+                    color: fallingBlock.color,
+  isSpecial: fallingBlock.isSpecial,
+  isMulticolor: fallingBlock.isMulticolor,
+  isDiva: fallingBlock.isDiva,
+  divaCountdown: fallingBlock.divaCountdown
+
+                    };
+              }
+            }
+
+            if (challenge3Active && !challenge3Failed) {
+  if (challenge3Count >= challenge3Limit) {
+    challenge3Success = true;
+    challenge3Active = false;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    lives += 3;
+    score += 250;
+    updateScoreDisplay();
+    updateLivesDisplay();
+    updateChallenge3StatusCell();
+  }
+}
+
+            score += fallingBlock.length;
+            updateScoreDisplay();
+            checkMatches();
+            updateDivaCountdowns();
+
+            if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+
+
+          }
+          directionToggle = !directionToggle;
+          //fallingBlock = createBlock(directionToggle ? "down" : "up");
+          useVertical = false;
+          updateControls()
+          fallingBlock = createBlockH(directionToggle ? "right" : "left");
+        }
+      } else {
+        // naar boven en dus dalende y
+        const nextY = fallingBlock.y - 1;
+        if (nextY < 0 || blockWouldCollide({ ...fallingBlock, y: nextY })) {
+          if (fallingBlock.y-1 >= gridRows - 1) { // min 1 ***** ok
+            lives--;
+updateLivesDisplay();
+if (challenge3Active && !challenge3Failed) {
+  challenge3Failed = true;
+  challenge3Active = false;
+  showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding
+  updateChallenge3StatusCell();
+}
+            updateLivesDisplay();
+          } else {
+            for (let i = 0; i < fallingBlock.length; i++) {
+              const col = fallingBlock.x + i;
+              if (col >= 0 && col < gridCols) {
+                //if (fallingBlock.isDiva) showDivaImageTemporarily();
+                if (fallingBlock.isSpecial) showHeartImageTemporarily();
+                field[fallingBlock.y][col] = {
+                    color: fallingBlock.color,
+  isSpecial: fallingBlock.isSpecial,
+  isMulticolor: fallingBlock.isMulticolor,
+  isDiva: fallingBlock.isDiva,
+  divaCountdown: fallingBlock.divaCountdown
+                    };
+              }
+            }
+
+            if (challenge3Active && !challenge3Failed) {
+  if (challenge3Count >= challenge3Limit) {
+    challenge3Success = true;
+    challenge3Active = false;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    lives += 3;
+    score += 250;
+    updateScoreDisplay();
+    updateLivesDisplay();
+    updateChallenge3StatusCell();
+  }
+}
+
+            score += fallingBlock.length;
+            updateScoreDisplay();
+            checkMatches();
+            updateDivaCountdowns();
+
+            if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+
+
+          }
+          directionToggle = !directionToggle;
+          //fallingBlock = createBlock(directionToggle ? "down" : "up");
+          useVertical = false;
+          updateControls()
+          fallingBlock = createBlockH(directionToggle ? "left" : "right");         
+        } else {
+          fallingBlock.y = nextY;
+        }
+      }
+      checkLevelProgression();
+      updateChallenge2StatusCell();
+    }
+
+
+    function updateH() {
+  if (lives <= 0) return;
+
+  if (fallingBlock.direction === "right") {
+    // Naar rechts = stijgende x
+    fallingBlock.x++;
+    if (fallingBlock.x >= gridCols || blockWouldCollideH(fallingBlock)) {
+      if (fallingBlock.x <= 0) { // plus 1
+        lives--;
+updateLivesDisplay();
+if (challenge3Active && !challenge3Failed) {
+  challenge3Failed = true;
+  challenge3Active = false;
+  showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding
+  updateChallenge3StatusCell();
+}
+        updateLivesDisplay();
+      } else {
+        for (let i = 0; i < fallingBlock.length; i++) {
+          const row = fallingBlock.y + i;
+          if (row >= 0 && row < gridRows) {
+            //if (fallingBlock.isDiva) showDivaImageTemporarily();
+            if (fallingBlock.isSpecial) showHeartImageTemporarily();
+            field[row][fallingBlock.x - 1] = {
+  
+  color: fallingBlock.color,
+  isSpecial: fallingBlock.isSpecial,
+  isMulticolor: fallingBlock.isMulticolor,
+  isDiva: fallingBlock.isDiva,
+  divaCountdown: fallingBlock.divaCountdown
+
+};
+          }
+        }
+
+        if (challenge3Active && !challenge3Failed) {
+  if (challenge3Count >= challenge3Limit) {
+    challenge3Success = true;
+    challenge3Active = false;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    lives += 3;
+    score += 250;
+    updateScoreDisplay();
+    updateLivesDisplay();
+    updateChallenge3StatusCell();
+  }
+}
+
+        score += fallingBlock.length;
+        updateScoreDisplay();
+        checkMatches();
+        updateDivaCountdowns();
+
+        if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+
+
+      }
+      directionToggle = !directionToggle;
+      //fallingBlock = createBlockH(directionToggle ? "right" : "left");
+      useVertical = true;
+      updateControls()
+      fallingBlock = createBlock(directionToggle ? "down" : "up");
+    }
+
+  } else {
+    // Naar links = dalende x
+    const nextX = fallingBlock.x - 1;
+    if (nextX < 0 || blockWouldCollideH({ ...fallingBlock, x: nextX })) {
+      if (fallingBlock.x >= gridCols) { // min 1 bij falling - terug weg bij gridcols
+        lives--;
+updateLivesDisplay();
+if (challenge3Active && !challenge3Failed) {
+  challenge3Failed = true;
+  challenge3Active = false;
+  showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding
+  updateChallenge3StatusCell();
+}
+        updateLivesDisplay();
+      } else {
+        for (let i = 0; i < fallingBlock.length; i++) {
+          const row = fallingBlock.y + i;
+          if (row >= 0 && row < gridRows) {
+            //if (fallingBlock.isDiva) showDivaImageTemporarily();  // ✅ bij rechts
+            if (fallingBlock.isSpecial) showHeartImageTemporarily();
+            field[row][fallingBlock.x] = {
+               
+
+  color: fallingBlock.color,
+  isSpecial: fallingBlock.isSpecial,
+  isMulticolor: fallingBlock.isMulticolor,
+  isDiva: fallingBlock.isDiva,
+  divaCountdown: fallingBlock.divaCountdown
+
+};
+          }
+        }
+        if (challenge3Active && !challenge3Failed) {
+  if (challenge3Count >= challenge3Limit) {
+    challenge3Success = true;
+    challenge3Active = false;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    lives += 3;
+    score += 250;
+    updateScoreDisplay();
+    updateLivesDisplay();
+    updateChallenge3StatusCell();
+  }
+}
+
+        score += fallingBlock.length;
+        updateScoreDisplay();
+        checkMatches();
+        updateDivaCountdowns();
+
+        if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+
+
+      }
+      directionToggle = !directionToggle;
+      //fallingBlock = createBlockH(directionToggle ? "right" : "left");
+      useVertical = true;
+      updateControls()
+      fallingBlock = createBlock(directionToggle ? "up" : "down");
+    } else {
+      fallingBlock.x = nextX;
+    }
+  }
+  checkLevelProgression();
+  updateChallenge2StatusCell();
+}
+
+/////////////////////////////////////////////////////////////////////////////////blockcollide
+
+    function blockWouldCollide(block) {
+      const yCheck = block.y;
+      if (yCheck < 0 || yCheck >= gridRows) return false;
+      for (let i = 0; i < block.length; i++) {
+        const col = block.x + i;
+        if (col < 0 || col >= gridCols || field[yCheck][col] !== null) return true;
+      }
+      return false;
+    }
+
+    function blockWouldCollideH(block) {
+  const xCheck = block.x;
+  if (xCheck < 0 || xCheck >= gridCols) return false;
+  for (let i = 0; i < block.length; i++) {
+  const row = block.y + i;
+  if (row < 0 || row >= gridRows || field[row][xCheck]!== null) return true;
+}
+  return false;
+}
+///////////////////////////////////////////////////////////////////////////// check matches
+    
+function showCelebration(lastCell) {
+  // Voeg een pop-effect toe voor de geselecteerde blokken
+  const [r, c] = lastCell; // Haal de rij en kolom op uit lastCell
+
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  if (cell) {
+    cell.classList.add("pop");
+    setTimeout(() => cell.classList.remove("pop"), 2000); // effect verdwijnt na 2 sec
+  }
+
+  // Voeg het plaatje toe in de juiste positie binnen het raster
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3VqXBUP.md.png";  // De afbeelding die je wilt tonen
+  img.alt = "Celebration Image";  // Alt-tekst voor de afbeelding
+  img.className = "celebration-image";  // Je kunt een klasse gebruiken voor styling als dat nodig is
+
+  // Verkrijg de positie van het laatste blokje
+  const x = (c + 10 + gridOffsetX) * blockSize;
+  const y = (r - gridOffsetY) * blockSize;
+
+  // Positioneer de afbeelding op basis van de cel
+  img.style.left = `${x + window.scrollX}px`;  // X-coördinaat van de cel
+  img.style.top = `${y + window.scrollY}px`;  // Y-coördinaat van de cel
+
+  // Stel de grootte van de afbeelding in om overeen te komen met 10x10 blokjes
+  img.style.width = `${10 * blockSize}px`;  // 10 blokjes breed
+  img.style.height = `${10 * blockSize}px`; // 10 blokjes hoog
+
+  // Voeg de afbeelding toe aan de pagina
+  document.body.appendChild(img);
+
+  // Verwijder de afbeelding na 2 seconden
+  setTimeout(() => {
+    img.remove();
+  }, 2000); // Verdwijnt na 2 seconden
+}
+
+function checkMatches() {
+  let toRemove = [];
+  const visited = Array.from({ length: gridRows }, () => Array(gridCols).fill(false));
+
+  function dfs(r, c, color, group) {
+    if (
+      r < 0 || r >= gridRows ||
+      c < 0 || c >= gridCols ||
+      visited[r][c] ||
+      !field[r][c] ||
+      field[r][c].isDiva
+    ) return;
+
+    const block = field[r][c];
+
+    const isMatch = block.color === color;
+
+    if (!isMatch) return;
+
+    visited[r][c] = true;
+    group.push([r, c]);
+
+    dfs(r + 1, c, color, group);
+    dfs(r - 1, c, color, group);
+    dfs(r, c + 1, color, group);
+    dfs(r, c - 1, color, group);
+  }
+
+  for (let r = 0; r < gridRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      if (visited[r][c] || !field[r][c] || field[r][c].isDiva) continue;
+
+      const block = field[r][c];
+
+      // ❌ Sla witte blokjes over als startpunt
+      if (block.color === "#FFFFFF") continue;
+
+      const group = [];
+      dfs(r, c, block.color, group);
+
+      if (group.length >= 5) {
+        toRemove.push(...group);
+
+        if (level === 2 && !level2ImageShown) {
+    showLevel2CelebrationImage();
+    level2ImageShown = true;
+  }
+
+        temporarilyChangeResetImage(block.color);
+        score += group.length * group.length;
+
+        bigGroupCount++; // Tel dit als een "grote groep"
+
+
+if (bigGroupCount >= 4) {
+  if (level >= 10) {
+    level++;
+    pauseUsesLeft++;
+    updatePauseDisplay();
+  }
+  bigGroupCount = 0;
+
+  if (level === 4) {
+    showLevel4CelebrationImage();
+    return;
+  }
+}
+
+        updateScoreDisplay();
+      }
+    }
+  }
+
+  for (let [r, c] of toRemove) {
+    const block = field[r][c];
+    if (!block) continue;
+    if (block.isDiva && block.divaCountdown > 0) continue;
+   // if (block.isSpecial) lives++;
+
+   if (block.isSpecial) {
+  if (!preventHeartReward) {
+    lives++;
+    updateLivesDisplay();
+    showHeartImageTemporarily();
+  }
+  heartFreed = true;
+  if (challengeActive) {
+    challengeHeartCount++;
+  }
+}
+
+if (block.isMulticolor) {
+  if (challenge2Active) {
+    challenge2MultiCount++;
+    challenge2PendingMulticolors++;
+  } else {
+    multicolorCount++;
+    multicolorDisplay.textContent = multicolorCount;
+  }
+}
+
+
+    disappearingBlocks.push({ r, c, scale: 1, opacity: 1 });
+  }
+}
+
+
+
+///////////////////////////////////////////////////////////////////////drawgrid
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const totalRows = extraRowsAbove + gridRows + extraRowsBelow;
+
+  const validColors = ["#4A90E2", "#7ED321", "#F8E71C", "#DEDEDE", "#9B51E0", "#50E3C2", "#FF6F61", "#FFFFFF"];
+
+  function getGroupSize(r, c, color) {
+    const visited = Array.from({ length: gridRows }, () => Array(gridCols).fill(false));
+    let group = [];
+
+    function dfs(row, col) {
+
+      if (
+        row < 0 ||
+        row >= gridRows ||
+        col < 0 ||
+        col >= gridCols ||
+        visited[row][col] ||
+        field[row][col] === null ||
+        field[row][col].color !== color ||
+  field[row][col].isDiva
+      ) {
+        return;
+      }
+
+      visited[row][col] = true;
+      group.push([row, col]);
+
+      dfs(row + 1, col);
+      dfs(row - 1, col);
+      dfs(row, col + 1);
+      dfs(row, col - 1);
+    }
+
+    dfs(r, c);
+    return group.length;
+  }
+
+  ctx.fillStyle = "#1A2633"; // Kies een bijpassende kleur zoals in je afbeelding
+ctx.fillRect(
+  (10 + gridOffsetX) * blockSize+20, // linkerkant van het 10x10 blok
+  (extraRowsAbove - gridOffsetY) * blockSize+20, // bovenkant van het 10x10 blok
+  gridCols * blockSize, // breedte van 10 blokken
+  gridRows * blockSize  // hoogte van 10 blokken
+);
+
+  for (let r = 0; r < totalRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      const x = (c + 10 + gridOffsetX) * blockSize+20;
+      const y = (r - gridOffsetY) * blockSize+20;
+
+      if (r >= extraRowsAbove && r < extraRowsAbove + gridRows) {
+        ctx.strokeStyle = "#FFE680";
+        ctx.lineWidth = 0;
+
+        ctx.beginPath();
+        ctx.moveTo(x + 10, y);
+        ctx.arcTo(x + blockSize, y, x + blockSize, y + blockSize, 12);
+        ctx.arcTo(x + blockSize, y + blockSize, x, y + blockSize, 12);
+        ctx.arcTo(x, y + blockSize, x, y, 12);
+        ctx.arcTo(x, y, x + 10, y, 12);
+        ctx.closePath();
+        ctx.stroke();
+
+        const fieldRow = r - extraRowsAbove;
+        let color = field[fieldRow][c] ? field[fieldRow][c].color : null;
+
+        if (color && validColors.includes(color)) {
+          let disappearing = disappearingBlocks.find(b => b.r === fieldRow && b.c === c);
+          let scale = 1;
+          let opacity = 1;
+
+          if (disappearing) {
+            scale = disappearing.scale;
+            opacity = disappearing.opacity;
+            disappearing.scale += 0.6;
+
+            if (disappearing.scale >= 3) {
+              field[fieldRow][c] = null;
+              disappearingBlocks = disappearingBlocks.filter(b => !(b.r === fieldRow && b.c === c));
+              continue;
+            }
+          }
+
+          ctx.save();
+          ctx.globalAlpha = opacity;
+          ctx.translate(x + blockSize / 2, y + blockSize / 2);
+          ctx.rotate(disappearing ? disappearing.rotation : 0);
+          ctx.scale(scale, scale);
+          ctx.translate(-(x + blockSize / 2), -(y + blockSize / 2));
+
+          ctx.beginPath();
+          ctx.moveTo(x + 10, y);
+          ctx.arcTo(x + blockSize, y, x + blockSize, y + blockSize, 12);
+          ctx.arcTo(x + blockSize, y + blockSize, x, y + blockSize, 12);
+          ctx.arcTo(x, y + blockSize, x, y, 12);
+          ctx.arcTo(x, y, x + 10, y, 12);
+          ctx.closePath();
+
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 0;
+          ctx.stroke();
+
+          ctx.fillStyle = color;
+          ctx.fill();
+
+          // 3D-effect: lichte glans bovenaan
+          const lightGradient = ctx.createLinearGradient(x, y, x, y + blockSize * 0.4);
+          lightGradient.addColorStop(0, "rgba(255,255,255,0.35)");
+          lightGradient.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = lightGradient;
+          ctx.fill();
+
+          // 3D-effect: donkere schaduw onderaan
+          const shadowGradient = ctx.createLinearGradient(x, y + blockSize * 0.6, x, y + blockSize);
+          shadowGradient.addColorStop(0, "rgba(0,0,0,0)");
+          shadowGradient.addColorStop(1, "rgba(0,0,0,0.25)");
+          ctx.fillStyle = shadowGradient;
+          ctx.fill();
+
+          const groupSize = getGroupSize(fieldRow, c, color);
+          const blockData = field[fieldRow][c];
+
+          if (blockData.isDiva && blockData.divaCountdown) {
+  const offsetY = blockSize * 0.08;
+
+  ctx.font = `bold ${blockSize * 0.8}px 'Baloo Bhaina 2', sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "black";
+  ctx.strokeText(blockData.divaCountdown, x + blockSize / 2, y + blockSize / 2 + offsetY);
+
+  ctx.fillStyle = "white";
+  ctx.fillText(blockData.divaCountdown, x + blockSize / 2, y + blockSize / 2 + offsetY);
+
+  ctx.restore();  // ← RESTORE toevoegen vóór je break
+  continue;
+}
+
+let imageToUse = null;
+
+if (blockData.isSpecial) {
+  imageToUse = specialImage;
+} else if (blockData.isMulticolor) {
+  imageToUse = multicolorImage;
+} else {
+  imageToUse = images[Math.min(groupSize - 1, 4)];
+}
+
+if (imageToUse) {
+  const imgSize = blockSize * 0.9;
+  ctx.drawImage(
+    imageToUse,
+    x + (blockSize - imgSize) / 2,
+    y + (blockSize - imgSize) / 2,
+    imgSize,
+    imgSize
+  );
+}
+
+
+
+
+          ctx.restore();
+        }
+      } else {
+        ctx.fillStyle = "rgba(0, 0, 0, 0)";
+        ctx.fillRect(x, y, blockSize, blockSize);
+      }
+    }
+  }
+
+  //const gridX = (10 + gridOffsetX) * blockSize;
+  //const gridY = (extraRowsAbove - gridOffsetY) * blockSize; // <-- aangepaste lij
+  
+  const gridX = (20 + (10+gridOffsetX) * blockSize);
+const gridY = (20 + (extraRowsAbove - gridOffsetY) * blockSize);
+  
+const gridWidth = gridCols * blockSize;
+const gridHeight = gridRows * blockSize;
+
+const borderColor = '#FFE680'; // Gele lijnen
+const fillColor = '#FFE680';   // Oranje vulling
+const outerPadding = 5;
+const innerPadding = 10;
+
+ctx.save();
+
+// 🔸 Teken de gevulde ring tussen de twee randen
+ctx.beginPath();
+
+// Buitenste pad
+ctx.moveTo(gridX - outerPadding, gridY - outerPadding);
+ctx.arcTo(gridX + gridWidth + outerPadding, gridY - outerPadding, gridX + gridWidth + outerPadding, gridY + gridHeight + outerPadding, 0);
+ctx.arcTo(gridX + gridWidth + outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY + gridHeight + outerPadding, 0);
+ctx.arcTo(gridX - outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY - outerPadding, 0);
+ctx.arcTo(gridX - outerPadding, gridY - outerPadding, gridX - outerPadding + 1, gridY - outerPadding, 0); // laatste bocht
+ctx.closePath();
+
+// Binnenste pad
+ctx.moveTo(gridX - innerPadding, gridY - innerPadding);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY - innerPadding, gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, 0);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY + gridHeight + innerPadding, 0);
+ctx.arcTo(gridX - innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY - innerPadding, 0);
+ctx.arcTo(gridX - innerPadding, gridY - innerPadding, gridX - innerPadding, gridY - innerPadding, 0);
+ctx.closePath();
+
+// Vulling tussen binnen- en buitenrand
+ctx.fillStyle = fillColor;
+ctx.fill("evenodd");
+
+// 🔸 Teken de twee randen erbovenop
+// Buitenrand
+// Buitenrand ZONDER bovenlijn
+ctx.lineWidth = 0;
+ctx.strokeStyle = borderColor;
+ctx.beginPath();
+ctx.moveTo(gridX + gridWidth + outerPadding, gridY - outerPadding); // begin rechtsboven
+ctx.arcTo(gridX + gridWidth + outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY + gridHeight + outerPadding, 12); // rechts → onder
+ctx.arcTo(gridX - outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY - outerPadding, 12); // onder → links
+ctx.arcTo(gridX - outerPadding, gridY - outerPadding, gridX - outerPadding + 1, gridY - outerPadding, 12); // links → net niet boven
+ctx.stroke(); // GEEN closePath → geen bovenlijn
+// Binnenrand
+ctx.lineWidth = 0;
+ctx.beginPath();
+ctx.moveTo(gridX - innerPadding, gridY - innerPadding);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY - innerPadding, gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, 12);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY + gridHeight + innerPadding, 12);
+ctx.arcTo(gridX - innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY - innerPadding, 12);
+ctx.arcTo(gridX - innerPadding, gridY - innerPadding, gridX - innerPadding + 1, gridY - innerPadding, 12);
+ctx.closePath();
+ctx.stroke();
+
+ctx.restore();
+
+
+
+
+
+
+}
+
+
+
+function drawFallingBlock() {
+  const { x, y, color, length } = fallingBlock;
+  const visibleTop = -extraRowsAbove;
+  const visibleBottom = gridRows + extraRowsBelow;
+
+  if (y >= visibleTop && y < visibleBottom) {
+    for (let i = 0; i < length; i++) {
+      const drawX = useVertical
+        ? (x + i + 10 + gridOffsetX) * blockSize+20
+        : (x + 10 + gridOffsetX) * blockSize+20;
+      const drawY = useVertical
+        ? (y + extraRowsAbove - gridOffsetY) * blockSize+20
+        : (y + i + extraRowsAbove - gridOffsetY) * blockSize+20;
+
+      // hoofdvlak
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(drawX + 10, drawY);
+      ctx.arcTo(drawX + blockSize, drawY, drawX + blockSize, drawY + blockSize, 12);
+      ctx.arcTo(drawX + blockSize, drawY + blockSize, drawX, drawY + blockSize, 12);
+      ctx.arcTo(drawX, drawY + blockSize, drawX, drawY, 12);
+      ctx.arcTo(drawX, drawY, drawX + blockSize, drawY, 12);
+      ctx.closePath();
+      ctx.fill();
+
+      // lichte glans bovenaan
+      const lightGradient = ctx.createLinearGradient(drawX, drawY, drawX, drawY + blockSize * 0.4);
+      lightGradient.addColorStop(0, "rgba(255,255,255,0.35)");
+      lightGradient.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = lightGradient;
+      ctx.fill();
+
+      // donkere schaduw onderaan
+      const shadowGradient = ctx.createLinearGradient(drawX, drawY + blockSize * 0.6, drawX, drawY + blockSize);
+      shadowGradient.addColorStop(0, "rgba(0,0,0,0)");
+      shadowGradient.addColorStop(1, "rgba(0,0,0,0.25)");
+      ctx.fillStyle = shadowGradient;
+      ctx.fill();
+      ctx.restore(); // <-- DIT HIER, VOOR je een afbeelding of tekst tekent
+      // emoji of afbeelding
+    // Vraagteken i.p.v. afbeelding bij vallende blokken
+const offsetY = blockSize * 0.08;
+ctx.font = `bold ${blockSize * 0.8}px 'Baloo Bhaina 2', sans-serif`;
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+
+
+  const text = fallingBlock.isDiva ? "9" : "?";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "black";
+  ctx.strokeText(text, drawX + blockSize / 2, drawY + blockSize / 2 + offsetY);
+
+  ctx.fillStyle = "white";
+  ctx.fillText(text, drawX + blockSize / 2, drawY + blockSize / 2 + offsetY);
+
+
+      // optionele witte rand
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+}
+
+
+
+
+ function updateControls() {
+  const verticalControls = document.querySelector('.vertical-controls');
+  const horizontalControls = document.querySelector('.horizontal-controls');
+
+  if (useVertical) {
+    verticalControls.style.display = 'none';
+    horizontalControls.style.display = 'flex';
+  } else {
+    verticalControls.style.display = 'flex';
+    horizontalControls.style.display = 'none';
+  }
+}
+
+    function gameLoop() {
+        if (gamePaused) {
+  return; // Doe niks als het spel gepauzeerd is
+}
+        if (useVertical) {
+    document.addEventListener('DOMContentLoaded', updateControls);
+    update();
+    drawGrid();
+    drawFallingBlock();
+  } else {
+    document.addEventListener('DOMContentLoaded', updateControls);
+    updateH();
+    drawGrid();
+    drawFallingBlock();
+  }
+}
+//setInterval(gameLoop, 300);
+
+
+    updateLivesDisplay();
+    updateScoreDisplay();
+
+
+    document.getElementById("multicolorDisplay").addEventListener("click", () => {
+  if (multicolorCount > 0 && !nextBlockIsMulticolor && !gamePaused) {
+    multicolorCount--;
+    multicolorDisplay.textContent = multicolorCount;
+
+    showColorChoice((selectedColor) => {
+        nextBlock = {
+  color: selectedColor,
+  length: 1,
+  isSpecial: false,
+  isMulticolor: true,
+  isDiva: false,
+  divaCountdown: null
+};
+updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+    });
+  }
+});
+
+
+function showLevel2CelebrationImage() {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  tutorialImage.src = "https://i.ibb.co/mV4yyjcd/1000011634.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const handleClose = () => {
+    tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    level = 3;
+    updateScoreDisplay();
+    level2ImageShown = true;
+
+    tutorialNextButton.removeEventListener("click", handleClose);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleClose;
+  tutorialNextButton.addEventListener("click", handleClose);
+}
+
+function showColorChoice(callback) {
+  gamePaused = true;
+
+    // ✅ Zorg dat andere overlays niet zichtbaar zijn
+    document.getElementById("levelMatrixOverlay").style.display = "none";
+  document.getElementById("challengeGridOverlay").style.display = "none";
+
+  const modal = document.getElementById("colorChoiceModal");
+  const options = document.getElementById("colorOptions");
+  options.innerHTML = "";
+
+  colors.forEach(color => {
+    const btn = document.createElement("button");
+    btn.style.backgroundColor = color;
+    btn.style.border = "2px solid white";
+    btn.style.width = "40px";
+    btn.style.height = "40px";
+    btn.style.borderRadius = "8px";
+    btn.onclick = () => {
+      modal.style.display = "none";
+      callback(color);
+      gamePaused = false;
+    };
+    options.appendChild(btn);
+  });
+
+  const texts = [
+  "Your next block wants a look. What colour are we giving her?",
+  "Your next block needs a vibe. Which colour is she serving?",
+  "She’s ready to slay. Choose her colour, stylist!",
+  "Your next diva is bare. Dress her in a colour, darling.",
+  "Block incoming... but she’s got no outfit! What colour?",
+  "She’s standing there, nude and confused. Help her pick a colour.",
+  "Time for a colour emergency. Give her something to werk with!",
+  "No colour? No confidence. Fix her up!",
+  "She refuses to fall without the right look. Choose a colour.",
+  "She’s blank, baby. Throw some shade on her.",
+  "She’s not coming down until she’s cute. What’s her colour?"
+];
+
+document.getElementById("colorChoiceText").textContent =
+  texts[Math.floor(Math.random() * texts.length)];
+
+  modal.style.display = "block";
+}
+
+    setInterval(gameLoop, 400);
+
+
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+  const howToPartyCell = document.getElementById("howToPartyCell");
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  
+ 
+
+  howToPartyCell.addEventListener("click", () => {
+  if (tutorialInProgress) return;
+  tutorialStep = 0;
+  tutorialInProgress = true;
+  tutorialImage.src = tutorialImages[tutorialStep];
+  tutorialOverlay.style.display = "flex";
+  gamePaused = true;
+});
+
+  let tutorialInProgress = false;
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+tutorialNextButton._customListener = () => {
+  tutorialStep++;
+
+  if (tutorialStep >= tutorialImages.length) {
+    tutorialOverlay.style.display = "none";
+
+    if (introImageOnly) {
+      // geen actie nodig
+    } else if (startedFromIntro) {
+      document.getElementById('startOverlay').style.display = 'flex';
+      startedFromIntro = false;
+    } else {
+      gamePaused = false;
+    }
+
+    tutorialInProgress = false;
+    return;
+  }
+
+  tutorialImage.src = tutorialImages[tutorialStep];
+};
+tutorialNextButton.addEventListener("click", tutorialNextButton._customListener);
+});
+
+const tutorialImages = [
+    "https://i.ibb.co/KpB7Sy6h/pag1.png",
+    "https://i.ibb.co/PGx4B92v/pag2.png"
+  ];
+
+
+let startedFromIntro = false;
+let introImageOnly = false;
+
+function startTutorialFromIntro() {
+  localStorage.removeItem("testScore");
+  score = 0;
+  updateScoreDisplay();
+  startedFromIntro = true;
+  tutorialStep = 0;
+  document.getElementById("tutorialImage").src = tutorialImages[tutorialStep];
+  document.getElementById("tutorialOverlay").style.display = "flex";
+  document.getElementById("startOverlay").style.display = "none";
+  gamePaused = true;
+}
+
+let levelImageShown = false; // voorkomt dubbele weergave
+
+
+function checkLevelProgression() {
+  if (level === 1 && blockCounter >= 6 && !levelImageShown) {
+    showLevelTransitionImage();
+    levelImageShown = true;
+    blockCounter = 0;
+    return;
+  }
+
+  if (level === 3 && blockCounter >= 20 && !level3ImageShown) {
+  showLevel3CelebrationImage();
+  return;
+}
+
+if (level === 4 && blockCounter >= 15 && !level4ImageShown) {
+  level = 5;
+  level4ImageShown = true;
+  blockCounter = 0;
+
+  showCelebrationOverlay("https://iili.io/3exx9tV.png");
+
+  forcedNextBlock = {
+    color: "#FF6F61",
+    length: 1,
+    isSpecial: true,
+    isMulticolor: false,
+    isDiva: false,
+    divaCountdown: null
+  };
+
+  updateScoreDisplay();
+  return;
+}
+
+if (level === 5 && heartFreed && !level6Triggered) {
+  level = 6;
+  level6Triggered = true;
+  blockCounter = 0;
+  showCelebrationOverlay("https://iili.io/3exZRJs.png"); // afbeelding voor overgang naar 6
+  forcedNextBlock = {
+    color: "#50E3C2",
+    length: 1,
+    isSpecial: false,
+    isMulticolor: false,
+    isDiva: true,
+    divaCountdown: 10
+  };
+  updateScoreDisplay();
+  return;
+}
+
+  // Na 20 blokken in level 6 → level 7 - multicolor
+  if (level === 6 && !level7Triggered && blockCounter >= 20) {
+    level = 7;
+    level7Triggered = true;
+    blockCounter = 0;
+    showCelebrationOverlay("https://iili.io/3exDWDx.png");
+
+    forcedNextBlock = {
+  color: colors[Math.floor(Math.random() * colors.length)], // gewone kleur
+  length: 1,
+  isSpecial: false,
+  isMulticolor: true, // dit triggert het multicolor-teller-mechanisme
+  isDiva: false,
+  divaCountdown: null
+};
+
+    updateScoreDisplay();
+    return;
+  }
+
+ 
+
+  // Na 20 blokken in level 7 → level 8 - toon multicolor naar 8
+  if (level === 7 && !level8Triggered && blockCounter >= 20) {
+    level = 8;
+    level8Triggered = true;
+    blockCounter = 0;
+    showCelebrationOverlay("https://iili.io/3exLGQS.png");
+
+    updateScoreDisplay();
+    return;
+  }
+
+  if (level === 8 && blockCounter >= 10 && !level9Triggered) {
+  level = 9;
+  level9Triggered = true;
+  blockCounter = 0;
+  showCelebrationOverlay("https://iili.io/3exiOKu.png"); // vervang door je eigen afbeelding indien gewenst
+  updateScoreDisplay();
+  return;
+}
+
+if (level === 9 && blockCounter >= 10 && !level10Triggered) {
+  level = 10;
+  level10Triggered = true;
+  blockCounter = 0;
+  showCelebrationOverlay("https://iili.io/3ezWgX2.png"); // gebruik hier je gewenste afbeelding
+  updateScoreDisplay();
+  return;
+}
+
+if (level === challengeLevel && !challengeActive && !challengeRewardGiven) {
+  challengeActive = true;
+  challengeHeartCount = 0;
+  challengeBlockCounter = 0;
+  challengeHeartOverrideCounter = 10;
+  preventHeartReward = true;
+  challengeRewardGiven = false;
+  updateChallengeStatusCell();
+  showCelebrationOverlay("https://iili.io/3ei0MlV.png"); // challenge-afbeelding
+  updateScoreDisplay();
+}
+
+if (level === challenge2Level && !challenge2Active && !challenge2RewardGiven) {
+  challenge2Active = true;
+  challenge2MultiCount = 0;
+  challenge2BlockCounter = 0;
+  challenge2RewardGiven = false;
+  
+  updateChallenge2StatusCell();
+  showCelebrationOverlay("https://iili.io/3v6K11f.png"); // challenge 2 start afbeelding
+  updateScoreDisplay();
+}
+
+if (challenge2Active && !challenge2RewardGiven) {
+    if (challenge2MultiCount >= 13 && challenge2BlockCounter <= 50) {
+  // SUCCES: voeg pending multicolors toe aan totaal
+  multicolorCount += challenge2PendingMulticolors;
+  multicolorDisplay.textContent = multicolorCount;
+
+  challenge2RewardGiven = true;
+  challenge2Active = false;
+  challenge2PendingMulticolors = 0;
+
+  updateChallenge2StatusCell();
+  showCelebrationOverlay("https://iili.io/3vig7wP.png");
+  return;
+}
+
+  if (challenge2BlockCounter > 50) {
+    // FAIL: multicolors kwijt
+    challenge2Active = false;
+    challenge2RewardGiven = true;
+    multicolorCount = 0;
+    multicolorDisplay.textContent = multicolorCount;
+    updateChallenge2StatusCell();
+    showCelebrationOverlay("https://iili.io/3vs26Vn.png"); // vervang indien gewenst
+  }
+}
+
+if (!challenge3Started && level >= challenge3Level) {
+  challenge3Active = true;
+  challenge3Started = true;
+  challenge3Failed = false;
+  challenge3Success = false;
+  challenge3Count = 0;
+  showCelebrationOverlay("https://iili.io/3vmzHfs.png"); // start afbeelding
+  updateChallenge3StatusCell();
+}
+
+if (challengeActive && !challengeRewardGiven) {
+    if (challengeHeartCount >= challengeHeartTarget && challengeBlockCounter <= challengeBlockLimit) {
+  lives += 3;
+  updateLivesDisplay();
+  score += 100;
+  challengeRewardGiven = true;
+  challengeActive = false;
+  preventHeartReward = false;
+  updateChallengeStatusCell();
+  showCelebrationOverlay("https://iili.io/3etTwJt.png");
+  updateScoreDisplay();
+}
+
+  // Challenge afgelopen zonder succes?
+
+
+if (challengeBlockCounter > challengeBlockLimit) {
+    challengeActive = false;
+    challengeRewardGiven = true;
+    updateChallengeStatusCell();
+    preventHeartReward = false;
+    showCelebrationOverlay("https://iili.io/3vrgHZJ.png"); // afbeelding bij mislukte challenge
+  }
+}
+
+if (level === challenge4Level && !challenge4Active && !challenge4RewardGiven) {
+  challenge4Active = true;
+  challenge4Count = 0;
+  challenge4FullFieldMoments = 0;
+  showCelebrationOverlay("https://iili.io/38k2Bpt.png");
+  updateChallenge4StatusCell();
+}
+
+if (level === challenge5StartLevel && !challenge5Started) {
+  challenge5Started = true;
+  challenge5Active = true;
+  challenge5Done = false;
+  challenge5Success = false;
+  challenge5BlockCounter = 0;
+  showCelebrationOverlay("https://iili.io/3ex0vzQ.png");
+  updateChallenge5StatusCell();
+  
+  // Zet ALLE blokjes op het veld in diva's met countdown 9
+  for (let r = 0; r < field.length; r++) {
+  for (let c = 0; c < field[0].length; c++) {
+    const block = field[r][c];
+    if (block) {
+      block.isDiva = true;
+      block.divaCountdown = 19;
+    }
+  }
+}
+
+  updateChallengeStatusCell(); // als je statusweergave hebt
+}
+
+
+
+
+}
+
+function showCelebrationOverlay(imageUrl) {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  if (tutorialOverlay.style.display === "flex") return; // voorkomt dubbele overlays
+
+  tutorialStep = -1;
+  tutorialImage.onload = () => {
+    tutorialOverlay.style.display = "flex";
+  };
+  tutorialImage.src = imageUrl;
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const close = () => {
+    tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    tutorialNextButton.removeEventListener("click", close);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = close;
+  tutorialNextButton.addEventListener("click", close);
+}
+
+
+
+function showLevel3CelebrationImage() {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  tutorialImage.src = "https://iili.io/3exCfSf.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const handleNext = () => {
+  tutorialOverlay.style.display = "none";
+  gamePaused = false;
+  level = 4;
+  pauseUsesLeft++;
+  
+  levelImageShown = true;
+  level3ImageShown = true;
+  blockCounter = 0;
+  updatePauseDisplay();
+  updateScoreDisplay();
+  tutorialNextButton.removeEventListener("click", handleNext);
+};
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleNext;
+  tutorialNextButton.addEventListener("click", handleNext);
+}
+
+function showLevelTransitionImage() {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  tutorialImage.src = "https://i.ibb.co/bjxT2f8G/5blokjes.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const handleLevelAdvance = () => {
+    tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    level = 2;
+    updateScoreDisplay();
+
+    tutorialNextButton.removeEventListener("click", handleLevelAdvance);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleLevelAdvance;
+  tutorialNextButton.addEventListener("click", handleLevelAdvance);
+}
+
+
+
+function showStartImageBeforeGame() {
+  localStorage.removeItem("testScore");
+  score = 0;
+  updateScoreDisplay();
+  
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  if (!tutorialOverlay || !tutorialImage || !tutorialNextButton) {
+        return;
+  }
+
+  document.getElementById("startOverlay").style.display = "none";
+  tutorialImage.src = "https://i.ibb.co/DPh9MbTh/1000011636.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+  introImageOnly = true;
+
+  const handleNext = () => {
+        tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    introImageOnly = false;
+    pauseUsesLeft = 10;
+    // verwijderd: document.getElementById("startOverlay").style.display = "none";
+    document.getElementById("startOverlay").style.display = "none";
+    tutorialNextButton.removeEventListener("click", handleNext);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleNext;
+  tutorialNextButton.addEventListener("click", handleNext);
+  }
+
+;
+
+  // Verwijder vorige listeners en koppel nieuwe
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+
+levelDisplay.addEventListener("click", () => {
+  document.getElementById("levelMatrixOverlay").style.display = "flex";
+  updateChallengeStatusCell();
+  gamePaused = true;
+});
+
+function closeLevelMatrixOverlay() {
+  document.getElementById("levelMatrixOverlay").style.display = "none";
+  gamePaused = false;
+}
+
+
+function updateChallengeStatusCell() {
+  const cell = document.getElementById("challengeStatusCell");
+  if (!cell) return;
+
+  // Verwijder achtergrondafbeelding altijd
+  cell.style.backgroundImage = "none";
+
+  // Bepaal of we grijze of normale stijl moeten tonen
+  const isInactive = !challengeActive && !challengeRewardGiven;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  // Bovenste helft: afbeelding
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png";
+  img.alt = "Challenge-afbeelding";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  // Onderste helft: emoji en cijfers
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+  if (challengeRewardGiven && challengeHeartCount >= 3) {
+    bottom.innerHTML = `<div>✅ Challenge was a success!</div>`;
+  } else if (challengeRewardGiven) {
+    bottom.innerHTML = `<div>❌ Challenge failed.</div>`;
+  } else {
+    bottom.innerHTML = `
+      
+      <div>❤️ <span id="challengeHeartCount">${challengeHeartCount}</span> / ${challengeHeartTarget}</div>
+      <div>⏳ <span id="challengeBlockCounter">${challengeBlockCounter}</span> / ${challengeBlockLimit}</div>
+    `;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  // Voeg opbouw toe aan cel
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge1;
+
+
+  // Klasse bijwerken
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge1() {
+  if (level < challengeLevel) return;
+
+  challengeActive = true;
+  challengeRewardGiven = false;
+  challengeHeartCount = 0;
+  challengeBlockCounter = 0;
+  challengeHeartOverrideCounter = 10;
+  preventHeartReward = true;
+  updateChallengeStatusCell();
+  showCelebrationOverlay("https://iili.io/3ei0MlV.png");
+}
+
+function updateChallenge3StatusCell() {
+  const cell = document.getElementById("challenge3StatusCell");
+  if (!cell) return;
+
+  cell.style.backgroundImage = "none";
+
+  const isInactive = !challenge3Active;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png";
+  img.alt = "Challenge 3";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+  if (challenge3Success) {
+    bottom.innerHTML = `<div>✅ Challenge was a success!</div>`;
+  } else if (challenge3Failed) {
+    bottom.innerHTML = `<div>❌ Challenge failed</div>`;
+  } else {
+    bottom.innerHTML = `
+      <div>🧍‍♂️ <span id="challenge3Count">${challenge3Count}</span> / ${challenge3Limit}</div>
+    `;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge3;
+
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge3() {
+  if (level < challenge3Level) return; // ← alleen activeren als het level bereikt is
+
+  challenge3Active = true;
+  challenge3Started = true;
+  challenge3Failed = false;
+  challenge3Success = false;
+  challenge3Count = 0;
+  updateChallenge3StatusCell();
+  showCelebrationOverlay("https://iili.io/3vmzHfs.png");
+}
+
+function updateChallenge4StatusCell() {
+  const cell = document.getElementById("challenge4StatusCell");
+  if (!cell) return;
+
+  cell.style.backgroundImage = "none"; // verwijder grote hart
+
+  const isInactive = !challenge4Active && !challenge4RewardGiven;
+  const blocksOnField = field.flat().filter(cell => cell !== null).length;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.85rem";
+
+  if (challenge4Success) {
+    bottom.innerHTML = `<div>✅ Challenge was a success!</div>`;
+  } else if (challenge4RewardGiven) {
+    bottom.innerHTML = `<div>❌ Challenge failed.</div>`;
+  } else {
+    bottom.innerHTML = `
+      <div>⏳ ${challenge4Count} / ${challenge4Limit}</div>
+      <div>📈 ${challenge4FullFieldMoments} / 10</div>
+      <div>🧱 ${blocksOnField}</div>
+    `;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge4;
+
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge4() {
+  if (level < challenge4Level) return;
+
+  challenge4Active = true;
+  challenge4RewardGiven = false;
+  challenge4Success = false;
+  challenge4Count = 0;
+  challenge4FullFieldMoments = 0;
+  updateChallenge4StatusCell();
+  showCelebrationOverlay("https://iili.io/38k2Bpt.png");
+}
+
+function updateChallenge5StatusCell() {
+  const cell = document.getElementById("challenge5StatusCell");
+  if (!cell) return;
+
+  // Achtergrond leegmaken
+  cell.style.backgroundImage = "none";
+
+  const isInactive = !challenge5Active && !challenge5Success && !challenge5Done;
+
+
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  // Bovenaan: afbeelding
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png"; // zelfde als cel 3
+  img.alt = "Challenge 5 afbeelding";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  // Onder: status info
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+ 
+
+  if (challenge5Success) {
+    bottom.innerHTML = `<div>✅ Challenge was a success!</div>`;
+ // } else if (challenge5Done) {
+ //   bottom.innerHTML = `<div>❌ Challenge failed</div>`;
+  } else {
+    const textColor = isInactive ? "#888" : "#FFE680";
+    bottom.innerHTML = `<div style="color: ${textColor};">🧍‍♂️ <span id="challenge5Count">${challenge5BlockCounter}</span> / ${challenge5RequiredBlocks}</div>`;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  // Cel leegmaken en nieuwe inhoud plaatsen
+  cell.innerHTML = "";
+  cell.appendChild(container);
+
+  // Eventuele clickfunctie om te herstarten
+  cell.onclick = restartChallenge5;
+
+  // Grijs maken bij inactiviteit (optioneel: CSS class ‘inactive’)
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge5() {
+  if (level < challenge5StartLevel) return;
+
+  challenge5Active = true;
+  challenge5Done = false;
+  challenge5Success = false;
+  challenge5BlockCounter = 0;
+
+  // Toon startafbeelding
+  showCelebrationOverlay("https://iili.io/3ex0vzQ.png");
+
+  // Zet bestaande blokjes in diva's met countdown 9
+  for (let r = 0; r < field.length; r++) {
+    for (let c = 0; c < field[0].length; c++) {
+      const block = field[r][c];
+      if (block) {
+        block.isDiva = true;
+        block.divaCountdown = 9;
+      }
+    }
+  }
+
+  updateChallenge5StatusCell();
+  updateChallengeStatusCell();
+}
+
+
+
+
+function updateChallenge2StatusCell() {
+  const cell = document.getElementById("challenge2StatusCell");
+  if (!cell) return;
+
+  cell.style.backgroundImage = "none";
+
+  const isInactive = !challenge2Active && !challenge2RewardGiven;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3vPbK7e.png"; // multicolor
+  img.alt = "Challenge 2 afbeelding";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+  if (challenge2RewardGiven && challenge2MultiCount >= challenge2MultiTarget) {
+    bottom.innerHTML = `<div>✅ Challenge was a success!</div>`;
+  } else if (challenge2RewardGiven) {
+    bottom.innerHTML = `<div>❌ Challenge failed</div>`;
+  } else {
+    let multiText = `${challenge2MultiCount}`;
+    if (challenge2PendingMulticolors > 0) {
+      multiText += ` (+${challenge2PendingMulticolors})`;
+    }
+
+    const textColor = isInactive ? "#888" : "#FFE680";
+
+    bottom.innerHTML = `
+      <div style="color: ${textColor};">🌈 <span id="challenge2MultiCount">${multiText}</span> / ${challenge2MultiTarget}</div>
+      <div style="color: ${textColor};">⏳ <span id="challenge2BlockCounter">${challenge2BlockCounter}</span> / ${challenge2BlockLimit}</div>
+    `;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge2;
+
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+
+function startChallenge5() {
+  challenge5Active = true;
+  challenge5Done = false;
+  challenge5BlockCounter = 0;
+  challenge5ImageShown = true;
+  showChallengeImage('images/challenge5_start.png'); // vervang met juiste pad
+
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      if (grid[row][col] !== null && !grid[row][col].isDiva) {
+        grid[row][col] = {
+          color: grid[row][col].color,
+          isDiva: true,
+          divaCountdown: 9,
+          isFalling: false,
+          landed: true,
+          x: col,
+          y: row,
+        };
+      }
+    }
+  }
+}
+
+
+function restartChallenge2() {
+  if (level < challenge2Level) return;
+
+  challenge2Active = true;
+  challenge2RewardGiven = false;
+  challenge2MultiCount = 0;
+  challenge2BlockCounter = 0;
+  challenge2PendingMulticolors = 0;
+  updateChallenge2StatusCell();
+  showCelebrationOverlay("https://iili.io/3v6K11f.png");
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateChallengeStatusCell();
+  updateChallenge2StatusCell();
+  updateChallenge3StatusCell();
+  updateChallenge4StatusCell();
+  updateChallenge5StatusCell();
+});
+
+
+  </script>
+<div id="colorChoiceModal" style="
+display: none;
+position: fixed;
+top: 40%;
+left: 50%;
+transform: translate(-50%, -40%);
+background: black;
+border: 3px solid #DE6911;
+border-radius: 10px;
+padding: 20px;
+z-index: 9999;
+text-align: center;
+">
+<div id="challengeGridOverlay" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+">
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 10px; width: 90vw; max-width: 700px; height: 90vh;">
+<div id="challengeCell1" style="
+      background: rgba(255, 255, 255, 0.07);
+      border: 2px solid #DE6911;
+      border-radius: 12px;
+      padding: 16px;
+      color: #FFE680;
+      font-size: 1rem;
+      box-shadow: 0 0 10px #DE6911;
+      overflow-y: auto;
+    ">
+<h2 style="margin-top: 0;">🎯 Challenge 1</h2>
+<p id="challengeDetails">Laden...</p>
+</div>
+<!-- Lege 8 cellen -->
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+</div>
+<button onclick="closeChallengeGridOverlay()" style="
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #DE6911;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 0 8px #FFA94D;
+    cursor: pointer;
+  ">Sluiten</button>
+</div>
+<h2 id="colorChoiceText" style="
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #DE6911;
+  margin-bottom: 10px;
+"></h2>
+<div id="colorOptions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"></div>
+</div>
+<div id="levelMatrixOverlay" style="
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  max-height: 100vh; /* ← dit zorgt dat scrollen mogelijk is */
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 99999;
+  justify-content: center;
+  align-items: flex-start;
+padding-top: 10px;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+">
+<div style="color: #DE6911; font-size: 2rem; font-weight: bold; margin-bottom: 20px;">
+    CHALLENGE TIME
+  </div>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, auto); gap: 14px; width: 90vw; max-width: 700px;">
+<!-- Cel 1: echte challengeStatus -->
+<!-- Cel 1: Challenge 1 -->
+<div class="challenge-cell inactive" id="challengeStatusCell"></div>
+<!-- Cel 2: Challenge 2 -->
+<div class="challenge-cell inactive" id="challenge2StatusCell"></div>
+<div class="challenge-cell inactive" id="challenge3StatusCell"></div>
+<div class="challenge-cell inactive" id="challenge4StatusCell"></div>
+<!-- Cel 5–9: vaste placeholder -->
+<div class="challenge-cell inactive" id="challenge5StatusCell"></div>
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+</div>
+<button onclick="closeLevelMatrixOverlay()" style="
+    margin-top: 20px;
+    background: #DE6911;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 0 8px #FFA94D;
+    cursor: pointer;
+  ">Sluiten</button>
+</div>
+<script>
+function saveTestScore() {
+  try {
+    localStorage.setItem("testScore", score);
+    localStorage.setItem("testLives", lives);
+    console.log("Score opgeslagen:", score);
+  } catch (e) {
+    console.error("Fout bij opslaan score:", e);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const stored = localStorage.getItem("testScore");
+  if (stored !== null) {
+}
+});
+</script>
+<script>
+function continueWithScore() {
+  const stored = localStorage.getItem("testScore");
+  if (stored !== null) {
+    score = parseInt(stored);
+    const storedLives = localStorage.getItem("testLives");
+    if (storedLives !== null) {
+      lives = parseInt(storedLives);
+      updateLivesDisplay();
+    }
+  }
+  document.getElementById('startOverlay').style.display = 'none';
+  startGame(1);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const stored = localStorage.getItem("testScore");
+  const continueBtn = document.getElementById("continueButton");
+  if (stored !== null && continueBtn) {
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = "1";
+  }
+});
+</script>
+
+
+<script>
+const startTime = performance.now();
+
+window.addEventListener("load", () => {
+  const loadTime = (performance.now() - startTime) / 1000;
+  console.log("Volledige laadtijd:", loadTime.toFixed(2), "seconden");
+
+  // Activeer knoppen
+  document.querySelectorAll(".main-button").forEach(btn => btn.disabled = false);
+
+  // Verwijder debugtekst
+  const loadingText = document.getElementById("loadingText");
+  if (loadingText) loadingText.remove();
+});
+</script>
+
+
+<script>
+  const debug = document.createElement("div");
+  debug.id = "debugStatus";
+  debug.style.cssText = "position:fixed;top:4px;left:4px;color:yellow;font-size:14px;z-index:10000;";
+  debug.textContent = "Laden van speldata...";
+  document.body.appendChild(debug);
+
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      debug.textContent = "Klaar!";
+      document.querySelectorAll(".main-button").forEach(btn => btn.disabled = false);
+      setTimeout(() => debug.remove(), 2000);
+    }, 100); // simulatie-wachttijd
+  });
+</script>
+
+
+<script>
+// Toon laadtekst
+const debug = document.createElement("div");
+debug.id = "debugStatus";
+debug.style.cssText = "position:fixed;top:4px;left:4px;color:yellow;font-size:14px;z-index:10000;";
+debug.textContent = "Laden van speldata...";
+document.body.appendChild(debug);
+
+// Wacht tot alles geladen is
+window.addEventListener("load", () => {
+  // Score ophalen
+  const stored = localStorage.getItem("testScore");
+  if (stored !== null) {
+    score = parseInt(stored);
+    const storedLives = localStorage.getItem("testLives");
+    if (storedLives !== null) {
+      lives = parseInt(storedLives);
+      updateLivesDisplay();
+    }
+    const scoreEl = document.getElementById("scoreValue");
+    if (scoreEl) scoreEl.textContent = score;
+  }
+
+  // Na korte vertraging knoppen in volgorde tonen
+  setTimeout(() => {
+    debug.textContent = "Klaar!";
+    const buttons = document.querySelectorAll(".main-button");
+    buttons.forEach((btn, index) => {
+      setTimeout(() => {
+        btn.style.animation = "fromLeft 0.6s ease forwards";
+        btn.disabled = false;
+      }, index * 1000); // 1000ms tussen knoppen
+    });
+    setTimeout(() => debug.remove(), 5000);
+  }, 1000); // Simuleer 1s verwerkvertraging
+});
+</script>
+
+</body>
+</html>
+
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  const knoppen = [
+  { id: "continueButton", anim: "fromLeft" },
+  { id: "teachButton", anim: "fromLeft" },
+  { id: "partyTogetherButton", anim: "fromLeft" },
+  { id: "proPlannerButton", anim: "fromLeft" }
+];
+  const ids = [
+    "continueButton",
+    "teachButton",
+    "partyTogetherButton",
+    "proPlannerButton"
+  ];
+  ids.forEach((id, i) => {
+    const knop = document.getElementById(id);
+    if (knop) {
+      setTimeout(() => {
+        knop.style.animation = `${knoppen[i].anim} 0.8s ease-out forwards`;
+      }, i * 1000);
+    }
+  });
+});
+</script>

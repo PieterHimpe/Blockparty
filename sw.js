@@ -10,7 +10,7 @@ self.addEventListener("install", event => {
         "./manifest.json",
         "./sw.js",
         "./icon-192.png",
-        "./icon-512.png"
+        //"./icon-512.png"
         // voeg hier je andere bestanden toe: JS, CSS, afbeeldingen...
       ]);
     })

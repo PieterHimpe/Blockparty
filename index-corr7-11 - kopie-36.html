@@ -1,0 +1,4970 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.json">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Blokjesspel met Levens</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2&amp;display=swap" rel="stylesheet"/>
+<style>
+
+@keyframes fromTop {
+  from { transform: translateY(-100vh); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes fromRight {
+  from { transform: translateX(100vw); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes fromBottom {
+  from { transform: translateY(100vh); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes fromLeft {
+  from { transform: translateX(-100vw); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.start-button {
+  opacity: 0;
+  position: relative;
+  animation-fill-mode: forwards;
+}
+
+
+html, body {
+  background-color: black;
+  background-size: cover;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  background-color: black;
+  background-size: cover;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* het volledige scherm */
+
+/*#continueButton {
+  display: none;
+}
+*/
+
+#container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1500px;
+  flex-grow: 1;
+  overflow: hidden;
+  /* NAKIJKEN*/
+  /*height: calc(100vh - 240px);*/
+  height: calc(100vh);
+}
+
+.orange-line.top-line {
+  position: absolute;
+  top: 22vh;
+  height: 6px;
+  width: 100%;
+  background-color: #DE6911;
+  z-index: 10;
+}
+
+.orange-line.bottom-line {
+  position: absolute;
+  top: 75.5vh; 
+  height: 6px;
+  width: 100%;
+  background-color: #DE6911;
+  z-index: 10;
+}
+
+/* het speelveld */
+
+.canvas-wrapper {
+  
+  width: 100%;
+  max-width: 100%;
+  height: auto;  
+  display: flex;
+  justify-content: center;
+  position: relative;
+  top: 2.0vh;
+  height: 51vh;
+  align-items: center;
+}
+
+.gameCanvas {
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  width: auto; /* hierdoor past breedte zich aan aan hoogte */
+  display: block;
+  background-color: black; /* optioneel: voor zwarte stroken links/rechts */
+}
+
+.backgroundLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: url('https://iili.io/3hoKrlI.png') no-repeat center center;
+  background-size: cover;
+  z-index: 0;
+}
+
+canvas {
+  position: relative;
+  z-index: 1;
+  display: block;
+  border: none;
+  background-color: transparent; 
+ width: 100%;
+  height: auto;
+}
+
+
+/* 10 op 10 grid maar het raster staat op 0 dus w elders gedefinieerd*/
+
+.grid {
+ position: absolute;
+  pointer-events: none;
+  z-index: 2;
+
+  background-image: 
+    repeating-linear-gradient(
+      to right,
+      #223344 0px,
+      #223344 0px,
+      transparent 0px,
+      transparent 0px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      #223344 0px,
+      #223344 0px,
+      transparent 0px,
+      transparent 0px
+    );
+  opacity: 0.0;
+  border-radius: 0px;
+}
+
+    .orange-line {
+  height: 4px;
+  width: 100%;
+  background-color: #DE6911; /* De oranje kleur */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); /* Optionele subtiele schaduw */
+}
+
+/* de 3 cellen onderaan*/
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px; /* ruimte tussen de knoppen */
+  margin: 0 auto 10px auto; /* centreren en marge onderaan */
+}
+
+/*geen nut*/
+.controls button {
+  margin-right: 0px; 
+}
+.controls button:last-child {
+  margin-right: 0; 
+}
+    .controls .up    { grid-area: up; }
+    .controls .down  { grid-area: down; }
+    .controls .left  { grid-area: left; }
+    .controls .right { grid-area: right; }
+    .controls .reset { grid-area: reset; }
+
+
+
+    /* specifiek de 3 onderste buttins*/
+
+    .controls button {
+        flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0px;
+  font-size: 20px;
+  border: none;
+  border: 2px solid #DE6911;
+  box-shadow: 0 0 10px #DE6911;
+  
+  border-radius: 10px; /* of gewoon: 0 voor scherpe hoeken */
+  width: 70px; /* wordt verderop overschreven */
+  height: 70px; /* wordt verderop overschreven */
+
+  background-color: transparent; /* transparante achtergrondkleur */
+  color: #2b2b2b;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  background-image: none; /* geen achtergrondafbeelding */
+  transition: transform 0.2s ease, background-color 0.3s ease;
+  outline: none;
+}
+
+    .controls button:active {
+      transform: scale(0.95);
+    }
+
+/* bovenste 9 cellen */
+
+    .info-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* NAKIJKEN 4 naar 5 gezet*/
+  grid-template-rows: repeat(4, 4vh); 
+  height: 22vh;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  margin: 5px auto 0px auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Elke cel: standaard styling */
+.info-cell {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-weight: 700;
+  color: #DE6911;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #DE6911;
+  box-shadow: 0 0 6px #DE6911;
+  border-radius: 10px;
+  height: 100%;
+  text-align: center;
+  font-size: 1.2rem;
+  line-height: 100%;
+}
+
+/* Specifieke inhoud: Levens */
+#livesDisplay {
+  flex-direction: column;
+  gap: 4px;
+}
+#livesDisplay .info-line {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Pauze knop */
+#pauseButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+#pauseButton img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+
+
+#livesDisplay {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.info-line {
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #DE6911;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #DE6911;
+  box-shadow: 0 0 6px #DE6911;
+  border-radius: 10px;
+  text-align: center;
+  height: 24px;
+  line-height: 24px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+#livesDisplay .info-line,
+#scoreDisplay .info-line {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+
+
+#pauseButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+}
+
+
+/* niet gebruikt */
+@keyframes popEffect {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop {
+  animation: popEffect 0.6s ease;
+}
+.combo-message {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5em 1em;
+  border-radius: 1em;
+  box-shadow: 0 0 10px #000;
+  animation: fadeInOut 1s ease;
+}
+.celebration-image {
+  position: absolute;
+  z-index: 9999;  /* Zorg ervoor dat het boven andere elementen komt */
+  object-fit: cover;  /* Zorg ervoor dat de afbeelding de cel vult zonder uit te rekken */
+  pointer-events: none;  /* Zorg ervoor dat de afbeelding geen andere interactie blokkeert */
+  transition: transform 0.2s ease; /* Optioneel, je kunt hier een animatie aan toevoegen als je wilt */
+}
+@keyframes fadeInOut {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+
+
+    .block {
+  width: 40px; /* Pas de breedte aan naar je voorkeur */
+  height: 40px; /* Pas de hoogte aan naar je voorkeur */
+  background-color: #00FF00; /* Groen, kan je aanpassen */
+  border-radius: 50%; /* Maak het blokje cirkelvormig */
+  display: inline-block;
+  box-shadow: 0 0 8px white; /* Voeg een witte schaduw toe voor een randachtig effect */
+  transition: background-color 0.3s, transform 0.2s ease; /* Animaties bij hover */
+}
+
+
+
+/* Media Query voor kleinere schermen (zoals mobiel): 600 --> 768 - gaat over de 9 cellen bovenaan */
+@media (max-width: 768px) {
+  .info {  
+    font-size: 1.1rem; /* Maak de tekst iets kleiner voor mobiel */
+    margin: 0 5px; /* Kleinere marge voor mobiel */
+  }
+      .info {
+  white-space: nowrap;    /* Nooit afbreken naar een nieuwe lijn */
+  overflow: hidden;       /* Als te groot: niet tonen buiten blokje */
+  text-overflow: ellipsis; /* Eventueel ... als het echt niet past */
+  text-align: center;
+  font-size: 32px;         /* Startgrootte, mag je aanpassen */
+}
+
+    .info:first-child {
+      text-align: left;
+    }
+
+    .info:last-child {
+      text-align: right;
+    }
+
+  .info-container {
+    flex-direction: row; /* heeft geen meerwaarde */
+    padding: 10px;
+  }
+
+/* geen meerwaarde want hogerop exact zelfde body*/
+
+body {
+  background-color: black;
+  background-size: cover;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+}
+
+/* heel kleine schermen  */
+@media (max-width: 600px) {
+  .info-container {
+    gap: 6px;
+  }
+
+  .info-cell {
+  height: 100%;
+    font-size: 1.2rem;
+    height: 100%;
+    line-height: 100%;
+  }
+}
+
+/* onderste 3 buttins*/
+
+.vertical-controls,
+.horizontal-controls {
+
+  position: fixed; 
+  
+  top: 78vh;
+  height: 20vh;
+  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;           /* Geen padding buiten de knoppen */
+  background: none;     /* Geen achtergrond */
+  border: none;         /* Geen rand */
+  box-shadow: none;     /* Geen schaduw rond de hele container */
+}
+
+.vertical-controls button,
+.horizontal-controls button {
+  height: 90%;
+  aspect-ratio: 1 / 1;
+  max-height: 100%;
+  flex: 1;
+}
+.vertical-controls button.reset,
+.horizontal-controls button.reset {
+  height: 90%;
+  aspect-ratio: 1.4 / 1;
+  max-height: 100%;
+  flex: 1.4;
+}
+
+
+
+.button-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 90%;
+  aspect-ratio: 1.4 / 1;
+  flex: 1.4;
+  max-height: 100%;
+}
+
+.button-wrapper button {
+  flex: 1;
+  width: 100%;
+  height: 3vh; /* ik begrijpniet waarom dit helpt ... */
+  padding: 0;
+  border: 2px solid #DE6911;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.button-wrapper .reset-btn {
+  flex: 7; /* 70% hoogte */
+}
+
+.button-wrapper .home-btn {
+  flex: 3; /* 30% hoogte */
+}
+
+.button-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+#dropButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+#renewCell {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+#renewCell:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 8px #DE6911;
+}
+
+#dropButton img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+
+/* beginscherm */
+
+#startOverlay {
+  position: relative;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 5vh;
+  z-index: 99999;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+}
+
+/* afbeelding op beginscherm*/
+
+#startOverlay .intro-image {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: url('https://i.ibb.co/1YdV4rPy/Chat-GPT-Image-4-mei-2025-22-54-41.png') no-repeat center top;
+  background-size: contain;
+  margin-top: auto;
+  max-height: 45vh;
+}
+
+
+/* zogezegd frame rond de 4 opties om er eventueel iets boven te zetten*/
+
+#startOverlay .content-box {
+  width: 90vw;
+  max-width: 340px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: none;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.8rem;
+  max-height: 90vh;
+  position: absolute;
+  bottom: min(15vh, 250px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+#startOverlay .button-container {
+  margin-bottom: 6vh;  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 360px;
+  padding: 1rem 0.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  max-height: 42vh;
+}
+
+
+#startOverlay .button-container button {
+  background: #DE6911;
+  color: #FFE680;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 8px #C35A10;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#startOverlay .button-container button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 12px #FFA94D;
+}
+
+#colorChoiceModal {
+  z-index: 100000 !important;
+}
+
+/* stuk van challanges*/
+
+.challenge-cell {
+  position: relative;
+  border: 2px solid #DE6911;
+  border-radius: 10px;
+  color: #FFE680;
+  box-shadow: 0 0 10px #DE6911;
+  background-image: url("https://iili.io/3kjXPee.png");
+  background-size: cover;
+  background-position: center;
+  padding: 10px;
+  text-align: center;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  transition: filter 0.3s ease;
+}
+
+.challenge-cell.inactive {
+  filter: grayscale(100%);
+}
+
+.challenge-content {
+  z-index: 1;
+}
+
+.challenge-title {
+  color: #DE6911;
+  font-weight: bold;
+  font-size: 1.1rem;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+
+.challenge-stats {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  font-size: 0.9rem;
+  align-items: center;
+}
+
+.challenge-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clock-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
+  
+
+@media (max-height: 640px) {
+  .button-container button {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+
+
+
+
+/* het startscherm*/
+/*box met 4 opties*/
+#startOverlay .content-box {
+  position: relative;
+  z-index: 2;
+  position: absolute;
+  bottom: min(15vh, 250px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+/*achtergrond*/
+.bg-wrapper {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+  z-index: -1;
+}
+.bg-wrapper .bg-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.bg-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+  background-color: black;
+  z-index: -1;
+
+  object-position: center;
+}
+  
+.info-cell * {
+  max-height: 100%;
+  object-fit: contain;
+}
+
+
+/* einde eerste stuk code*/
+
+
+</style>
+</head>
+<body>
+
+
+<!-- vorm tutorial -->
+<div id="tutorialOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.9); z-index: 99999; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 5vh;">
+<img id="tutorialImage" src="" style="max-width: 90vw; max-height: 80vh; border: 4px solid #DE6911; border-radius: 12px;"/>
+<button id="tutorialNextButton" style="
+          margin-top: 1rem;
+          background: #DE6911;
+          color: white;
+          border: none;
+          padding: 0.6rem 1.2rem;
+          border-radius: 12px;
+          font-size: 1rem;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 0 10px #DE6911;
+          transition: transform 0.2s ease;
+        ">Next</button>
+
+</div>
+
+<!-- achtergrond eerste scherm -->
+<div id="startOverlay">
+<div class="bg-wrapper"><img alt="Achtergrond" class="bg-image" src="https://i.ibb.co/1YdV4rPy/Chat-GPT-Image-4-mei-2025-22-54-41.png"/>
+</div>
+
+  <!-- zogezegd frame rond de 4 opties om er eventueel iets boven te zetten -->
+
+<div class="content-box">
+
+  <!-- Debugtekst bovenaan -->
+<!--
+<div id="loadingText" style="position: fixed; top: 4px; left: 4px; color: yellow; font-size: 14px; z-index: 10000;">
+  Bezig met laden...
+</div>
+-->
+
+<div class="button-container">
+
+  <button id="teachButton" onclick="startTutorialFromIntro()" class="start-button fromLeft main-button" disabled>
+    Teach me how to party!
+  </button>
+  <button id="partyTogetherButton" onclick="showStartImageBeforeGame()" class="start-button fromLeft main-button" disabled>
+    Let’s throw this party together!
+  </button>
+  <button id="proPlannerButton" onclick="startAtLevel10()" class="start-button fromLeft main-button" disabled>
+    Professional party planner in the house!
+  </button>
+    <button id="continueButton" class="start-button fromLeft main-button" onclick="continueWithScore()" disabled>
+    Continue the party...
+  </button>
+</div>
+
+</div>
+
+
+<!-- de 12 cellen -->
+
+</div>
+<div class="info-container">
+
+<!-- multi-->
+
+<div class="info-cell" id="multicolorDisplay" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6px;">
+  <div style="display: flex; align-items: center; width: 100%;">
+    <img alt="Multicolor" src="https://i.ibb.co/YTdNQ6nX/square-format-transparent-background-designify-5.png" style="width: 33.33%; object-fit: contain;" />
+    <img alt="Free Picture" src="https://i.ibb.co/sdGRP8NP/square-format-transparent-background-shadow-designify.png" style="width: 33.33%; object-fit: contain;" />
+    <div id="multicolorCount" style="width: 33.33%; font-size: 1rem; text-align: center; color: #DE6911; font-weight: bold;">0</div>
+  </div>
+</div>
+
+
+  <!-- leven -->
+
+<div class="info-cell" id="livesDisplay" style="display: flex; justify-content: center; align-items: center; padding: 0 6px;">
+  <div style="display: flex; align-items: center; width: 100%;">
+    <img src="https://i.ibb.co/gN9RK7v/square-format-transparent-background-designify-6.png" alt="Heart" style="width: 33.33%; object-fit: contain;" />
+    <img src="https://i.ibb.co/20t4Rr32/square-format-transparent-background-designify-7.png" alt="Extra symbool" style="width: 33.33%; object-fit: contain;" />
+    <div id="livesText" style="width: 33.33%; font-size: 1rem; text-align: center; color: #DE6911; font-weight: bold;">5</div>
+  </div>
+</div>
+
+<!-- pause -->
+
+<div class="info-cell" id="pauseCell" style="display: flex; justify-content: center; align-items: center; padding: 0 6px;">
+  <button id="pauseButton" style="all: unset; width: 100%;">
+    <div style="display: flex; width: 100%;height: 100%; align-items: center;">
+      <img alt="Pause" src="https://i.ibb.co/dqTymNj/landscape-format-transparent-background-shadow-designify-1.png" style="width: 50%;height: 90%; object-fit: contain;" />
+      <img alt="Symbol" src="https://i.ibb.co/1J94GSR6/square-format-transparent-background-designify-8.png" style="width: 50%;height: 90%; object-fit: contain;" />
+    </div>
+  </button>
+</div>
+
+
+<!-- skip block -->
+
+<div class="info-cell" id="renewCell" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6px;">
+  <div style="display: flex; width: 100%; height: 100%; align-items: center;">
+
+    <!-- Linkse skip afbeelding -->
+    <img alt="Skip Icon 1" src="https://i.ibb.co/V0H9ncXn/transparent-background-no-shadow-designify-7.png" style="width: 33.33%; height: 90%; object-fit: contain;" />
+
+    <!-- Middelste skip afbeelding -->
+    <img alt="Skip Icon 2" src="https://i.ibb.co/cXhCf0Z5/Chat-GPT-Image-23-jun-2025-21-09-20.png" style="width: 33.33%; height: 90%; object-fit: contain;" />
+
+    <!-- Rechterdeel met teller + horizontale progress bar -->
+    <div style="position: relative; width: 33.33%; height: 100%; display: flex; align-items: center; justify-content: center;">
+
+      <!-- De oranje voortgangsbalk achter het cijfer -->
+      <div id="renewProgressBar" style="
+        position: absolute;
+        left: 0;
+        top: 20%;
+        bottom: 20%;
+        width: 0%;
+        background-color: rgba(222, 105, 17, 0.4);
+     
+        border-radius: 4px;
+        z-index: 1;
+      "></div>
+
+      <!-- Het cijfer, centraal -->
+      <div id="renewCounter" style="
+        position: relative;
+        color: #DE6911;
+        font-weight: bold;
+        font-size: 1rem;
+        font-family: 'Baloo Bhaina 2', sans-serif;
+        text-align: center;
+        z-index: 2;
+      ">
+        0
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+
+<!-- score-->
+
+<div class="info-cell" id="scoreDisplay" style="display: flex; align-items: center; justify-content: center; padding: 0 6px;">
+  <div style="display: flex; width: 100%; align-items: center;">
+    <img alt="Star" src="https://i.ibb.co/m5GvpgVd/square-format-transparent-background-designify-11.png" style="width: 33%; object-fit: contain;" />
+    <img alt="Star2" src="https://i.ibb.co/NnTwhxYT/Chat-GPT-Image-23-jun-2025-21-09-35.png" style="width: 33%; object-fit: contain;" />
+    <div id="scoreValue" style="width: 34%; font-size: 1rem; text-align: center; color: #DE6911; font-weight: bold;">0</div>
+  </div>
+</div>
+
+
+<!-- winkel -->
+
+<div class="info-cell" id="shopCell" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 6px;">
+  <div style="display: flex; width: 100%;height: 100%; align-items: center;">
+    <img src="https://i.ibb.co/LzKrQXgv/transparent-background-no-shadow-designify-5.png" alt="Shop Part 1" style="width: 50%;max-height: 90%;; object-fit: contain;" />
+    <img src="https://i.ibb.co/ccC9Nv9z/SHOP.png" alt="Shop Part 2" style="width: 50%;max-height: 90%; object-fit: contain;" />
+  </div>
+</div>
+
+
+
+
+<!-- free picture -->
+<div class="info-cell" id="freePictureDisplay" style="display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 6px;" onclick="useFreePicture()">
+  <img src="https://i.ibb.co/TxhN6Pgw/Chat-GPT-Image-24-jun-2025-20-05-11.png" alt="Free Picture" style="width: 33%; object-fit: contain;" />
+  <img src="https://i.ibb.co/pFPqTMY/Chat-GPT-Image-23-jun-2025-21-09-11.png" alt="Free Picture Duplicate" style="width: 33%; object-fit: contain;" />
+  <span id="freePictureCount" style="width: 33%; text-align: center; color: #DE6911; font-weight: bold; font-size: 1rem; font-family: 'Baloo Bhaina 2', sans-serif;">3</span>
+</div>
+
+
+<!-- level -->
+<div class="info-cell" id="extraCell1" style="display: flex; align-items: center; justify-content: center; padding: 0 6px;">
+  <div style="display: flex; width: 100%; align-items: center;">
+    <img alt="Level icon 1" src="https://i.ibb.co/HD5QSJ6s/square-format-transparent-background-designify-13.png" style="width: 33%; object-fit: contain;" />
+    <img alt="Level icon 2" src="https://i.ibb.co/4Zw2bG3m/square-format-transparent-background-designify-12.png" style="width: 33%; object-fit: contain;" />
+    <span id="levelDisplayExtra" style="width: 34%; font-size: 1rem; text-align: center; color: #DE6911; font-weight: bold;">1</span>
+  </div>
+</div>
+
+
+
+<!-- quest block -->
+<div class="info-cell" id="levelDisplay" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 6px;" title="Klik voor challenge overzicht">
+  <div style="display: flex; width: 100%;height: 100%; align-items: center;">
+    <img id="levelImage" src="https://i.ibb.co/vvmJyQMZ/square-format-transparent-background-designify-15.png" alt="Level" style="width: 50%;height: 90%; object-fit: contain;" />
+    <img id="levelIcon2" src="https://i.ibb.co/fYCYvqC9/transparent-background-shadow-designify.png" alt="Level 2" style="width: 50%;height: 90%; object-fit: contain;" />
+  </div>
+  <span id="levelValue" style="display: none;"></span>
+</div>
+
+
+
+
+<!-- bewaren-->
+
+<div class="info-cell" id="saveScoreCell" style="display: flex; justify-content: center; align-items: center;">
+  <div id="saveWrapper" style="display: flex; align-items: center; justify-content: center; width: 100%;height: 100%;">
+    <img src="https://i.ibb.co/LdyZffzS/BIJNASAVE.png" style="width: 33.33%; object-fit: contain;">
+    <img src="https://i.ibb.co/wrjcH86q/square-format-transparent-background-designify-10.png" style="width: 33.33%; object-fit: contain;">
+    <span id="saveBlockCounter" style="width: 33.33%; text-align: center; color:  #DE6911; font-weight: bold; font-size: 1rem; font-family: 'Baloo Bhaina 2', sans-serif;">50</span>
+  </div>
+</div>
+
+
+
+
+
+<!-- next star -->
+
+<div class="info-cell" id="nextBlockDisplay" style="display: flex; justify-content: center; align-items: center; padding: 0 6px;">
+  <div style="display: flex; width: 100%; align-items: center;">
+    <img alt="Next Star 1" src="https://i.ibb.co/GvKD5ZNT/transparent-background-no-shadow-designify-6.png" style="width: 33.33%; object-fit: contain;" />
+    <img alt="Next Star 2" src="https://i.ibb.co/JF0sFKfM/Chat-GPT-Image-23-jun-2025-21-08-57.png" style="width: 33.33%; object-fit: contain;" />
+    <div id="nextBlockPreview" style="width: 33.33%; display: flex; align-items: center; justify-content: center;"></div>
+  </div>
+</div>
+
+
+
+<div class="info-cell" id="dropCell" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 6px;">
+  <div id="dropButton" style="display: flex; width: 100%; height: 100%; align-items: center;">
+    <img alt="Drop 1" src="https://i.ibb.co/HDpnknq9/square-format-transparent-background-designify-14.png" style="width: 50%; object-fit: contain;" />
+    <img alt="Drop 2" src="https://i.ibb.co/ns18V4sz/Chat-GPT-Image-23-jun-2025-21-09-10.png" style="width: 50%; object-fit: contain;" />
+  </div>
+</div>
+
+<!-- drop cell 
+<div class="info-cell" id="dropButton" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 6px; border: 3px solid #DE6911; border-radius: 10px;">
+  <div style="display: flex; width: 100%; align-items: center;">
+    <img id="dropImage1" src="https://i.ibb.co/HDpnknq9/square-format-transparent-background-designify-14.png" alt="Drop 1" style="width: 50%; object-fit: contain;" />
+    <img id="dropImage2" src="https://i.ibb.co/ns18V4sz/Chat-GPT-Image-23-jun-2025-21-09-10.png" alt="Drop 2" style="width: 50%; object-fit: contain;" />
+  </div>
+  <span id="dropValue" style="display: none;"></span>
+</div>
+
+-->
+
+
+</div>
+
+
+
+
+<div class="orange-line top-line"></div>
+
+
+<div id="container">
+<div class="canvas-wrapper">
+<div class="backgroundLayer"></div> <!-- Achtergrond voor het spel -->
+<canvas height="1540" id="gameCanvas" width="1540"></canvas> <!-- Het speelveld -->
+<div class="grid"></div> <!-- Subtiele grid laag boven de achtergrond -->
+</div>
+
+
+<div class="orange-line bottom-line"></div>
+
+</div>
+
+<!-- Voor verticale blokjes (⬆️ - reset - ⬇️) -->
+<div class="controls vertical-controls">
+
+<button class="up" onclick="moveGridH(1)">
+<img alt="Up" src="https://iili.io/3Xvyt7S.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+
+<!--
+<button class="reset" onclick="resetGrid()">
+<img alt="Reset" src="https://iili.io/3XL22Rt.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+-->
+<div class="button-wrapper">
+  <button class="reset-btn" onclick="resetGrid()">
+   <img alt="Reset" src="https://i.ibb.co/8LRMzm5B/landscape-format-transparent-background-shadow-designify-3.png" />
+  </button>
+  <button class="home-btn" onclick="returnToMenu()">
+   <img alt="Home" src="https://i.ibb.co/3YRwhWCd/Chat-GPT-Image-14-jun-2025-19-17-12.png" /> 
+  </button>
+</div>
+
+
+
+<button class="down" onclick="moveGridH(-1)">
+<img alt="Down" src="https://iili.io/3X8Hdtn.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+
+</div>
+
+<!-- Voor horizontale blokjes (⬅️ - reset - ➡️) -->
+<div class="controls horizontal-controls">
+<button class="left" onclick="moveGrid(1)">
+<img alt="Left" src="https://iili.io/3XvDVMQ.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+
+<!--
+<button class="reset" onclick="resetGrid()">
+<img alt="Reset" src="https://iili.io/3XL22Rt.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+-->
+<div class="button-wrapper">
+  <button class="reset-btn" onclick="resetGrid()">
+    <img alt="Reset" src="https://i.ibb.co/8LRMzm5B/landscape-format-transparent-background-shadow-designify-3.png" /> 
+  </button>
+  <button class="home-btn" onclick="returnToMenu()">
+    <img alt="Home" src="https://i.ibb.co/3YRwhWCd/Chat-GPT-Image-14-jun-2025-19-17-12.png" />
+  </button>
+</div>
+
+<button class="right" onclick="moveGrid(-1)">
+<img alt="Right" src="https://iili.io/3XvbLrB.png" style="width: 100%; height: 100%; object-fit: contain;"/>
+</button>
+</div>
+
+<!-- layer van de levels met de 9 challengecellen -->
+ <!-- height 100vh toegevoegd -->
+
+<div id="levelMatrixOverlay" style="
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  max-height: 100vh; /* ← dit zorgt dat scrollen mogelijk is */
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 99999;
+  justify-content: center;
+  align-items: flex-start;
+padding-top: 10px;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+">
+<div style="color: #DE6911; font-size: 2rem; font-weight: bold; margin-bottom: 20px;">
+    CHALLENGE TIME
+</div>
+
+ <div style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, auto); gap: 14px; width: 90vw; max-width: 700px;">
+
+<div class="challenge-cell inactive" id="challengeStatusCell"></div>
+<div class="challenge-cell inactive" id="challenge2StatusCell"></div>
+<div class="challenge-cell inactive" id="challenge3StatusCell"></div>
+<div class="challenge-cell inactive" id="challenge4StatusCell"></div>
+<div class="challenge-cell inactive" id="challenge5StatusCell"></div>
+
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+
+<div style="border: 2px solid #DE6911; border-radius: 10px; padding: 12px; color: #FFE680; text-align: center; font-size: 0.9rem; box-shadow: 0 0 10px #DE6911;">
+<div style="font-size: 1.2rem;">❌❌❌</div>
+<div>Challenge volgt</div>
+</div>
+
+</div>
+
+
+
+<button onclick="closeLevelMatrixOverlay()" style="
+    margin-top: 20px;
+    background: #DE6911;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 0 8px #FFA94D;
+    cursor: pointer;
+  ">Close</button>
+</div>
+
+<!-- onterechte code
+
+<div id="challengeGridOverlay" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+">
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 10px; width: 90vw; max-width: 700px; height: 90vh;">
+<div id="challengeCell1" style="
+      background: rgba(255, 255, 255, 0.07);
+      border: 2px solid #DE6911;
+      border-radius: 12px;
+      padding: 16px;
+      color: #FFE680;
+      font-size: 1rem;
+      box-shadow: 0 0 10px #DE6911;
+      overflow-y: auto;
+    ">
+<h2 style="margin-top: 0;">🎯 Challenge 1</h2>
+<p id="challengeDetails">Laden...</p>
+</div>
+
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+<div style="border: 2px dashed #555; border-radius: 12px;"></div>
+</div>
+
+<button onclick="closeChallengeGridOverlay()" style="
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #DE6911;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 0 8px #FFA94D;
+    cursor: pointer;
+  ">Sluiten</button>
+</div>
+onterechte code  -->
+
+
+<div id="shopModal" style="
+  display: none;
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: black;
+  border: 3px solid #DE6911;
+  border-radius: 10px;
+  padding: 20px;
+  z-index: 9999;
+  text-align: center;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+width: 90vw; max-width: 500px;
+">
+ 
+
+
+<div style="color: #DE6911; margin-bottom: 10px; text-align: center; font-family: 'Baloo Bhaina 2', sans-serif;">
+  <h2 style="margin: 0; font-size: 1.4rem;">Welcome to the Block Party Shop</h2>
+  <p style="margin: 6px 0 0 0; font-size: 0.95rem; color: #FFE680;">Ready to spice up the dance floor?</p>
+  <ul style="list-style-type: none; padding: 0; margin: 10px 0 0 0; text-align: left; font-size: 0.9rem; color: #FFE680;">
+    <li><strong>Skip Block – 25 points</strong><br/><span style="font-weight: normal;"></span></li>
+    <li style="margin-top: 8px;"><strong>Multicolor Block – 100 points</strong><br/><span style="font-weight: normal;"></span></li>
+    <li style="margin-top: 8px;"><strong>Free Picture Block – 500 points</strong><br/><span style="font-weight: normal;"></span></li>
+  </ul>
+  <p style="margin-top: 10px; font-size: 0.9rem; color: #FFE680;">Keep dancing, keep scoring... and keep the party going!</p>
+</div>
+
+
+
+  <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px;">
+  
+    <!-- 
+    <button onclick="buyFreePicture()" style="padding: 10px; background-color: #222; color: white; border: 2px solid #DE6911; border-radius: 8px;">
+      🖼️ Free Picture
+    </button>
+  -->
+
+<button onclick="buyFreePicture()" style="padding: 0; background-color: #222; border: 2px solid #DE6911; border-radius: 8px;">
+  <img id="freePictureImage" src="https://i.ibb.co/TxhN6Pgw/Chat-GPT-Image-24-jun-2025-20-05-11.png" alt="Free Picture" style="width: 50px; height: 50px; object-fit: contain;"/>
+</button>
+
+    <!--   
+    <button onclick="buyMulticolor()" style="padding: 10px; background-color: #222; color: white; border: 2px solid #DE6911; border-radius: 8px;">
+      🌈 Multicolor
+    </button>
+-->
+
+<button onclick="buyMulticolor()" style="padding: 0; background-color: #222; border: 2px solid #DE6911; border-radius: 8px;">
+  <img id="multicolorImage" src="https://i.ibb.co/YTdNQ6nX/square-format-transparent-background-designify-5.png" alt="Multicolor" style="width: 50px; height: 50px; object-fit: contain;"/>
+</button>
+
+  </div>
+
+  <!--
+  <button onclick="buySkipBlock()" style="padding: 10px; background-color: #222; color: white; border: 2px solid #DE6911; border-radius: 8px;">
+  ⏭️ Skip Block
+</button>
+-->
+
+<button onclick="buySkipBlock()" style="padding: 0; background-color: #222; border: 2px solid #DE6911; border-radius: 8px;">
+  <img id="skipBlockImage" src="https://i.ibb.co/V0H9ncXn/transparent-background-no-shadow-designify-7.png" alt="Skip Block" style="width: 50px; height: 50px; object-fit: contain;"/>
+</button>
+
+<button onclick="closeShopModal()" style="margin-top: 10px; background-color: #DE6911; color: black; padding: 6px 12px; border: none; border-radius: 6px; font-weight: bold;">
+    CLOSE
+  </button>
+</div>
+
+<!-- info over layer van multicolor enkel de container met de tekst niet de blokjes zelf -->
+<div id="colorChoiceModal" style="
+display: none;
+position: fixed;
+top: 40%;
+left: 50%;
+transform: translate(-50%, -50%);
+background: black;
+border: 3px solid #DE6911;
+border-radius: 10px;
+padding: 20px;
+z-index: 9999;
+text-align: center;
+">
+
+
+<h2 id="colorChoiceText" style="
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #DE6911;
+  margin-bottom: 10px;
+  line-height: 1.2;
+"></h2>
+
+<div id="colorOptions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"></div>
+
+</div>
+
+
+
+<script>
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+  
+    const gridCols = 10;
+    const gridRows = 10;
+    const blockSize = 50;
+    const extraRowsAbove = 10;
+    const extraRowsBelow = 10;
+    const extraColsLeft = 10;
+    const extraColsRight = 10;
+    const visibleCols = 30;
+    let gridOffsetX = 0;
+    let gridOffsetY = 0;
+    const maxOffset = 10;
+    const maxOffsetY = 10;
+
+let freePictureCount = 3;
+
+let saveBlockCountdown = 51;
+let saveUnlocked = false;
+
+const freePictureIcon = new Image();
+freePictureIcon.src = "https://i.ibb.co/XxMnGGMJ/square-format-transparent-background-designify-4.png";
+
+// w niet gebruikt
+    const blockImage = new Image();
+    blockImage.src = "https://i.ibb.co/jvgtN2YZ/vraagtwit.png";
+// w niet gebruikt
+    const specialImage2 = new Image();
+    specialImage2.src = "https://iili.io/3XeXn6X.png";
+
+
+// beeld van wit hartje
+    const specialImage = new Image();
+    specialImage.src = "https://iili.io/3Xex59j.png";
+
+    
+    const multicolorImage = new Image();
+    multicolorImage.src = "https://i.ibb.co/ZzJMrz5X/square-format-transparent-background-designify-3.png";
+
+// vanaf waar telt diva
+    let divaCountdown = 10;  // Startwaarde voor de diva-timer
+// hoe vaak
+    const multicolorSpawnChance = 1 / 20; // frequentie multicolor
+
+
+// Welk level activeert de challenge?
+let challengeLevel = 15; 
+let challenge2Level = 20;
+let challenge3Level = 25;
+let challenge4Level = 30;
+let challenge5StartLevel = 35;
+
+// param chal 1
+let challengeBlockLimit = 50;
+let challengeHeartTarget = 10;
+
+// param chal 2
+let challenge2BlockLimit = 50;
+let challenge2MultiTarget = 13; // vrij te spelen multicolor
+
+// param chal 3
+let challenge3Limit = 100;
+
+// param chal 4
+let challenge4Limit = 100;
+
+// param chal 5
+let challenge5RequiredBlocks = 30; 
+
+
+let challenge1Done = false;
+let challenge2Done = false;
+let challenge3Done = false;
+let challenge4Done = false;
+let challengeLocked = false;
+let challengeActive = false;
+
+let blockCounter = 0;
+
+let challenge2SuccessImageShown = false;
+let challenge2PendingMulticolors = 0;
+
+let challengeHeartCount = 0;
+let challengeHeartOverrideCounter = 0;
+let preventHeartReward = false;
+let challengeBlockCounter = 0; 
+let challengeRewardGiven = false; 
+
+let challenge2Active = false;
+let challenge2MultiCount = 0;
+
+let challenge2BlockCounter = 0;
+let challenge2RewardGiven = false;
+
+let challenge3Active = false;
+let challenge3Started = false;
+let challenge3Failed = false;
+let challenge3Success = false;
+let challenge3Count = 0;
+
+let challenge4Active = false;
+
+let challenge4Count = 0;
+let challenge4FullFieldMoments = 0;
+let challenge4Success = false;
+let challenge4RewardGiven = false;
+
+let challenge5Active = false;
+let challenge5Done = false;
+let challenge5Success = false;
+let challenge5BlockCounter = 0;
+let challenge5StartImageShown = false;
+let challenge5SuccessImageShown = false;
+let challenge5Started = false;
+
+let passedChallenge1 = false;
+let passedChallenge2 = false;
+let passedChallenge3 = false;
+let passedChallenge4 = false;
+let passedChallenge5 = false;
+
+let passedChallenge1c = false;
+let passedChallenge2c = false;
+let passedChallenge3c = false;
+let passedChallenge4c = false;
+let passedChallenge5c = false;
+
+// beelden en par bij opleiding
+let tutorialStep = 0;
+let level1FixedColor = null;
+const level1FixedLength = 1;
+let level2ImageShown = false;
+let level3ImageShown = false;
+let level4ImageShown = false;
+let level5ImageShown = false;
+let level6ImageShown = false;
+let level7ImageShown = false;
+let level8ImageShown = false;
+
+let level6Triggered = false;
+let level7Triggered = false;
+let level8Triggered = false;
+let level9Triggered = false;
+let level10Triggered = false;    
+    
+
+// allerlei 
+    
+let forcedNextBlock = null;
+let heartFreed = false;
+
+// start
+let level = 1;
+let bigGroupCount = 0;
+let pauseUsesLeft = 1000;
+let nextBlockColor = null;
+let blockSpawnCount = 0;
+let renewTokenCount = 6;
+let nextBlock = null;
+let multicolorCount = 3;
+let skipUsesLeft = 0;
+let nextBlockIsMulticolor = false;
+let lives = 5;
+let renewcounter = 2;
+let score = 0;
+let useVertical = true;
+let isPaused = false;
+let gamePaused = true;
+
+const nextBlockDisplay = document.getElementById("nextBlockDisplay");
+//const renewBar = document.getElementById("renewBar");
+//const renewCircle = document.getElementById("renewProgressCircle");
+const renewCounter = document.getElementById("renewCounter");
+const multicolorDisplay = document.getElementById("multicolorCount");
+const livesDisplay = document.getElementById("livesDisplay");
+const scoreDisplay = document.getElementById("scoreDisplay");
+const pauseButton = document.getElementById('pauseButton');
+const imgElement = pauseButton.querySelector('img');
+
+// beelden per kleur van vrijspelen groepje van 5
+let resetImages = {
+  "#4A90E2": "https://i.ibb.co/MkLQKJZT/landscape-format-transparent-background-shadow-designify-10.png",
+  "#7ED321": "https://i.ibb.co/nqxnLm8T/landscape-format-transparent-background-shadow-designify-9.png",
+  "#F8E71C": "https://i.ibb.co/C5xKZ9xy/landscape-format-transparent-background-shadow-designify-8.png",
+  "#DEDEDE": "https://i.ibb.co/sJHgkqQD/landscape-format-transparent-background-shadow-designify-7.png",
+  "#9B51E0": "https://i.ibb.co/R4tR3sj8/landscape-format-transparent-background-shadow-designify-6.png",
+  "#50E3C2": "https://i.ibb.co/KxJZRMDV/landscape-format-transparent-background-shadow-designify-5.png",
+  "#FF6F61": "https://i.ibb.co/Z69V4NTz/landscape-format-transparent-background-shadow-designify-4.png"
+};
+
+
+
+let originalResetImage = "https://iili.io/3XL22Rt.png";
+let resetButtonElements = document.querySelectorAll(".reset-btn img");
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateControls();});
+
+
+    // smiling faces bij landen 
+const images = [
+  Object.assign(new Image(), { src: "https://i.ibb.co/5Wf0HDJy/een-1.png" }),
+  Object.assign(new Image(), { src: "https://i.ibb.co/1JzmHXmH/twee-1.png"}),
+  Object.assign(new Image(), { src: "https://i.ibb.co/V09z900X/drie-1.png"}),
+  Object.assign(new Image(), { src: "https://i.ibb.co/SDvrwV9F/vier-1.png"}),
+  Object.assign(new Image(), { src: "https://i.ibb.co/kgj3mwHr/vijf-2.png"})
+];
+
+let field = Array.from({ length: gridRows }, () => Array(gridCols).fill(null));
+
+const colors = [
+"#4A90E2", // Blauw
+  "#7ED321", // Groen
+  "#F8E71C", // Geel
+  "#DEDEDE", // Rood
+  "#9B51E0", // Paars
+  "#50E3C2", // Turkoois
+  "#FF6F61"  // Koraalroze
+];
+
+// onnodig
+let markedForRemoval = [];
+let disappearingBlocks = [];
+
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX start van de functies
+
+
+// wat de skip block doet, maar zouden we ook in een functie kunnen zetten
+
+const renewCell = document.getElementById("renewCell");
+
+renewCell.addEventListener("click", () => {
+  if (renewTokenCount < 1) {
+    console.log("Niet genoeg tokens!"); // heeft geen zin want zie ik nergens
+    return;
+  }
+
+  renewTokenCount--;
+  updateRenewDisplay();
+
+  // Nieuw blok met dezelfde richting als het vorige
+  fallingBlock = useVertical
+    ? createBlock(fallingBlock.direction)
+    : createBlockH(fallingBlock.direction);
+
+  drawGrid();
+  drawFallingBlock();
+});
+
+// wat de dropbutton doet, maar zouden we ook in een functie kunnen zetten
+
+const dropButton = document.getElementById('dropButton');
+dropButton.addEventListener('click', () => {
+  if (useVertical) {
+    if (fallingBlock.direction === "down") {
+      while (!blockWouldCollide(fallingBlock) && fallingBlock.y < gridRows) {
+        fallingBlock.y++;
+      }
+      fallingBlock.y--; // terug omhoog om niet door vloer te zakken
+    } else if (fallingBlock.direction === "up") {
+      while (!blockWouldCollide(fallingBlock) && fallingBlock.y > 0) {
+        fallingBlock.y--;
+      }
+      fallingBlock.y++; // terug omlaag om niet in blok te zitten
+    }
+    update();
+    drawGrid();
+    drawFallingBlock();
+  } else {
+    if (fallingBlock.direction === "right") {
+      while (!blockWouldCollideH(fallingBlock) && fallingBlock.x < gridCols) {
+        fallingBlock.x++;
+      }
+      fallingBlock.x--; // terug om niet in muur of blok te zitten
+    } else if (fallingBlock.direction === "left") {
+      while (!blockWouldCollideH(fallingBlock) && fallingBlock.x > 0) {
+        fallingBlock.x--;
+      }
+      fallingBlock.x++; // terug om niet in muur of blok te zitten
+    }
+    updateH();
+    drawGrid();
+    drawFallingBlock();
+  }
+});
+
+
+
+// wordt gebruikt als je voor continue hebt gekozen (onduidelijk of nodig)
+
+function startGame() {
+  document.getElementById('startOverlay').style.display = 'none';
+  gamePaused = false;
+  multicolorCount = 3;
+  updateMulticolorDisplay();
+  pauseUsesLeft = 1000;
+  updatePauseDisplay();
+  document.getElementById("saveBlockCounter").textContent = saveBlockCountdown;
+}
+
+function returnToMenu() {
+  document.getElementById("startOverlay").style.display = "flex";
+  gamePaused = true;
+}
+
+function updateFreePictureDisplay() {
+  const el = document.getElementById("freePictureCount");
+  if (el) el.textContent = freePictureCount;
+}
+
+function useFreePicture() {
+  if (freePictureCount <= 0 || fallingBlock !== null) return;
+
+  fallingBlock = {
+    x: Math.floor(gridCols / 2),
+    y: -1,
+    color: "white",
+    length: 1,
+    isFreePicture: true
+  };
+  freePictureCount--;
+  updateFreePictureDisplay();
+}
+
+function updateRenewProgress(percentage) {
+  const bar = document.getElementById("renewProgressBar");
+  const counter = document.getElementById("renewCounter");
+
+  if (bar) {
+    bar.style.width = `${percentage}%`;
+  }
+
+  if (counter) {
+    counter.textContent = Math.floor(percentage);
+  }
+}
+
+
+// optie gekozen in startmenu
+
+//function startAtLevel10() {
+//  localStorage.removeItem("testScore");
+//  score = 100;
+//  updateScoreDisplay();
+//  level = 10;
+//  multicolorCount = 5;
+//  updateMulticolorDisplay();
+//  document.getElementById('startOverlay').style.display = 'none';
+//  gamePaused = false;
+//  pauseUsesLeft = 1000;
+//  updatePauseDisplay();
+//  updateScoreDisplay();
+//}
+
+
+function startAtLevel10() {
+  // Reset alle belangrijke spelwaarden
+  level = 10;
+  score = 0;
+  lives = 5;
+  renewTokenCount = 6;
+  multicolorCount = 5;
+  skipUsesLeft = 0;
+  saveBlockCountdown = 51;
+  saveUnlocked = false;
+  pauseUsesLeft = 1000;
+  blockSpawnCount = 0;
+  bigGroupCount = 0;
+  forcedNextBlock = null;
+  isPaused = false;
+  gamePaused = false;
+  freePictureCount = 3;
+
+
+  // Reset veld
+  field = Array.from({ length: gridRows }, () => Array(gridCols).fill(null));
+
+  // Overlay weg
+  document.getElementById('startOverlay').style.display = 'none';
+
+  // Visuele updates
+  updateScoreDisplay();
+  updateLivesDisplay();
+  updateMulticolorDisplay();
+  updatePauseDisplay();
+  updateRenewDisplay();
+  updateLevelDisplay();
+  updateFreePictureDisplay();
+
+  // Nieuw blokje genereren
+  nextBlock = generateNextBlock();
+  updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+  fallingBlock = createBlock("down");
+
+  drawGrid();
+  drawFallingBlock();
+}
+
+
+// pauzeren en herstarten - console.log lijkt mij niet nuttig
+
+function pauseGame() {
+  gamePaused = true;
+  console.log('Game gepauzeerd');
+}
+function resumeGame() {
+  gamePaused = false;
+  console.log('Game hervat');
+}
+
+// bepaalt grootte van raster en blokjes
+function positionGrid() {
+  const canvas = document.getElementById("gameCanvas");
+  const grid = document.querySelector(".grid");
+
+  const canvasSize = canvas.clientWidth;   // of .clientHeight als je liever verticaal baseert
+  const unit = canvasSize / 30;            // 1 blok = 1/30 van canvas
+  const offset = unit * 10;                // 10 blokken marge voor scrollruimte
+  const visibleSize = unit * 10;           // 10x10 raster
+
+  grid.style.width = `${visibleSize}px`;
+  grid.style.height = `${visibleSize}px`;
+  grid.style.left = `${offset}px`;
+  grid.style.top = `${offset}px`;
+}
+
+window.addEventListener("resize", positionGrid);
+window.addEventListener("load", positionGrid);
+
+// niet gebruikt
+
+function lightenColor(color, percent) {
+  let num = parseInt(color.slice(1), 16),
+      amt = Math.round(2.55 * percent * 100),
+      R = (num >> 16) + amt,
+      G = (num >> 8 & 0x00FF) + amt,
+      B = (num & 0x0000FF) + amt;
+  return "#" + (
+    0x1000000 +
+    (R<255?R<1?0:R:255)*0x10000 +
+    (G<255?G<1?0:G:255)*0x100 +
+    (B<255?B<1?0:B:255)
+  ).toString(16).slice(1);
+}
+function darkenColor(color, percent) {
+  return lightenColor(color, -percent);
+}
+
+
+// pauzeknop en aantal pauzes updaten (zou ik dus willen verwijderen)
+
+function updatePauseDisplay() {
+  const pauseCell = document.getElementById('pauseCell');
+  pauseCell.title = `Pauze`;
+
+  // Leeg de cel eerst
+  pauseCell.innerHTML = '';
+
+  // Maak de knop
+  const button = document.createElement('button');
+  button.id = 'pauseButton';
+  button.style.all = 'unset';
+  button.style.display = 'flex';
+  button.style.alignItems = 'center';
+  button.style.justifyContent = 'center';
+  button.style.cursor = 'pointer';
+  button.style.height = '100%';
+  button.style.width = '100%';
+
+  // Container voor twee afbeeldingen
+  const innerDiv = document.createElement('div');
+  innerDiv.style.display = 'flex';
+  innerDiv.style.width = '100%';
+  innerDiv.style.alignItems = 'center';
+
+  // Selecteer juiste afbeeldingen per status
+  const img1 = document.createElement('img');
+  const img2 = document.createElement('img');
+
+  if (isPaused) {
+    img1.src = 'https://i.ibb.co/vv3N5Hh9/landscape-format-transparent-background-shadow-designify-2.png'; // afbeelding 1 bij pauze
+    img2.src = 'https://i.ibb.co/nMqC5pVB/square-format-transparent-background-designify-9.png'; // afbeelding 2 bij pauze
+  } else {
+    img1.src = 'https://i.ibb.co/dqTymNj/landscape-format-transparent-background-shadow-designify-1.png'; // afbeelding 1 bij spelen
+    img2.src = 'https://i.ibb.co/1J94GSR6/square-format-transparent-background-designify-8.png'; // afbeelding 2 bij spelen
+  }
+
+
+
+  img1.alt = 'PauseState1';
+  img2.alt = 'PauseState2';
+
+  // Stijl: 50% breedte per afbeelding
+  [img1, img2].forEach(img => {
+    img.style.width = '50%';
+    img.style.objectFit = 'contain';
+    img.style.filter = pauseUsesLeft === 0 ? 'grayscale(100%)' : 'none';
+  });
+
+  innerDiv.appendChild(img1);
+  innerDiv.appendChild(img2);
+  button.appendChild(innerDiv);
+  pauseCell.appendChild(button);
+
+  // Eventlistener opnieuw koppelen
+  button.onclick = () => {
+    if (!isPaused) {
+      if (pauseUsesLeft <= 0) return;
+      pauseUsesLeft--;
+      pauseGame();
+      isPaused = true;
+    } else {
+      resumeGame();
+      isPaused = false;
+    }
+    updatePauseDisplay();
+  };
+}
+
+
+
+
+
+// tonen van het volgende blokje in cel 9
+
+function updateNextBlockDisplay(color, length = 1) {
+  const previewContainer = document.getElementById("nextBlockPreview");
+  previewContainer.innerHTML = ''; // leegmaken
+
+  for (let i = 0; i < length; i++) {
+    const blockPreview = document.createElement("div");
+    blockPreview.style.width = "12px";
+    blockPreview.style.height = "12px";
+    blockPreview.style.backgroundColor = color;
+    blockPreview.style.borderRadius = "3px"; // afgerond maar geen cirkel
+    blockPreview.style.boxShadow = "0 0 4px white";
+    blockPreview.style.display = "inline-block";
+    blockPreview.style.flexShrink = "0";
+
+    previewContainer.appendChild(blockPreview);
+  }
+}
+
+// het tonen van de beelden in midden onder cel bij het verwijderen van 5 blokjes - per kleur - blijft 5 sec
+function temporarilyChangeResetImage(color) {
+  const newImage = resetImages[color];
+  if (!newImage) return;
+  resetButtonElements.forEach(img => img.src = newImage);
+  setTimeout(() => {
+    resetButtonElements.forEach(img => img.src = originalResetImage);
+  }, 5000);
+}
+
+// het tonen van het hartje in midden onder cel - blijft 5 sec
+function showHeartImageTemporarily() {
+  resetButtonElements.forEach(img => {
+    img.src = "https://i.ibb.co/KpP5dHn5/Hart-viert-feest.png" + Math.random(); // Hartbeeld, met cache-bypass
+  });
+  setTimeout(() => {
+    resetButtonElements.forEach(img => img.src = originalResetImage);
+  }, 5000);
+}
+
+// het tonen van het dive in midden onder cel - blijft 5 sec
+function showDivaImageTemporarily() {
+  resetButtonElements.forEach(img => {
+  img.src = "https://iili.io/3hkyldg.png" + Math.random(); // ← dwing herladen af
+});
+  setTimeout(() => {
+    resetButtonElements.forEach(img => img.src = originalResetImage);
+  }, 5000); 
+}
+
+// aantal levens tonen
+function updateLivesDisplay() {
+  document.getElementById("livesText").textContent = lives;
+}
+
+// aantal levels tonen
+function updateLevelDisplay() {
+  document.getElementById("levelValue").textContent = level;
+  const extra = document.getElementById("levelDisplayExtra");
+  if (extra) extra.textContent = level;
+}
+
+
+function updateMulticolorDisplay() {
+  document.getElementById("multicolorCount").textContent = multicolorCount;
+}
+
+function updateSkipDisplay() {
+ // document.getElementById("skipCount").textContent = skipUsesLeft;
+document.getElementById("renewCounter").textContent = renewTokenCount;
+
+}
+
+// balkje dat tot 10 loopt
+
+//function updateRenewDisplay() {
+//  const fraction = blockSpawnCount / 10;
+//  renewBar.style.width = `${fraction * 100}%`;
+//  renewCounter.textContent = `${renewTokenCount}`;
+//}
+
+function updateRenewDisplay() {
+  const percentage = (blockSpawnCount / 10) * 100;
+  const renewBar = document.getElementById("renewProgressBar");
+  const renewCounter = document.getElementById("renewCounter");
+
+  if (renewBar) {
+    renewBar.style.width = `${percentage}%`;
+  }
+
+  if (renewCounter) {
+    renewCounter.textContent = `${renewTokenCount}`;
+  }
+}
+
+// score en level tonen
+
+function updateScoreDisplay() {
+  const scoreValue = document.getElementById("scoreValue");
+  if (scoreValue) {
+    scoreValue.textContent = `${score}`;
+  }
+
+  const levelValue = document.getElementById("levelValue");
+  if (levelValue) {
+    levelValue.textContent = level;
+  }
+}
+
+
+// lengte van het blok
+    function randomBlockLength() {
+      return Math.floor(Math.random() * 3) + 1;
+    }
+
+// de 9 cellen beginnen met een tekstgrootte van 32 en worden kleiner gemaakt tot ze passen
+
+function resizeTextToFit(element) {
+    let fontSize = 32; // Begin met grootte 32px
+    element.style.fontSize = fontSize + "px";
+
+    while (element.scrollWidth > element.clientWidth && fontSize > 5) {
+        fontSize--;
+        element.style.fontSize = fontSize + "px";
+    }
+}
+
+// Pas het toe op alle .info elementen
+document.querySelectorAll('.info').forEach(resizeTextToFit);
+
+// volgende blok aanmaken
+
+function generateNextBlock() {
+  if (forcedNextBlock) {
+    const block = { ...forcedNextBlock };
+    forcedNextBlock = null;
+    return block;
+  }
+
+  // hartjes in chal 1 maken
+  if (challengeActive && challengeHeartOverrideCounter > 0) {
+  challengeHeartOverrideCounter--;
+
+  const color = colors[Math.floor(Math.random() * colors.length)];
+
+  return {
+    color: color, 
+    length: 1,
+    isSpecial: true,
+    isMulticolor: false,
+    isDiva: false,
+    divaCountdown: null
+  };
+}
+
+  let length = level <= 3 ? 1 : Math.floor(Math.random() * 3) + 1;
+
+  let color;
+
+// bij lage level maar 1 kleur
+  if (level <= 2) {
+  if (!level1FixedColor) {
+    level1FixedColor = colors[Math.floor(Math.random() * colors.length)];
+  }
+  color = level1FixedColor;
+} else {
+  color = colors[Math.floor(Math.random() * colors.length)];
+}
+
+  const allowSpecials = level >= 5;
+
+  const isSpecial = allowSpecials && level >= 5 && Math.random() < 1 / 20; // frequentie hartjes
+  let isMulticolor = false;
+
+// Challenge 2: forceer elke 3e blok een multicolor
+
+let forceChallenge2Multicolor = challenge2Active && challenge2BlockCounter % 3 === 2;
+if (forceChallenge2Multicolor) {
+  isMulticolor = true;
+  length = 1; // ← Zorg dat het blok 1 lang is
+} else {
+  isMulticolor = allowSpecials && level >= 7 && (nextBlockIsMulticolor || Math.random() < multicolorSpawnChance);
+}
+
+const isDiva = allowSpecials && level >= 6 && Math.random() < 1 / 10; // frequentie diva
+  const divaCountdown = isDiva ? 10 : null;
+
+  nextBlockIsMulticolor = false;
+  nextBlockColor = null;
+
+  return {
+    color,
+    length,
+    isSpecial,
+    isMulticolor,
+    isDiva,
+    divaCountdown
+  };
+}
+
+
+
+
+// het aftellen van de diva + het bekijken of ze met een groep van 5 magverdwijnen EN rekening houden met challenges om die verdwijningen mee te tellen
+
+function updateDivaCountdowns() {
+  for (let r = 0; r < gridRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      const block = field[r][c];
+      if (block && block.isDiva && block.divaCountdown > 1) {
+        block.divaCountdown--;
+      } else if (block && block.isDiva && block.divaCountdown === 1) {
+        // Diva wordt een normaal blok
+        block.isDiva = false;
+        block.divaCountdown = null;
+
+        // Check of ze nu in een groep zit
+        const tempGroup = [];
+        const visited = Array.from({ length: gridRows }, () => Array(gridCols).fill(false));
+        function dfs(r2, c2, color) {
+          if (
+            r2 < 0 || r2 >= gridRows ||
+            c2 < 0 || c2 >= gridCols ||
+            visited[r2][c2] ||
+            !field[r2][c2] ||
+            field[r2][c2].color !== color
+          ) return;
+          visited[r2][c2] = true;
+          tempGroup.push([r2, c2]);
+          dfs(r2+1, c2, color);
+          dfs(r2-1, c2, color);
+          dfs(r2, c2+1, color);
+          dfs(r2, c2-1, color);
+        }
+        dfs(r, c, block.color);
+        if (tempGroup.length >= 5) {
+          for (const [rr, cc] of tempGroup) {
+            disappearingBlocks.push({ r: rr, c: cc, scale: 1, opacity: 1 });
+          }
+
+
+          for (const [rr, cc] of tempGroup) {
+  const block = field[rr][cc];
+
+  if (block.isSpecial) {
+    lives++;
+    heartFreed = true;
+    if (challengeActive) {
+      challengeHeartCount++;
+    }
+  }
+
+  if (block.isMulticolor) {
+    multicolorCount++;
+    multicolorDisplay.textContent = multicolorCount;
+
+    if (challenge2Active) {
+      challenge2MultiCount++;
+    }
+  }
+
+  disappearingBlocks.push({ r: rr, c: cc, scale: 1, opacity: 1 });
+}
+
+  
+score += tempGroup.length * tempGroup.length;
+updateScoreDisplay();
+        }
+      }
+    }
+  }
+}
+
+// na het genereren wordt er nu  create block
+
+function createBlock(direction = "down") {
+ 
+  const block = forcedNextBlock || nextBlock;
+if (forcedNextBlock) forcedNextBlock = null;
+  nextBlock = generateNextBlock();
+
+  // diva direct laten zien in beeld onderaan
+  if (block.isDiva) showDivaImageTemporarily();
+
+  updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+
+  const startX = Math.floor(gridCols / 2 - Math.floor(block.length / 2));
+  const y = direction === "down" ? -extraRowsAbove : gridRows + extraRowsBelow;
+
+  blockCounter++;
+
+if (!saveUnlocked) {
+  saveBlockCountdown--;
+
+  if (saveBlockCountdown <= 0) {
+    saveUnlocked = true;
+    const wrapper = document.getElementById("saveWrapper");
+    if (wrapper) {
+      wrapper.innerHTML = `
+        <img id="saveBlockImage1" src="https://i.ibb.co/9mcrRqx3/transparent-background-no-shadow-designify-4.png" style="width: 50%; object-fit: contain; cursor: pointer;">
+        
+      `;
+//<img id="saveBlockImage2" src="https://i.ibb.co/qkRfWpk/square-format-transparent-background-designify-9.png" style="width: 50%; object-fit: contain; cursor: pointer;">
+      // Klikgedrag koppelen aan beide beelden
+      const img1 = document.getElementById("saveBlockImage1");
+      const img2 = document.getElementById("saveBlockImage2");
+
+      const saveClick = () => {
+        saveTestScore();
+
+        // Reset teller en layout terug naar 3 delen (2 afbeeldingen + teller)
+        saveUnlocked = false;
+        saveBlockCountdown = 50;
+        const wrapper = document.getElementById("saveWrapper");
+  //      if (wrapper) {
+  //        wrapper.innerHTML = `
+  //          <img src="https://i.ibb.co/Nn9nFn6Z/transparent-background-no-shadow-designify-8.png" style="width: 33.33%; object-fit: contain;">
+  //          <img src="https://i.ibb.co/wrjcH86q/square-format-transparent-background-designify-10.png" style="width: 33.33%; object-fit: contain;">
+  //          <span id="saveBlockCounter" style="width: 33.33%; text-align: center; color: orange; font-weight: bold; font-size: 1rem; font-family: 'Baloo Bhaina 2', sans-serif;">${saveBlockCountdown}</span>
+  //        `;
+  //      }
+
+if (wrapper) {
+  wrapper.innerHTML = `
+    <img src="https://i.ibb.co/Nn9nFn6Z/transparent-background-no-shadow-designify-8.png" style="width: 33.33%; height: 90%; object-fit: contain;">
+    <img src="https://i.ibb.co/wrjcH86q/square-format-transparent-background-designify-10.png" style="width: 33.33%; height: 90%; object-fit: contain;">
+    <span id="saveBlockCounter" style="width: 33.33%; text-align: center; color:  #DE6911; font-weight: bold; font-size: 1rem; font-family: 'Baloo Bhaina 2', sans-serif;">${saveBlockCountdown}</span>
+  `;
+}
+
+      };
+
+      if (img1) img1.onclick = saveClick;
+      if (img2) img2.onclick = saveClick;
+    }
+
+  } else {
+    const counter = document.getElementById("saveBlockCounter");
+    if (counter) counter.textContent = saveBlockCountdown;
+  }
+}
+
+
+
+
+
+
+  if (challengeActive) {
+    challengeBlockCounter++;
+  }
+
+  if (challenge2Active) {
+  challenge2BlockCounter++;
+}
+
+if (challenge3Active) {
+    challenge3Count++;
+    updateChallenge3StatusCell();
+  }
+
+
+  if (challenge5Active) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  // hier w chal 5 al afgesloten want je moet gewoon overleven
+  if (challenge5BlockCounter >= challenge5RequiredBlocks && !challenge5Done) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png"); // nog aan te passen
+    updateChallenge5StatusCell();
+  }
+}
+
+
+// skip block teller
+  blockSpawnCount++;
+  if (blockSpawnCount >= 10) {
+    blockSpawnCount = 0;
+    renewTokenCount++;
+  }
+  updateRenewDisplay();
+
+// de info over blokje om door te geven aan create block
+  return {
+    x: startX,
+    y: y,
+    color: block.color,
+    length: block.length,
+    direction: direction,
+    isSpecial: block.isSpecial,
+    isMulticolor: block.isMulticolor,
+    isDiva: block.isDiva,
+    divaCountdown: block.divaCountdown
+  };
+
+// wordt blijkbaar niet uitgevoerd omdat na return komt - maar is toch dubbel op
+
+  if (challenge5Active && !challenge5Done) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  if (challenge5BlockCounter >= challenge5RequiredBlocks) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    updateScoreDisplay();
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+  }
+  updateChallenge5StatusCell(); // ← deze toevoegen
+}
+
+}
+
+
+function createBlockH(direction = "right") {
+ 
+
+  const block = forcedNextBlock || nextBlock;
+if (forcedNextBlock) forcedNextBlock = null;
+  nextBlock = generateNextBlock();
+  updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+  if (block.isDiva) showDivaImageTemporarily();
+
+  const startY = Math.floor(gridRows / 2 - Math.floor(block.length / 2));
+  const x = direction === "right" ? -extraColsLeft : gridCols + extraColsRight;
+
+  blockCounter++;
+
+
+if (!saveUnlocked) {
+  saveBlockCountdown--;
+  if (saveBlockCountdown <= 0) {
+    saveUnlocked = true;
+    const wrapper = document.getElementById("saveWrapper");
+    if (wrapper) {
+     wrapper.innerHTML = `
+ <img id="saveBlockImage" src="https://i.ibb.co/9mcrRqx3/transparent-background-no-shadow-designify-4.png"
+     style="max-height: 24px; width: auto; object-fit: contain; cursor: pointer;">
+`;
+      const img = document.getElementById("saveBlockImage");
+      if (img) {
+        img.onclick = () => {
+          saveTestScore();
+
+          // Reset teller en afbeelding
+          saveUnlocked = false;
+          saveBlockCountdown = 50; // ← origineel cijfer hier invullen
+          const wrapper = document.getElementById("saveWrapper");
+          if (wrapper) {
+            wrapper.innerHTML = `
+              <img id="saveBlockImage" src="https://i.ibb.co/L2sFz90/transparent-background-no-shadow-designify-3.png" style="max-height: 24px; width: auto; object-fit: contain;">
+              <span id="saveBlockCounter" style="color: orange; font-weight: bold; font-size: 1rem; font-family: 'Baloo Bhaina 2', sans-serif;">${saveBlockCountdown}</span>
+            `;
+          }
+        };
+      }
+    }
+  } else {
+    const counter = document.getElementById("saveBlockCounter");
+    if (counter) counter.textContent = saveBlockCountdown;
+  }
+}
+
+
+  if (challengeActive) {
+    challengeBlockCounter++;
+  }
+
+  if (challenge2Active) {
+  challenge2BlockCounter++;
+}
+
+if (challenge3Active) {
+    challenge3Count++;
+    updateChallenge3StatusCell();
+  }
+
+  if (challenge5Active) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  if (challenge5BlockCounter >= challenge5RequiredBlocks && !challenge5Done) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    updateChallenge5StatusCell();
+  }
+}
+
+
+
+  blockSpawnCount++;
+  if (blockSpawnCount >= 10) {
+    blockSpawnCount = 0;
+    renewTokenCount++;
+  }
+  updateRenewDisplay();
+
+  return {
+    x: x,
+    y: startY,
+    color: block.color,
+    length: block.length,
+    direction: direction,
+    isSpecial: block.isSpecial,
+    isMulticolor: block.isMulticolor,
+    isDiva: block.isDiva,
+    divaCountdown: block.divaCountdown
+  };
+
+  // wordt blijkbaar niet uitgevoerd omdat na return komt - maar is toch dubbel op
+  if (challenge5Active && !challenge5Done) {
+  challenge5BlockCounter++;
+  updateChallenge5StatusCell();
+  if (challenge5BlockCounter >= challenge5RequiredBlocks) {
+    challenge5Done = true;
+    challenge5Active = false;
+    challenge5Success = true;
+    score += 250;
+    updateScoreDisplay();
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+  }
+  updateChallenge5StatusCell(); // ← deze toevoegen
+}
+
+}
+
+
+// dit gebeurt er bij de opstart van het spel
+
+    let directionToggle = true;
+    
+    nextBlock = generateNextBlock();
+updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+
+//const stored = localStorage.getItem("testScore");
+//if (stored !== null) {
+//  score = parseInt(stored);
+//  updateScoreDisplay();
+//}
+
+const stored = localStorage.getItem("testScore");
+const continueButton = document.getElementById("continueButton");
+let hasSavedGame = false;
+if (stored !== null) {
+  score = parseInt(stored);
+  updateScoreDisplay();
+  hasSavedGame = true;
+}
+
+
+let fallingBlock = createBlock("down");
+
+
+// movegrid: bewegen van het raster
+
+
+
+
+function moveGrid(dir) {
+  const newOffset = gridOffsetX + dir;
+  
+  if (!useVertical) {
+    return; // vertical is de andere functie
+  }
+
+  if (newOffset < -maxOffset || newOffset > maxOffset) return;
+
+  let canMove = true;
+
+  const newBlockX = fallingBlock.x - dir;
+  const blockEnd = newBlockX + fallingBlock.length;
+
+
+if (fallingBlock.y <0 && newBlockX+1 > 0 && blockEnd-1 < gridCols){
+gridOffsetX = newOffset;
+fallingBlock.x = newBlockX;
+//updateDisplay();
+}
+
+
+if (fallingBlock.y >gridRows && newBlockX+1 > 0 && blockEnd-1 < gridCols){
+gridOffsetX = newOffset;
+fallingBlock.x = newBlockX;
+//updateDisplay();
+}
+
+if (fallingBlock.y >=0 && newBlockX+1 > 0 && blockEnd-1 < gridCols){
+    const row = Math.floor(fallingBlock.y); // <-- Belangrijk: afronden
+    for (let i = 0; i < fallingBlock.length; i++) {
+    const col = newBlockX + i;
+    const row = fallingBlock.y;
+
+    if (field[row][col] !== null) {
+      canMove = false;
+      break; // Stop met controleren als er een blokje in de weg zit
+      return;
+    }
+  }
+
+  if (canMove) {
+    gridOffsetX = newOffset;
+    fallingBlock.x = newBlockX;
+//updateDisplay();
+}
+}
+}
+
+
+function moveGridH(dir) {
+  const newOffset = gridOffsetY - dir;
+  
+  if (useVertical) {
+    return; // dan de andere movegrid gebruiken
+  }
+
+  if (newOffset < -maxOffsetY || newOffset > maxOffsetY) return; 
+  let canMove = true;
+
+  const newBlockY = fallingBlock.y - dir;
+  const blockEnd = newBlockY + fallingBlock.length;
+
+
+//if (fallingBlock.x <0 && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+ if (fallingBlock.x >gridCols && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+gridOffsetY = newOffset;
+fallingBlock.y = newBlockY;
+//updateDisplayH();
+}
+
+//if (fallingBlock.x >gridCols && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+    if (fallingBlock.x <0 && newBlockY+1 > 0 && blockEnd-1 < gridRows){    
+
+  // if (fallingBlock.x <0){
+gridOffsetY = newOffset;
+fallingBlock.y = newBlockY;
+//updateDisplayH();
+}
+
+if (fallingBlock.x >=0 && newBlockY+1 > 0 && blockEnd-1 < gridRows){
+    const col = Math.floor(fallingBlock.x); // <-- Deze lijn toevoegen hier!
+    for (let i = 0; i < fallingBlock.length; i++) {
+    const row = newBlockY + i;
+  //  const row = fallingBlock.x;
+
+    if (field[row][col] !== null) {
+      canMove = false;
+      break; // Stop met controleren als er een blokje in de weg zit
+      return;
+    }
+  }
+
+  if (canMove) {
+    gridOffsetY = newOffset;
+    fallingBlock.y = newBlockY;
+//updateDisplayH();
+}
+}
+}
+
+
+
+// worden nergens aangeroepen dus zouden weg mogen
+function updateDisplay() {
+  // Je kunt een HTML element gebruiken om de status weer te geven
+  document.getElementById('gridOffsetX').textContent = 'Grid Offset X: ' + gridOffsetX;
+  document.getElementById('fallingBlockX').textContent = 'Falling Block X: ' + fallingBlock.x;
+  document.getElementById('fallingBlockY').textContent = 'Falling Block Y: ' + fallingBlock.y;
+  document.getElementById('fallingBlockLength').textContent = 'Falling Block Length: ' + fallingBlock.length;
+  document.getElementById('canMove').textContent = 'Can Move: ' + (canMove ? 'Yes' : 'No');
+}
+function updateDisplayH() {
+  // Je kunt een HTML element gebruiken om de status weer te geven
+  document.getElementById('gridOffsetY').textContent = 'Grid Offset Y: ' + gridOffsetY;
+  document.getElementById('fallingBlockY').textContent = 'Falling Block Y: ' + fallingBlock.y;
+  document.getElementById('fallingBlockX').textContent = 'Falling Block X: ' + fallingBlock.x;
+  document.getElementById('fallingBlockLength').textContent = 'Falling Block Length: ' + fallingBlock.length;
+  document.getElementById('canMove').textContent = 'Can Move: ' + (canMove ? 'Yes' : 'No');
+}
+ 
+
+//update - bepaalt wat er gebeurt met een vallend blokje
+// bepalen wat te doen als het nog verder kan vallen en niet meer verder kan vallen
+
+    function update() {
+      if (lives <= 0) return;
+
+// naar beneden en dus stijgende y
+      if (fallingBlock.direction === "down") {
+        fallingBlock.y++;
+        if (fallingBlock.y >= gridRows || blockWouldCollide(fallingBlock)) {
+          if (fallingBlock.y <= 0) { // verlies van leven als niet binnen veld geraakt
+            
+            lives--;
+            updateLivesDisplay();
+            
+            if (challenge3Active && !challenge3Failed) { // als leven verloren dan is chal 3 verloren
+            challenge3Failed = true;
+            challenge3Active = false;
+            showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding cahl 3
+            updateChallenge3StatusCell();
+            }
+            
+            updateLivesDisplay();
+
+          } else { 
+            
+            if (fallingBlock.isFreePicture) {
+  const fx = fallingBlock.x;
+  const fy = fallingBlock.y;
+  const blocksToRemove = [];
+
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      const nx = fx + dx;
+      const ny = fy + dy;
+      if (
+        nx >= 0 && nx < gridCols &&
+        ny >= 0 && ny < gridRows &&
+        !(dx === 0 && dy === 0) &&
+        field[ny][nx]
+      ) {
+        blocksToRemove.push([ny, nx]);
+      }
+    }
+  }
+
+  // Voeg elk blokje correct toe aan disappearingBlocks
+  for (const [r, c] of blocksToRemove) {
+    const block = field[r][c];
+
+    if (block.isSpecial) {
+      lives++;
+      heartFreed = true;
+      if (challengeActive) challengeHeartCount++;
+    }
+
+    if (block.isMulticolor) {
+      multicolorCount++;
+      updateMulticolorDisplay();
+      if (challenge2Active) challenge2MultiCount++;
+    }
+
+    disappearingBlocks.push({ r, c, scale: 1, opacity: 1 });
+  }
+
+  // Score = aantal²
+  const n = blocksToRemove.length;
+  score += n * n;
+  updateScoreDisplay();
+
+  fallingBlock = null;
+  drawGrid();
+  return;
+}
+
+
+            
+            for (let i = 0; i < fallingBlock.length; i++) {
+              const col = fallingBlock.x + i;
+              if (col >= 0 && col < gridCols) {
+                //hier landt het blokje en info w in field gestoken
+                if (fallingBlock.isSpecial) showHeartImageTemporarily();
+                field[fallingBlock.y - 1][col] = {
+                    color: fallingBlock.color,
+                    isSpecial: fallingBlock.isSpecial,
+                    isMulticolor: fallingBlock.isMulticolor,
+                    isDiva: fallingBlock.isDiva,
+                    divaCountdown: fallingBlock.divaCountdown
+                    };
+              }
+            }
+            
+            // celebration omdat level 3 geslaagd is
+            if (challenge3Active && !challenge3Failed) {
+            if (challenge3Count >= challenge3Limit) {
+            challenge3Success = true;
+            challenge3Active = false;
+            showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+            lives += 3;
+            score += 250;
+            updateScoreDisplay();
+            updateLivesDisplay();
+            updateChallenge3StatusCell();
+  }
+}
+
+            score += fallingBlock.length;
+            updateScoreDisplay();
+            checkMatches();
+            updateDivaCountdowns();
+// challange 4 nakijken
+  if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+}
+
+// volgende richting voorbereiden
+directionToggle = !directionToggle;
+useVertical = false;
+updateControls()
+fallingBlock = createBlockH(directionToggle ? "right" : "left");
+        }
+
+
+// naar boven vallend - zelfde code als hierboven maar andere richting
+      } else {
+        const nextY = fallingBlock.y - 1;
+        if (nextY < 0 || blockWouldCollide({ ...fallingBlock, y: nextY })) {
+          if (fallingBlock.y-1 >= gridRows - 1) { // min 1 ***** ok
+            lives--;
+            updateLivesDisplay();
+if (challenge3Active && !challenge3Failed) {
+  challenge3Failed = true;
+  challenge3Active = false;
+  showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding
+  updateChallenge3StatusCell();
+}
+            updateLivesDisplay();
+          } else {
+            for (let i = 0; i < fallingBlock.length; i++) {
+              const col = fallingBlock.x + i;
+              if (col >= 0 && col < gridCols) {
+                //if (fallingBlock.isDiva) showDivaImageTemporarily();
+                if (fallingBlock.isSpecial) showHeartImageTemporarily();
+                field[fallingBlock.y][col] = {
+                    color: fallingBlock.color,
+                    isSpecial: fallingBlock.isSpecial,
+                    isMulticolor: fallingBlock.isMulticolor,
+                    isDiva: fallingBlock.isDiva,
+                    divaCountdown: fallingBlock.divaCountdown
+                    };
+              }
+            }
+
+  if (challenge3Active && !challenge3Failed) {
+  if (challenge3Count >= challenge3Limit) {
+    challenge3Success = true;
+    challenge3Active = false;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    lives += 3;
+    score += 250;
+    updateScoreDisplay();
+    updateLivesDisplay();
+    updateChallenge3StatusCell();
+  }
+}
+
+            score += fallingBlock.length;
+            updateScoreDisplay();
+            checkMatches();
+            updateDivaCountdowns();
+
+  if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+}
+
+directionToggle = !directionToggle;
+useVertical = false;
+updateControls()
+fallingBlock = createBlockH(directionToggle ? "left" : "right");         
+        } else {
+          fallingBlock.y = nextY;
+        }
+      }
+      checkLevelProgression();
+      updateChallenge2StatusCell();
+    }
+
+// zelfde als update maar de andere richting
+
+function updateH() {
+  if (lives <= 0) return;
+
+  if (fallingBlock.direction === "right") {
+    // Naar rechts = stijgende x
+    fallingBlock.x++;
+    if (fallingBlock.x >= gridCols || blockWouldCollideH(fallingBlock)) {
+      if (fallingBlock.x <= 0) { // plus 1
+        lives--;
+updateLivesDisplay();
+if (challenge3Active && !challenge3Failed) {
+  challenge3Failed = true;
+  challenge3Active = false;
+  showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding
+  updateChallenge3StatusCell();
+}
+        updateLivesDisplay();
+      } else {
+
+if (fallingBlock.isFreePicture) {
+  const fx = fallingBlock.x;
+  const fy = fallingBlock.y;
+  const blocksToRemove = [];
+
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      const nx = fx + dx;
+      const ny = fy + dy;
+      if (
+        nx >= 0 && nx < gridCols &&
+        ny >= 0 && ny < gridRows &&
+        !(dx === 0 && dy === 0) &&
+        field[ny][nx]
+      ) {
+        blocksToRemove.push([ny, nx]);
+      }
+    }
+  }
+
+  // Voeg elk blokje correct toe aan disappearingBlocks
+  for (const [r, c] of blocksToRemove) {
+    const block = field[r][c];
+
+    if (block.isSpecial) {
+      lives++;
+      heartFreed = true;
+      if (challengeActive) challengeHeartCount++;
+    }
+
+    if (block.isMulticolor) {
+      multicolorCount++;
+      updateMulticolorDisplay();
+      if (challenge2Active) challenge2MultiCount++;
+    }
+
+    disappearingBlocks.push({ r, c, scale: 1, opacity: 1 });
+  }
+
+  // Score = aantal²
+  const n = blocksToRemove.length;
+  score += n * n;
+  updateScoreDisplay();
+
+  fallingBlock = null;
+  drawGrid();
+  return;
+}
+
+
+
+        for (let i = 0; i < fallingBlock.length; i++) {
+          const row = fallingBlock.y + i;
+          if (row >= 0 && row < gridRows) {
+            //if (fallingBlock.isDiva) showDivaImageTemporarily();
+            if (fallingBlock.isSpecial) showHeartImageTemporarily();
+            field[row][fallingBlock.x - 1] = {
+  
+  color: fallingBlock.color,
+  isSpecial: fallingBlock.isSpecial,
+  isMulticolor: fallingBlock.isMulticolor,
+  isDiva: fallingBlock.isDiva,
+  divaCountdown: fallingBlock.divaCountdown
+
+};
+          }
+        }
+
+        if (challenge3Active && !challenge3Failed) {
+  if (challenge3Count >= challenge3Limit) {
+    challenge3Success = true;
+    challenge3Active = false;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    lives += 3;
+    score += 250;
+    updateScoreDisplay();
+    updateLivesDisplay();
+    updateChallenge3StatusCell();
+  }
+}
+
+        score += fallingBlock.length;
+        updateScoreDisplay();
+        checkMatches();
+        updateDivaCountdowns();
+
+        if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+
+
+      }
+      directionToggle = !directionToggle;
+      //fallingBlock = createBlockH(directionToggle ? "right" : "left");
+      useVertical = true;
+      updateControls()
+      fallingBlock = createBlock(directionToggle ? "down" : "up");
+    }
+
+  } else {
+    // Naar links = dalende x
+    const nextX = fallingBlock.x - 1;
+    if (nextX < 0 || blockWouldCollideH({ ...fallingBlock, x: nextX })) {
+      if (fallingBlock.x >= gridCols) { // min 1 bij falling - terug weg bij gridcols
+        lives--;
+updateLivesDisplay();
+if (challenge3Active && !challenge3Failed) {
+  challenge3Failed = true;
+  challenge3Active = false;
+  showCelebrationOverlay("https://iili.io/3vpANmx.png"); // gefaald afbeelding
+  updateChallenge3StatusCell();
+}
+        updateLivesDisplay();
+      } else {
+        for (let i = 0; i < fallingBlock.length; i++) {
+          const row = fallingBlock.y + i;
+          if (row >= 0 && row < gridRows) {
+            //if (fallingBlock.isDiva) showDivaImageTemporarily();  // ✅ bij rechts
+            if (fallingBlock.isSpecial) showHeartImageTemporarily();
+            field[row][fallingBlock.x] = {
+               
+
+  color: fallingBlock.color,
+  isSpecial: fallingBlock.isSpecial,
+  isMulticolor: fallingBlock.isMulticolor,
+  isDiva: fallingBlock.isDiva,
+  divaCountdown: fallingBlock.divaCountdown
+
+};
+          }
+        }
+        if (challenge3Active && !challenge3Failed) {
+  if (challenge3Count >= challenge3Limit) {
+    challenge3Success = true;
+    challenge3Active = false;
+    showCelebrationOverlay("https://iili.io/3vmN3bV.png");
+    lives += 3;
+    score += 250;
+    updateScoreDisplay();
+    updateLivesDisplay();
+    updateChallenge3StatusCell();
+  }
+}
+
+        score += fallingBlock.length;
+        updateScoreDisplay();
+        checkMatches();
+        updateDivaCountdowns();
+
+        if (challenge4Active && !challenge4Success) {
+  const fieldBlockCount = field.flat().filter(cell => cell !== null).length;
+
+  if (fieldBlockCount >= 50) {
+    challenge4FullFieldMoments++;
+  }
+
+  if (challenge4FullFieldMoments >= 10) {
+    challenge4Active = false;
+    challenge4Success = true;
+    challenge4RewardGiven = true;
+    score += 250;
+    multicolorCount += 5;
+    updateScoreDisplay();
+    multicolorDisplay.textContent = multicolorCount;
+    showCelebrationOverlay("https://iili.io/38kPc4s.png");
+  }
+
+  challenge4Count++;
+  updateChallenge4StatusCell();
+
+  if (challenge4Count >= challenge4Limit && !challenge4Success) {
+    challenge4Active = false;
+    challenge4RewardGiven = true;
+    showCelebrationOverlay("https://iili.io/38SdH8l.png");
+    updateChallenge4StatusCell();
+  }
+}
+
+
+      }
+      directionToggle = !directionToggle;
+      //fallingBlock = createBlockH(directionToggle ? "right" : "left");
+      useVertical = true;
+      updateControls()
+      fallingBlock = createBlock(directionToggle ? "up" : "down");
+    } else {
+      fallingBlock.x = nextX;
+    }
+  }
+  checkLevelProgression();
+  updateChallenge2StatusCell();
+}
+
+//blockcollide - check of blok al tegen ander is gekomen
+
+    function blockWouldCollide(block) {
+      const yCheck = block.y;
+      if (yCheck < 0 || yCheck >= gridRows) return false;
+      for (let i = 0; i < block.length; i++) {
+        const col = block.x + i;
+        if (col < 0 || col >= gridCols || field[yCheck][col] !== null) return true;
+      }
+      return false;
+    }
+
+    function blockWouldCollideH(block) {
+  const xCheck = block.x;
+  if (xCheck < 0 || xCheck >= gridCols) return false;
+  for (let i = 0; i < block.length; i++) {
+  const row = block.y + i;
+  if (row < 0 || row >= gridRows || field[row][xCheck]!== null) return true;
+}
+  return false;
+}
+///////////////////////////////////////////////////////////////////////////// 
+
+// wordt niet gebruikt !!! - het is showcelebrationoverlay die w gebruikt overal
+
+function showCelebration(lastCell) {
+  // Voeg een pop-effect toe voor de geselecteerde blokken
+  const [r, c] = lastCell; // Haal de rij en kolom op uit lastCell
+
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  if (cell) {
+    cell.classList.add("pop");
+    setTimeout(() => cell.classList.remove("pop"), 2000); // effect verdwijnt na 2 sec
+  }
+
+  // Voeg het plaatje toe in de juiste positie binnen het raster
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3VqXBUP.md.png";  // De afbeelding die je wilt tonen
+  img.alt = "Celebration Image";  // Alt-tekst voor de afbeelding
+  img.className = "celebration-image";  // Je kunt een klasse gebruiken voor styling als dat nodig is
+
+  // Verkrijg de positie van het laatste blokje
+  const x = (c + 10 + gridOffsetX) * blockSize;
+  const y = (r - gridOffsetY) * blockSize;
+
+  // Positioneer de afbeelding op basis van de cel
+  img.style.left = `${x + window.scrollX}px`;  // X-coördinaat van de cel
+  img.style.top = `${y + window.scrollY}px`;  // Y-coördinaat van de cel
+
+  // Stel de grootte van de afbeelding in om overeen te komen met 10x10 blokjes
+  img.style.width = `${10 * blockSize}px`;  // 10 blokjes breed
+  img.style.height = `${10 * blockSize}px`; // 10 blokjes hoog
+
+  // Voeg de afbeelding toe aan de pagina
+  document.body.appendChild(img);
+
+  // Verwijder de afbeelding na 2 seconden
+  setTimeout(() => {
+    img.remove();
+  }, 2000); // Verdwijnt na 2 seconden
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// nakijken of er 5 van zelfde kleur aan elkaar plakken
+
+function checkMatches() {
+  let toRemove = [];
+  const visited = Array.from({ length: gridRows }, () => Array(gridCols).fill(false));
+
+  function dfs(r, c, color, group) {
+    if (
+      r < 0 || r >= gridRows ||
+      c < 0 || c >= gridCols ||
+      visited[r][c] ||
+      !field[r][c] ||
+      field[r][c].isDiva
+    ) return;
+
+    const block = field[r][c];
+
+    const isMatch = block.color === color;
+
+    if (!isMatch) return;
+
+    visited[r][c] = true;
+    group.push([r, c]);
+
+    dfs(r + 1, c, color, group);
+    dfs(r - 1, c, color, group);
+    dfs(r, c + 1, color, group);
+    dfs(r, c - 1, color, group);
+  }
+
+
+// Witte blokjes: verwijder alles wat eraan grenst, ongeacht kleur
+for (let r = 0; r < gridRows; r++) {
+  for (let c = 0; c < gridCols; c++) {
+    const block = field[r][c];
+    if (!block || block.color !== "#FFFFFF") continue;
+
+    const directions = [
+      [0, -1], [1, 0], [0, 1], [-1, 0], // boven, rechts, onder, links
+      [-1, -1], [1, -1], [1, 1], [-1, 1] // diagonaal
+    ];
+
+    for (let [dx, dy] of directions) {
+      const nr = r + dy;
+      const nc = c + dx;
+      if (
+        nr >= 0 && nr < gridRows &&
+        nc >= 0 && nc < gridCols &&
+        field[nr][nc]
+      ) {
+        toRemove.push([nr, nc]);
+      }
+    }
+
+    // ook de witte zelf verwijderen
+    toRemove.push([r, c]);
+  }
+}
+
+
+
+  for (let r = 0; r < gridRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      if (visited[r][c] || !field[r][c] || field[r][c].isDiva) continue;
+
+      const block = field[r][c];
+
+      // ❌ Sla witte blokjes over als startpunt - mag allicht weg want gebruik ik niet meer
+      if (block.color === "#FFFFFF") continue;
+
+      const group = [];
+      dfs(r, c, block.color, group);
+
+      if (group.length >= 5) {
+        toRemove.push(...group);
+
+        // bij eerste verdwijning in level 2 ga je naar level 3
+        if (level === 2 && !level2ImageShown) {
+        showLevel2CelebrationImage();
+        level2ImageShown = true;
+         }
+
+         // beeld onderaan
+        temporarilyChangeResetImage(block.color);
+        score += group.length * group.length;
+
+        bigGroupCount++; // Tel dit als een "grote groep" om level te verhogen
+
+
+if (bigGroupCount >= 4) {
+  if (level >= 10) {
+    level++;
+    pauseUsesLeft++;
+    updatePauseDisplay();
+    updateLevelDisplay();
+  }
+  bigGroupCount = 0;
+
+  // dit zou een fout moeten geven - als bij level 4 een blokjes verdwijnen
+  if (level === 4) {
+    showLevel4CelebrationImage();
+    return;
+  }
+}
+        updateScoreDisplay();
+      }
+    }
+  }
+
+  for (let [r, c] of toRemove) {
+    const block = field[r][c];
+    if (!block) continue;
+    if (block.isDiva && block.divaCountdown > 0) continue;
+   
+
+   if (block.isSpecial) {
+  if (!preventHeartReward) {
+    lives++;
+    updateLivesDisplay();
+    showHeartImageTemporarily();
+  }
+  heartFreed = true;
+  if (challengeActive) {
+    challengeHeartCount++;
+  }
+}
+
+if (block.isMulticolor) {
+  if (challenge2Active) {
+    challenge2MultiCount++;
+    challenge2PendingMulticolors++;
+  } else {
+    multicolorCount++;
+    multicolorDisplay.textContent = multicolorCount;
+  }
+}
+
+
+    disappearingBlocks.push({ r, c, scale: 1, opacity: 1 });
+  }
+}
+
+
+
+// drawgrid
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const totalRows = extraRowsAbove + gridRows + extraRowsBelow;
+
+  const validColors = ["#4A90E2", "#7ED321", "#F8E71C", "#DEDEDE", "#9B51E0", "#50E3C2", "#FF6F61", "#FFFFFF"];
+
+  // getgroupsize --> nodig om later juiste gezichtje te tekenen op blokje !!
+  function getGroupSize(r, c, color) {
+    const visited = Array.from({ length: gridRows }, () => Array(gridCols).fill(false));
+    let group = [];
+
+    function dfs(row, col) {
+
+      if (
+        row < 0 ||
+        row >= gridRows ||
+        col < 0 ||
+        col >= gridCols ||
+        visited[row][col] ||
+        field[row][col] === null ||
+        field[row][col].color !== color ||
+  field[row][col].isDiva
+      ) {
+        return;
+      }
+
+      visited[row][col] = true;
+      group.push([row, col]);
+
+      dfs(row + 1, col);
+      dfs(row - 1, col);
+      dfs(row, col + 1);
+      dfs(row, col - 1);
+    }
+
+    dfs(r, c);
+    return group.length;
+  }
+// einde getgroupsize
+
+  ctx.fillStyle = "#1A2633"; // Kies een bijpassende kleur zoals in je afbeelding
+ctx.fillRect(
+  (10 + gridOffsetX) * blockSize+20, // linkerkant van het 10x10 blok
+  (extraRowsAbove - gridOffsetY) * blockSize+20, // bovenkant van het 10x10 blok
+  gridCols * blockSize, // breedte van 10 blokken
+  gridRows * blockSize  // hoogte van 10 blokken
+);
+
+  for (let r = 0; r < totalRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      const x = (c + 10 + gridOffsetX) * blockSize+20;
+      const y = (r - gridOffsetY) * blockSize+20;
+
+      if (r >= extraRowsAbove && r < extraRowsAbove + gridRows) {
+        ctx.strokeStyle = "#FFE680";
+        ctx.lineWidth = 0;
+
+        ctx.beginPath();
+        ctx.moveTo(x + 10, y);
+        ctx.arcTo(x + blockSize, y, x + blockSize, y + blockSize, 12);
+        ctx.arcTo(x + blockSize, y + blockSize, x, y + blockSize, 12);
+        ctx.arcTo(x, y + blockSize, x, y, 12);
+        ctx.arcTo(x, y, x + 10, y, 12);
+        ctx.closePath();
+        ctx.stroke();
+
+        const fieldRow = r - extraRowsAbove;
+        let color = field[fieldRow][c] ? field[fieldRow][c].color : null;
+
+        if (color && validColors.includes(color)) {
+          let disappearing = disappearingBlocks.find(b => b.r === fieldRow && b.c === c);
+          let scale = 1;
+          let opacity = 1;
+
+          if (disappearing) {
+            scale = disappearing.scale;
+            opacity = disappearing.opacity;
+            disappearing.scale += 0.6;
+
+            if (disappearing.scale >= 3) {
+              field[fieldRow][c] = null;
+              disappearingBlocks = disappearingBlocks.filter(b => !(b.r === fieldRow && b.c === c));
+              continue;
+            }
+          }
+
+          ctx.save();
+          ctx.globalAlpha = opacity;
+          ctx.translate(x + blockSize / 2, y + blockSize / 2);
+          ctx.rotate(disappearing ? disappearing.rotation : 0);
+          ctx.scale(scale, scale);
+          ctx.translate(-(x + blockSize / 2), -(y + blockSize / 2));
+
+          ctx.beginPath();
+          ctx.moveTo(x + 10, y);
+          ctx.arcTo(x + blockSize, y, x + blockSize, y + blockSize, 12);
+          ctx.arcTo(x + blockSize, y + blockSize, x, y + blockSize, 12);
+          ctx.arcTo(x, y + blockSize, x, y, 12);
+          ctx.arcTo(x, y, x + 10, y, 12);
+          ctx.closePath();
+
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 0;
+          ctx.stroke();
+
+          ctx.fillStyle = color;
+          ctx.fill();
+
+          // 3D-effect: lichte glans bovenaan
+          const lightGradient = ctx.createLinearGradient(x, y, x, y + blockSize * 0.4);
+          lightGradient.addColorStop(0, "rgba(255,255,255,0.35)");
+          lightGradient.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = lightGradient;
+          ctx.fill();
+
+          // 3D-effect: donkere schaduw onderaan
+          const shadowGradient = ctx.createLinearGradient(x, y + blockSize * 0.6, x, y + blockSize);
+          shadowGradient.addColorStop(0, "rgba(0,0,0,0)");
+          shadowGradient.addColorStop(1, "rgba(0,0,0,0.25)");
+          ctx.fillStyle = shadowGradient;
+          ctx.fill();
+
+          const groupSize = getGroupSize(fieldRow, c, color);
+          const blockData = field[fieldRow][c];
+
+  // specifieciteiten diva
+  if (blockData.isDiva && blockData.divaCountdown) {
+  const offsetY = blockSize * 0.08;
+
+  ctx.font = `bold ${blockSize * 0.8}px 'Baloo Bhaina 2', sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "black";
+  ctx.strokeText(blockData.divaCountdown, x + blockSize / 2, y + blockSize / 2 + offsetY);
+
+  ctx.fillStyle = "white";
+  ctx.fillText(blockData.divaCountdown, x + blockSize / 2, y + blockSize / 2 + offsetY);
+
+  ctx.restore();  // ← RESTORE toevoegen vóór je break
+  continue;
+}
+
+let imageToUse = null;
+
+//if (blockData.isSpecial) {
+//  imageToUse = specialImage; // beeld van hartje
+//} else if (blockData.isMulticolor) {
+//  imageToUse = multicolorImage; // beeld van multicolor
+//} else {
+//  imageToUse = images[Math.min(groupSize - 1, 4)];
+//}
+
+if (blockData.isSpecial) {
+  imageToUse = specialImage; // beeld van hartje
+} else if (blockData.isMulticolor) {
+  imageToUse = multicolorImage; // beeld van multicolor
+} else if (blockData.color === "#FFFFFF") {
+  imageToUse = freePictureIcon; // afbeelding voor wit blokje
+} else {
+  imageToUse = images[Math.min(groupSize - 1, 4)];
+}
+
+if (imageToUse) {
+  const imgSize = blockSize * 0.9;
+  ctx.drawImage(
+    imageToUse,
+    x + (blockSize - imgSize) / 2,
+    y + (blockSize - imgSize) / 2,
+    imgSize,
+    imgSize
+  );
+}
+
+
+
+
+          ctx.restore();
+        }
+      } else {
+        ctx.fillStyle = "rgba(0, 0, 0, 0)";
+        ctx.fillRect(x, y, blockSize, blockSize);
+      }
+    }
+  }
+
+  //const gridX = (10 + gridOffsetX) * blockSize;
+  //const gridY = (extraRowsAbove - gridOffsetY) * blockSize; // <-- aangepaste lij
+  
+  const gridX = (20 + (10+gridOffsetX) * blockSize);
+const gridY = (20 + (extraRowsAbove - gridOffsetY) * blockSize);
+  
+const gridWidth = gridCols * blockSize;
+const gridHeight = gridRows * blockSize;
+
+const borderColor = '#FFE680'; // Gele lijnen
+const fillColor = '#FFE680';   // Oranje vulling
+const outerPadding = 5;
+const innerPadding = 20;
+
+ctx.save();
+
+// 🔸 Teken de gevulde ring tussen de twee randen
+ctx.beginPath();
+
+// Buitenste pad
+ctx.moveTo(gridX - outerPadding, gridY - outerPadding);
+ctx.arcTo(gridX + gridWidth + outerPadding, gridY - outerPadding, gridX + gridWidth + outerPadding, gridY + gridHeight + outerPadding, 0);
+ctx.arcTo(gridX + gridWidth + outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY + gridHeight + outerPadding, 0);
+ctx.arcTo(gridX - outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY - outerPadding, 0);
+ctx.arcTo(gridX - outerPadding, gridY - outerPadding, gridX - outerPadding + 1, gridY - outerPadding, 0); // laatste bocht
+ctx.closePath();
+
+// Binnenste pad
+ctx.moveTo(gridX - innerPadding, gridY - innerPadding);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY - innerPadding, gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, 0);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY + gridHeight + innerPadding, 0);
+ctx.arcTo(gridX - innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY - innerPadding, 0);
+ctx.arcTo(gridX - innerPadding, gridY - innerPadding, gridX - innerPadding, gridY - innerPadding, 0);
+ctx.closePath();
+
+// Vulling tussen binnen- en buitenrand
+ctx.fillStyle = fillColor;
+ctx.fill("evenodd");
+
+// 🔸 Teken de twee randen erbovenop
+// Buitenrand
+// Buitenrand ZONDER bovenlijn
+ctx.lineWidth = 0;
+ctx.strokeStyle = borderColor;
+ctx.beginPath();
+ctx.moveTo(gridX + gridWidth + outerPadding, gridY - outerPadding); // begin rechtsboven
+ctx.arcTo(gridX + gridWidth + outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY + gridHeight + outerPadding, 12); // rechts → onder
+ctx.arcTo(gridX - outerPadding, gridY + gridHeight + outerPadding, gridX - outerPadding, gridY - outerPadding, 12); // onder → links
+ctx.arcTo(gridX - outerPadding, gridY - outerPadding, gridX - outerPadding + 1, gridY - outerPadding, 12); // links → net niet boven
+ctx.stroke(); // GEEN closePath → geen bovenlijn
+// Binnenrand
+ctx.lineWidth = 0;
+ctx.beginPath();
+ctx.moveTo(gridX - innerPadding, gridY - innerPadding);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY - innerPadding, gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, 12);
+ctx.arcTo(gridX + gridWidth + innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY + gridHeight + innerPadding, 12);
+ctx.arcTo(gridX - innerPadding, gridY + gridHeight + innerPadding, gridX - innerPadding, gridY - innerPadding, 12);
+ctx.arcTo(gridX - innerPadding, gridY - innerPadding, gridX - innerPadding + 1, gridY - innerPadding, 12);
+ctx.closePath();
+ctx.stroke();
+
+ctx.restore();
+
+}
+
+
+// tekenen van blokje terwijl het valt (dus zonder raster en nog niet geland)
+
+function drawFallingBlock() {
+  const { x, y, color, length } = fallingBlock;
+  const visibleTop = -extraRowsAbove;
+  const visibleBottom = gridRows + extraRowsBelow;
+
+  if (y >= visibleTop && y < visibleBottom) {
+    for (let i = 0; i < length; i++) {
+      const drawX = useVertical
+        ? (x + i + 10 + gridOffsetX) * blockSize+20
+        : (x + 10 + gridOffsetX) * blockSize+20;
+      const drawY = useVertical
+        ? (y + extraRowsAbove - gridOffsetY) * blockSize+20
+        : (y + i + extraRowsAbove - gridOffsetY) * blockSize+20;
+
+      // hoofdvlak
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(drawX + 10, drawY);
+      ctx.arcTo(drawX + blockSize, drawY, drawX + blockSize, drawY + blockSize, 12);
+      ctx.arcTo(drawX + blockSize, drawY + blockSize, drawX, drawY + blockSize, 12);
+      ctx.arcTo(drawX, drawY + blockSize, drawX, drawY, 12);
+      ctx.arcTo(drawX, drawY, drawX + blockSize, drawY, 12);
+      ctx.closePath();
+      ctx.fill();
+
+      // lichte glans bovenaan
+      const lightGradient = ctx.createLinearGradient(drawX, drawY, drawX, drawY + blockSize * 0.4);
+      lightGradient.addColorStop(0, "rgba(255,255,255,0.35)");
+      lightGradient.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = lightGradient;
+      ctx.fill();
+
+      // donkere schaduw onderaan
+      const shadowGradient = ctx.createLinearGradient(drawX, drawY + blockSize * 0.6, drawX, drawY + blockSize);
+      shadowGradient.addColorStop(0, "rgba(0,0,0,0)");
+      shadowGradient.addColorStop(1, "rgba(0,0,0,0.25)");
+      ctx.fillStyle = shadowGradient;
+      ctx.fill();
+      ctx.restore(); // <-- DIT HIER, VOOR je een afbeelding of tekst tekent
+      // emoji of afbeelding
+
+    // Vraagteken i.p.v. afbeelding bij vallende blokken
+const offsetY = blockSize * 0.08;
+ctx.font = `bold ${blockSize * 0.8}px 'Baloo Bhaina 2', sans-serif`;
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+
+
+ // const text = fallingBlock.isDiva ? "9" : "?";
+
+let text = "?";
+if (fallingBlock.isDiva) {
+  text = "9";
+} else if (fallingBlock.color === "#FFFFFF") {
+  text = "";
+}
+
+if (fallingBlock.color === "#FFFFFF") {
+  ctx.drawImage(freePictureIcon, drawX + blockSize * 0.1, drawY + blockSize * 0.1, blockSize * 0.8, blockSize * 0.8);
+}
+
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "black";
+  ctx.strokeText(text, drawX + blockSize / 2, drawY + blockSize / 2 + offsetY);
+
+  ctx.fillStyle = "white";
+  ctx.fillText(text, drawX + blockSize / 2, drawY + blockSize / 2 + offsetY);
+
+
+      // optionele witte rand
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+}
+
+
+// de juiste knoppen oneraan selecteren bij wissel
+
+ function updateControls() {
+  const verticalControls = document.querySelector('.vertical-controls');
+  const horizontalControls = document.querySelector('.horizontal-controls');
+
+  if (useVertical) {
+    verticalControls.style.display = 'none';
+    horizontalControls.style.display = 'flex';
+  } else {
+    verticalControls.style.display = 'flex';
+    horizontalControls.style.display = 'none';
+  }
+}
+
+
+// deze functie wordt elke x tijd herhaalt
+
+    function gameLoop() {
+        if (gamePaused) {
+        return; // Doe niks als het spel gepauzeerd is
+        }
+    // toon de juiste 2 pijlen
+        if (useVertical) {
+    document.addEventListener('DOMContentLoaded', updateControls);
+    update();
+    drawGrid();
+    drawFallingBlock();
+  } else {
+    // toon de juiste 2 pijlen
+    document.addEventListener('DOMContentLoaded', updateControls);
+    updateH();
+    drawGrid();
+    drawFallingBlock();
+  }
+}
+//setInterval(gameLoop, 300);
+
+
+    updateLivesDisplay();
+    updateScoreDisplay();
+
+nextBlockIsFreePicture = false;
+document.getElementById("freePictureDisplay").addEventListener("click", () => {
+  if (freePictureCount > 0 && !nextBlockIsFreePicture && !gamePaused) {
+    freePictureCount--;
+    updateFreePictureDisplay();
+
+    nextBlockIsFreePicture = true;
+    nextBlock = {
+      color: "#FFFFFF",
+      length: 1,
+      isSpecial: false,
+      isMulticolor: false,
+      isFreePicture: true,
+      isDiva: false,
+      divaCountdown: null
+    };
+    nextBlockIsFreePicture = false;
+    updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+  }
+});
+
+// is om multicolor in te zetten maar zou logischer zijn om dat anders te coderen
+    document.getElementById("multicolorDisplay").addEventListener("click", () => {
+  if (multicolorCount > 0 && !nextBlockIsMulticolor && !gamePaused) {
+    multicolorCount--;
+    multicolorDisplay.textContent = multicolorCount;
+
+    showColorChoice((selectedColor) => {
+        nextBlock = {
+  color: selectedColor,
+  length: 1,
+  isSpecial: false,
+  isMulticolor: true,
+  isDiva: false,
+  divaCountdown: null
+};
+updateNextBlockDisplay(nextBlock.color, nextBlock.length);
+    });
+  }
+});
+
+
+
+
+// getoond na level 2 (niet chall 2)
+
+function showLevel2CelebrationImage() {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  tutorialImage.src = "https://i.ibb.co/mV4yyjcd/1000011634.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const handleClose = () => {
+    tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    level = 3;
+    updateScoreDisplay();
+    level2ImageShown = true;
+
+    tutorialNextButton.removeEventListener("click", handleClose);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleClose;
+  tutorialNextButton.addEventListener("click", handleClose);
+}
+
+// layer van inzetten van multicolor
+
+function showColorChoice(callback) {
+  gamePaused = true;
+
+    // ✅ Zorg dat andere overlays niet zichtbaar zijn
+    document.getElementById("levelMatrixOverlay").style.display = "none";
+ 
+ //   document.getElementById("challengeGridOverlay").style.display = "none";
+
+  const modal = document.getElementById("colorChoiceModal");
+  const options = document.getElementById("colorOptions");
+  options.innerHTML = "";
+
+  colors.forEach(color => {
+    const btn = document.createElement("button");
+    btn.style.backgroundColor = color;
+    btn.style.border = "2px solid white";
+    btn.style.width = "40px";
+    btn.style.height = "40px";
+    btn.style.borderRadius = "8px";
+    btn.onclick = () => {
+      modal.style.display = "none";
+      callback(color);
+      gamePaused = false;
+    };
+    options.appendChild(btn);
+  });
+
+  const texts = [
+  "Your next block wants a look. What colour are we giving her?",
+  "Your next block needs a vibe. Which colour is she serving?",
+  "She’s ready to slay. Choose her colour, stylist!",
+  "Your next diva is bare. Dress her in a colour, darling.",
+  "Block incoming... but she’s got no outfit! What colour?",
+  "She’s standing there, nude and confused. Help her pick a colour.",
+  "Time for a colour emergency. Give her something to werk with!",
+  "No colour? No confidence. Fix her up!",
+  "She refuses to fall without the right look. Choose a colour.",
+  "She’s blank, baby. Throw some shade on her.",
+  "She’s not coming down until she’s cute. What’s her colour?"
+];
+
+document.getElementById("colorChoiceText").textContent =
+  texts[Math.floor(Math.random() * texts.length)];
+
+  modal.style.display = "block";
+}
+
+// hoe snel bokje beweegt
+setInterval(gameLoop, 400);
+
+
+
+// als je tutorial start door in cel 2 te klikken
+  document.addEventListener("DOMContentLoaded", () => {
+  
+  const howToPartyCell = document.getElementById("howToPartyCell");
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  howToPartyCell.addEventListener("click", () => {
+  if (tutorialInProgress) return;
+  tutorialStep = 0;
+  tutorialInProgress = true;
+  tutorialImage.src = tutorialImages[tutorialStep];
+  tutorialOverlay.style.display = "flex";
+  gamePaused = true;
+});
+
+  let tutorialInProgress = false;
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+tutorialNextButton._customListener = () => {
+  tutorialStep++;
+
+  if (tutorialStep >= tutorialImages.length) {
+    tutorialOverlay.style.display = "none";
+
+    if (introImageOnly) {
+      // geen actie nodig
+    } else if (startedFromIntro) {
+      document.getElementById('startOverlay').style.display = 'flex';
+      startedFromIntro = false;
+    } else {
+      gamePaused = false;
+    }
+
+    tutorialInProgress = false;
+    return;
+  }
+
+  tutorialImage.src = tutorialImages[tutorialStep];
+};
+tutorialNextButton.addEventListener("click", tutorialNextButton._customListener);
+});
+
+const tutorialImages = [
+    "https://i.ibb.co/KpB7Sy6h/pag1.png",
+    "https://i.ibb.co/PGx4B92v/pag2.png"
+  ];
+
+
+let startedFromIntro = false;
+let introImageOnly = false;
+
+
+// als je tutorial start bij beginscherm
+function startTutorialFromIntro() {
+  localStorage.removeItem("testScore");
+  score = 0;
+  updateScoreDisplay();
+  startedFromIntro = true;
+  tutorialStep = 0;
+  document.getElementById("tutorialImage").src = tutorialImages[tutorialStep];
+  document.getElementById("tutorialOverlay").style.display = "flex";
+  document.getElementById("startOverlay").style.display = "none";
+  gamePaused = true;
+}
+
+let levelImageShown = false; // voorkomt dubbele weergave
+
+
+// in welke level zitten we en wat dan tonen (zowel voorlevels als challenges) - wordt aangeroepen in cruciale functue update
+
+function checkLevelProgression() {
+  if (level === 1 && blockCounter >= 6 && !levelImageShown) {
+    showLevelTransitionImage();
+    levelImageShown = true;
+    blockCounter = 0;
+    return;
+  }
+
+  if (level === 3 && blockCounter >= 20 && !level3ImageShown) {
+  showLevel3CelebrationImage();
+  return;
+}
+
+if (level === 4 && blockCounter >= 15 && !level4ImageShown) {
+  level = 5;
+  level4ImageShown = true;
+  blockCounter = 0;
+
+  showCelebrationOverlay("https://iili.io/3exx9tV.png");
+
+  forcedNextBlock = {
+    color: "#FF6F61",
+    length: 1,
+    isSpecial: true,
+    isMulticolor: false,
+    isDiva: false,
+    divaCountdown: null
+  };
+
+  updateScoreDisplay();
+  return;
+}
+
+if (level === 5 && heartFreed && !level6Triggered) {
+  level = 6;
+  level6Triggered = true;
+  blockCounter = 0;
+  showCelebrationOverlay("https://iili.io/3exZRJs.png"); // afbeelding voor overgang naar 6
+  forcedNextBlock = {
+    color: "#50E3C2",
+    length: 1,
+    isSpecial: false,
+    isMulticolor: false,
+    isDiva: true,
+    divaCountdown: 10
+  };
+  updateScoreDisplay();
+  return;
+}
+
+  // Na 20 blokken in level 6 → level 7 - multicolor
+  if (level === 6 && !level7Triggered && blockCounter >= 20) {
+    level = 7;
+    level7Triggered = true;
+    blockCounter = 0;
+    showCelebrationOverlay("https://iili.io/3exDWDx.png");
+
+    forcedNextBlock = {
+  color: colors[Math.floor(Math.random() * colors.length)], // gewone kleur
+  length: 1,
+  isSpecial: false,
+  isMulticolor: true, // dit triggert het multicolor-teller-mechanisme
+  isDiva: false,
+  divaCountdown: null
+};
+
+    updateScoreDisplay();
+    return;
+  }
+
+
+  // Na 20 blokken in level 7 → level 8 - toon multicolor naar 8
+  if (level === 7 && !level8Triggered && blockCounter >= 20) {
+    level = 8;
+    level8Triggered = true;
+    blockCounter = 0;
+    showCelebrationOverlay("https://iili.io/3exLGQS.png");
+
+    updateScoreDisplay();
+    return;
+  }
+
+  if (level === 8 && blockCounter >= 10 && !level9Triggered) {
+  level = 9;
+  level9Triggered = true;
+  blockCounter = 0;
+  showCelebrationOverlay("https://iili.io/3exiOKu.png"); // vervang door je eigen afbeelding indien gewenst
+  updateScoreDisplay();
+  return;
+}
+
+if (level === 9 && blockCounter >= 10 && !level10Triggered) {
+  level = 10;
+  level10Triggered = true;
+  blockCounter = 0;
+  showCelebrationOverlay("https://iili.io/3ezWgX2.png"); // gebruik hier je gewenste afbeelding
+  updateScoreDisplay();
+  return;
+}
+
+if (level === challengeLevel && !challengeActive && !challengeRewardGiven) {
+  challengeActive = true;
+  level++;
+  updateLevelDisplay();
+  challengeHeartCount = 0;
+  challengeBlockCounter = 0;
+  challengeHeartOverrideCounter = 10;
+  preventHeartReward = true;
+  challengeRewardGiven = false;
+  updateChallengeStatusCell();
+  showCelebrationOverlay("https://iili.io/3ei0MlV.png"); // challenge-afbeelding
+  updateScoreDisplay();
+}
+
+if (level === challenge2Level && !challenge2Active && !challenge2RewardGiven) {
+  challenge2Active = true;
+  challenge2MultiCount = 0;
+  challenge2BlockCounter = 0;
+  challenge2RewardGiven = false;
+  level++;
+  updateLevelDisplay();
+  updateChallenge2StatusCell();
+  showCelebrationOverlay("https://iili.io/3v6K11f.png"); // challenge 2 start afbeelding
+  updateScoreDisplay();
+}
+
+if (challenge2Active && !challenge2RewardGiven) {
+    if (challenge2MultiCount >= 13 && challenge2BlockCounter <= 50) {
+  // SUCCES: voeg pending multicolors toe aan totaal
+  multicolorCount += challenge2PendingMulticolors;
+  multicolorDisplay.textContent = multicolorCount;
+
+  challenge2RewardGiven = true;
+  challenge2Active = false;
+  challenge2PendingMulticolors = 0;
+
+  updateChallenge2StatusCell();
+  showCelebrationOverlay("https://iili.io/3vig7wP.png");
+  return;
+}
+
+  if (challenge2BlockCounter > 50) {
+    // FAIL: multicolors kwijt
+    challenge2Active = false;
+    challenge2RewardGiven = true;
+    multicolorCount = 0;
+    multicolorDisplay.textContent = multicolorCount;
+    updateChallenge2StatusCell();
+    showCelebrationOverlay("https://iili.io/3vs26Vn.png"); // vervang indien gewenst
+  }
+}
+
+if (!challenge3Started && level >= challenge3Level) {
+  challenge3Active = true;
+  challenge3Started = true;
+  challenge3Failed = false;
+  challenge3Success = false;
+  challenge3Count = 0;
+  level++;
+  updateLevelDisplay();
+  showCelebrationOverlay("https://iili.io/3vmzHfs.png"); // start afbeelding
+  updateChallenge3StatusCell();
+}
+
+if (challengeActive && !challengeRewardGiven) {
+    if (challengeHeartCount >= challengeHeartTarget && challengeBlockCounter <= challengeBlockLimit) {
+  lives += 3;
+  updateLivesDisplay();
+  score += 100;
+  challengeRewardGiven = true;
+  challengeActive = false;
+  preventHeartReward = false;
+  updateChallengeStatusCell();
+  showCelebrationOverlay("https://iili.io/3etTwJt.png");
+  updateScoreDisplay();
+}
+
+   if (challengeBlockCounter > challengeBlockLimit) {
+    challengeActive = false;
+    challengeRewardGiven = true;
+    updateChallengeStatusCell();
+    preventHeartReward = false;
+    showCelebrationOverlay("https://iili.io/3vrgHZJ.png"); // afbeelding bij mislukte challenge
+  }
+}
+
+if (level === challenge4Level && !challenge4Active && !challenge4RewardGiven) {
+  challenge4Active = true;
+  challenge4Count = 0;
+  challenge4FullFieldMoments = 0;
+  level++;
+  updateLevelDisplay();
+  showCelebrationOverlay("https://iili.io/38k2Bpt.png");
+  updateChallenge4StatusCell();
+}
+
+if (level === challenge5StartLevel && !challenge5Started) {
+  challenge5Started = true;
+  challenge5Active = true;
+  challenge5Done = false;
+  challenge5Success = false;
+  challenge5BlockCounter = 0;
+  level++;
+  updateLevelDisplay();
+  showCelebrationOverlay("https://iili.io/3ex0vzQ.png");
+  updateChallenge5StatusCell();
+  
+  // Zet ALLE blokjes op het veld in diva's met countdown 19
+  for (let r = 0; r < field.length; r++) {
+  for (let c = 0; c < field[0].length; c++) {
+    const block = field[r][c];
+    if (block) {
+      block.isDiva = true;
+      block.divaCountdown = 19;
+    }
+  }
+}
+
+  updateChallengeStatusCell(); // als je statusweergave hebt
+}
+
+}
+
+// het tonen van pop ups bij chal en behaalde levels
+
+function showCelebrationOverlay(imageUrl) {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  if (tutorialOverlay.style.display === "flex") return; // voorkomt dubbele overlays
+
+  tutorialStep = -1;
+  tutorialImage.onload = () => {
+    tutorialOverlay.style.display = "flex";
+  };
+  tutorialImage.src = imageUrl;
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const close = () => {
+    tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    tutorialNextButton.removeEventListener("click", close);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = close;
+  tutorialNextButton.addEventListener("click", close);
+}
+
+
+// specifiek tonen image van level 3
+function showLevel3CelebrationImage() {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  tutorialImage.src = "https://iili.io/3exCfSf.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const handleNext = () => {
+  tutorialOverlay.style.display = "none";
+  gamePaused = false;
+  level = 4;
+  pauseUsesLeft++;
+  
+  levelImageShown = true;
+  level3ImageShown = true;
+  blockCounter = 0;
+  updatePauseDisplay();
+  updateScoreDisplay();
+  tutorialNextButton.removeEventListener("click", handleNext);
+};
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleNext;
+  tutorialNextButton.addEventListener("click", handleNext);
+}
+
+
+// beeld bij level 1
+function showLevelTransitionImage() {
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  tutorialImage.src = "https://i.ibb.co/bjxT2f8G/5blokjes.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+
+  const handleLevelAdvance = () => {
+    tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    level = 2;
+    updateScoreDisplay();
+
+    tutorialNextButton.removeEventListener("click", handleLevelAdvance);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleLevelAdvance;
+  tutorialNextButton.addEventListener("click", handleLevelAdvance);
+}
+
+
+// allereerste slide van tutorial
+function showStartImageBeforeGame() {
+  localStorage.removeItem("testScore");
+  score = 0;
+  updateScoreDisplay();
+  
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+
+  if (!tutorialOverlay || !tutorialImage || !tutorialNextButton) {
+        return;
+  }
+
+  document.getElementById("startOverlay").style.display = "none";
+  tutorialImage.src = "https://i.ibb.co/DPh9MbTh/1000011636.png";
+  tutorialOverlay.style.display = "flex";
+  tutorialNextButton.style.display = "block";
+  gamePaused = true;
+  introImageOnly = true;
+
+  const handleNext = () => {
+        tutorialOverlay.style.display = "none";
+    gamePaused = false;
+    introImageOnly = false;
+    pauseUsesLeft = 1000;
+    // verwijderd: document.getElementById("startOverlay").style.display = "none";
+    document.getElementById("startOverlay").style.display = "none";
+    tutorialNextButton.removeEventListener("click", handleNext);
+  };
+
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+  tutorialNextButton._customListener = handleNext;
+  tutorialNextButton.addEventListener("click", handleNext);
+  }
+
+;
+
+  // Verwijder vorige listeners en koppel nieuwe
+  tutorialNextButton.removeEventListener("click", tutorialNextButton._customListener);
+
+levelDisplay.addEventListener("click", () => {
+  document.getElementById("levelMatrixOverlay").style.display = "flex";
+  updateChallengeStatusCell();
+  gamePaused = true;
+});
+
+function closeLevelMatrixOverlay() {
+  document.getElementById("levelMatrixOverlay").style.display = "none";
+  gamePaused = false;
+}
+
+
+// om de cel van de 1ste challenge te updaten
+
+function updateChallengeStatusCell() {
+  const cell = document.getElementById("challengeStatusCell");
+  if (!cell) return;
+
+  // Verwijder achtergrondafbeelding altijd
+  cell.style.backgroundImage = "none";
+
+  // Bepaal of we grijze of normale stijl moeten tonen
+  //const isInactive = !challengeActive && !challengeRewardGiven;
+  const isInactive = level < challengeLevel;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  // Bovenste helft: afbeelding
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png";
+  img.alt = "Challenge-afbeelding";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  // Onderste helft: emoji en cijfers
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+
+if (passedChallenge1c) {
+  bottom.innerHTML = `<div>Go again?</div>`;
+} else if (challengeRewardGiven && challengeHeartCount >= 3) {
+  bottom.innerHTML = `<div>✅ Challenge was a success! Go again?</div>`;
+} else if (challengeRewardGiven) {
+  bottom.innerHTML = `<div>❌ Challenge failed, try again?</div>`;
+} else {
+  bottom.innerHTML = `
+    <div>❤️ <span id="challengeHeartCount">${challengeHeartCount}</span> / ${challengeHeartTarget}</div>
+    <div>⏳ <span id="challengeBlockCounter">${challengeBlockCounter}</span> / ${challengeBlockLimit}</div>
+  `;
+}
+
+
+
+
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  // Voeg opbouw toe aan cel
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge1;
+
+
+  // Klasse bijwerken
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge1() {
+  if (level < challengeLevel) return;
+
+  challengeActive = true;
+  challengeRewardGiven = false;
+  challengeHeartCount = 0;
+  challengeBlockCounter = 0;
+  challengeHeartOverrideCounter = 10;
+  preventHeartReward = true;
+  passedChallenge1c = false;
+  updateChallengeStatusCell();
+  showCelebrationOverlay("https://iili.io/3ei0MlV.png");
+}
+
+// om de cel van de derde challenge te updaten
+function updateChallenge3StatusCell() {
+  const cell = document.getElementById("challenge3StatusCell");
+  if (!cell) return;
+
+  cell.style.backgroundImage = "none";
+
+  //const isInactive = !challenge3Active;
+   const isInactive = level < challenge3Level;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png";
+  img.alt = "Challenge 3";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+  if (passedChallenge3c) {
+  bottom.innerHTML = `<div>Go again?</div>`;
+} else 
+  if (challenge3Success) {
+    bottom.innerHTML = `<div>✅ Challenge was a success! Go again?</div>`;
+  } else if (challenge3Failed) {
+    bottom.innerHTML = `<div>❌ Challenge failed, try again?</div>`;
+  } else {
+    bottom.innerHTML = `
+      <div>🧍‍♂️ <span id="challenge3Count">${challenge3Count}</span> / ${challenge3Limit}</div>
+    `;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge3;
+
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge3() {
+  if (level < challenge3Level) return; // ← alleen activeren als het level bereikt is
+
+  challenge3Active = true;
+  challenge3Started = true;
+  challenge3Failed = false;
+  challenge3Success = false;
+  challenge3Count = 0;
+  passedChallenge3c = false;
+  updateChallenge3StatusCell();
+  showCelebrationOverlay("https://iili.io/3vmzHfs.png");
+}
+
+
+// om de cel van chal 4 up te datn
+function updateChallenge4StatusCell() {
+  const cell = document.getElementById("challenge4StatusCell");
+  if (!cell) return;
+
+  cell.style.backgroundImage = "none"; // verwijder grote hart
+
+  //const isInactive = !challenge4Active && !challenge4RewardGiven;
+   const isInactive = level < challenge4Level;
+
+  const blocksOnField = field.flat().filter(cell => cell !== null).length;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  const top = document.createElement("div");
+  // weggedaan om even hoog te krijgen
+  //top.style.flex = "1";
+top.style.flex = "none";
+top.style.height = "50%";
+
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  const bottom = document.createElement("div");
+// weggedaan om even hoog te krijgen
+//  bottom.style.flex = "1";
+
+bottom.style.flex = "none";
+bottom.style.height = "50%";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.85rem";
+
+  if (passedChallenge4c) {
+  bottom.innerHTML = `<div>Go again?</div>`;
+} else 
+  if (challenge4Success) {
+    bottom.innerHTML = `<div>✅ Challenge was a success! Go again?</div>`;
+  } else if (challenge4RewardGiven) {
+    bottom.innerHTML = `<div>❌ Challenge failed, try again?</div>`;
+  } else {
+    bottom.innerHTML = `
+      <div>⏳ ${challenge4Count} / ${challenge4Limit}</div>
+      <div>📈 ${challenge4FullFieldMoments} / 10</div>
+      <div>🧱 ${blocksOnField}</div>
+    `;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge4;
+
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge4() {
+  if (level < challenge4Level) return;
+
+  challenge4Active = true;
+  challenge4RewardGiven = false;
+  challenge4Success = false;
+  challenge4Count = 0;
+  challenge4FullFieldMoments = 0;
+  passedChallenge4c = false;
+  updateChallenge4StatusCell();
+  showCelebrationOverlay("https://iili.io/38k2Bpt.png");
+}
+
+// om de cel van challenge 5 up te daten
+function updateChallenge5StatusCell() {
+  const cell = document.getElementById("challenge5StatusCell");
+  if (!cell) return;
+
+  // Achtergrond leegmaken
+  cell.style.backgroundImage = "none";
+
+  //const isInactive = !challenge5Active && !challenge5Success && !challenge5Done;
+ const isInactive = level < challenge5StartLevel ;
+
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  // Bovenaan: afbeelding
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3kjXPee.png"; // zelfde als cel 3
+  img.alt = "Challenge 5 afbeelding";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  // Onder: status info
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+ 
+if (passedChallenge5c) {
+  bottom.innerHTML = `<div>Go again?</div>`;
+} else 
+  if (challenge5Success) {
+    bottom.innerHTML = `<div>✅ Challenge was a success! Go again?</div>`;
+ // } else if (challenge5Done) {
+ //   bottom.innerHTML = `<div>❌ Challenge failed. Try again?</div>`;
+  } else {
+    const textColor = isInactive ? "#888" : "#FFE680";
+    bottom.innerHTML = `<div style="color: ${textColor};">🧍‍♂️ <span id="challenge5Count">${challenge5BlockCounter}</span> / ${challenge5RequiredBlocks}</div>`;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  // Cel leegmaken en nieuwe inhoud plaatsen
+  cell.innerHTML = "";
+  cell.appendChild(container);
+
+  // Eventuele clickfunctie om te herstarten
+  cell.onclick = restartChallenge5;
+
+  // Grijs maken bij inactiviteit (optioneel: CSS class ‘inactive’)
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+function restartChallenge5() {
+  if (level < challenge5StartLevel) return;
+
+  challenge5Active = true;
+  challenge5Done = false;
+  challenge5Success = false;
+  challenge5BlockCounter = 0;
+  passedChallenge5c = false;
+
+  // Toon startafbeelding
+  showCelebrationOverlay("https://iili.io/3ex0vzQ.png");
+
+  // Zet bestaande blokjes in diva's met countdown 9
+  for (let r = 0; r < field.length; r++) {
+    for (let c = 0; c < field[0].length; c++) {
+      const block = field[r][c];
+      if (block) {
+        block.isDiva = true;
+        block.divaCountdown = 9;
+      }
+    }
+  }
+
+  updateChallenge5StatusCell();
+  updateChallengeStatusCell();
+}
+
+
+
+// om cel challenge 2 up te daten
+function updateChallenge2StatusCell() {
+  const cell = document.getElementById("challenge2StatusCell");
+  if (!cell) return;
+
+  cell.style.backgroundImage = "none";
+
+  //const isInactive = !challenge2Active && !challenge2RewardGiven;
+  const isInactive = level <= challenge2Level;
+
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.justifyContent = "space-between";
+  container.style.alignItems = "center";
+  container.style.height = "100%";
+
+  const top = document.createElement("div");
+  top.style.flex = "1";
+  top.style.display = "flex";
+  top.style.justifyContent = "center";
+  top.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "https://iili.io/3vPbK7e.png"; // multicolor
+  img.alt = "Challenge 2 afbeelding";
+  img.style.maxHeight = "60px";
+  img.style.maxWidth = "100%";
+  img.style.objectFit = "contain";
+  img.style.filter = isInactive ? "grayscale(100%)" : "none";
+
+  top.appendChild(img);
+
+  const bottom = document.createElement("div");
+  bottom.style.flex = "1";
+  bottom.style.display = "flex";
+  bottom.style.flexDirection = "column";
+  bottom.style.justifyContent = "center";
+  bottom.style.alignItems = "center";
+  bottom.style.fontSize = "0.9rem";
+
+  if (passedChallenge2c) {
+  bottom.innerHTML = `<div>Go again?</div>`;
+} else 
+  if (challenge2RewardGiven && challenge2MultiCount >= challenge2MultiTarget) {
+    bottom.innerHTML = `<div>✅ Challenge was a success! Go again?</div>`;
+  } else if (challenge2RewardGiven) {
+    bottom.innerHTML = `<div>❌ Challenge failed, try again?</div>`;
+  } else {
+    let multiText = `${challenge2MultiCount}`;
+    if (challenge2PendingMulticolors > 0) {
+      multiText += ` (+${challenge2PendingMulticolors})`;
+    }
+
+    const textColor = isInactive ? "#888" : "#FFE680";
+
+    bottom.innerHTML = `
+      <div style="color: ${textColor};">🌈 <span id="challenge2MultiCount">${multiText}</span> / ${challenge2MultiTarget}</div>
+      <div style="color: ${textColor};">⏳ <span id="challenge2BlockCounter">${challenge2BlockCounter}</span> / ${challenge2BlockLimit}</div>
+    `;
+  }
+
+  container.appendChild(top);
+  container.appendChild(bottom);
+
+  cell.innerHTML = "";
+  
+  cell.innerHTML = "";
+cell.appendChild(container);
+cell.onclick = restartChallenge2;
+
+  if (isInactive) {
+    cell.classList.add("inactive");
+  } else {
+    cell.classList.remove("inactive");
+  }
+}
+
+// volgens mij nergens gebruikt - het is de restartchallenge die overal w gebruikt
+function startChallenge5() {
+  challenge5Active = true;
+  challenge5Done = false;
+  challenge5BlockCounter = 0;
+  challenge5ImageShown = true;
+  showChallengeImage('images/challenge5_start.png'); // vervang met juiste pad
+
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      if (grid[row][col] !== null && !grid[row][col].isDiva) {
+        grid[row][col] = {
+          color: grid[row][col].color,
+          isDiva: true,
+          divaCountdown: 9,
+          isFalling: false,
+          landed: true,
+          x: col,
+          y: row,
+        };
+      }
+    }
+  }
+}
+
+
+function restartChallenge2() {
+  if (level < challenge2Level) return;
+
+  challenge2Active = true;
+  challenge2RewardGiven = false;
+  challenge2MultiCount = 0;
+  challenge2BlockCounter = 0;
+  challenge2PendingMulticolors = 0;
+  passedChallenge2c = false;
+  updateChallenge2StatusCell();
+  showCelebrationOverlay("https://iili.io/3v6K11f.png");
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateChallengeStatusCell();
+  updateChallenge2StatusCell();
+  updateChallenge3StatusCell();
+  updateChallenge4StatusCell();
+  updateChallenge5StatusCell();
+});
+
+
+document.getElementById("shopCell").addEventListener("click", () => {
+  pauseGame();
+  document.getElementById("shopModal").style.display = "block";
+});
+
+function closeShopModal() {
+  document.getElementById("shopModal").style.display = "none";
+  resumeGame();
+}
+
+
+function buySkipBlock() {
+  const img = document.getElementById("skipBlockImage");
+
+  if (score >= 25) {
+    score -= 25;
+    renewTokenCount++;
+    updateScoreDisplay();
+    updateRenewDisplay();
+
+    if (img) img.src = "https://i.ibb.co/XZq7BBQB/transparent-background-no-shadow-designify-10.png";
+
+    // Eventueel: closeShopModal(); als je de shop wil sluiten na aankoop
+  } else {
+    if (img) img.src = "https://i.ibb.co/NnKMfCk0/transparent-background-no-shadow-designify-9.png";
+  }
+
+}
+
+
+
+function buyFreePicture() {
+  const img = document.getElementById("freePictureImage");
+
+    if (score >= 500) {
+    score -= 500;
+    freePictureCount++;
+    updateFreePictureDisplay();
+    updateScoreDisplay();
+
+    if (img) img.src = "https://i.ibb.co/XZq7BBQB/transparent-background-no-shadow-designify-10.png";
+
+    // Eventueel: closeShopModal(); als je de shop wil sluiten na aankoop
+  } else {
+    if (img) img.src = "https://i.ibb.co/NnKMfCk0/transparent-background-no-shadow-designify-9.png";
+  }
+
+}
+
+function buyMulticolor() {
+  const img = document.getElementById("multicolorImage");
+    if (score >= 100) {
+    score -= 100;
+    multicolorCount++;
+    updateMulticolorDisplay();
+    updateScoreDisplay();
+
+    if (img) img.src = "https://i.ibb.co/XZq7BBQB/transparent-background-no-shadow-designify-10.png";
+
+    // Eventueel: closeShopModal(); als je de shop wil sluiten na aankoop
+  } else {
+    if (img) img.src = "https://i.ibb.co/NnKMfCk0/transparent-background-no-shadow-designify-9.png";
+  }
+}
+
+</script>
+<script>
+
+// bewaren van de gegeven
+function saveTestScore() {
+
+if (level >= challengeLevel) passedChallenge1 = true;
+if (level >= challenge2Level) passedChallenge2 = true;
+if (level >= challenge3Level) passedChallenge3 = true;
+if (level >= challenge4Level) passedChallenge4 = true;
+if (level >= challenge5StartLevel) passedChallenge5 = true;
+
+  try {
+    localStorage.setItem("testScore", score);
+    localStorage.setItem("testLives", lives);
+    localStorage.setItem("testLevel", level);
+    localStorage.setItem("testMulticolor", multicolorCount);
+    localStorage.setItem("testSkip", renewTokenCount);
+    localStorage.setItem("savedField", JSON.stringify(field));
+    localStorage.setItem("gridOffsetX", gridOffsetX);
+    localStorage.setItem("gridOffsetY", gridOffsetY);
+
+    localStorage.setItem("passedChallenge1", passedChallenge1);
+    localStorage.setItem("passedChallenge2", passedChallenge2);
+    localStorage.setItem("passedChallenge3", passedChallenge3);
+    localStorage.setItem("passedChallenge4", passedChallenge4);
+    localStorage.setItem("passedChallenge5", passedChallenge5);
+
+    console.log("Score opgeslagen:", score);
+    console.log("Skipdinges opgeslagen:", renewTokenCount);
+    
+  } catch (e) {
+    console.error("Fout bij opslaan score:", e);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const stored = localStorage.getItem("testScore");
+  if (stored !== null) {
+}
+});
+
+</script>
+<script>
+
+// keuze continue bij het beginscherm - met ophalen van bewaarde geg
+
+function continueWithScore() {
+  const stored = localStorage.getItem("testScore");
+  if (stored !== null) {
+    score = parseInt(stored);
+    
+    const storedLives = localStorage.getItem("testLives");
+    if (storedLives !== null) {
+      lives = parseInt(storedLives);
+      updateLivesDisplay();
+    }
+
+
+    const storedLevel = localStorage.getItem("testLevel");
+    if (storedLevel !== null) {
+      level = parseInt(storedLevel);
+      updateLevelDisplay();
+    }
+
+    const storedMulti = localStorage.getItem("testMulticolor");
+    if (storedMulti !== null) {
+      multicolorCount = parseInt(storedMulti);
+      updateMulticolorDisplay();
+    }
+    
+    //const storedSkip = 6;
+    const storedSkip = localStorage.getItem("testSkip");
+    
+    if (storedSkip !== null) {
+      renewTokenCount = parseInt(storedSkip);
+      console.log("testSkip in localStorage2 =", renewTokenCount);
+      updateSkipDisplay();
+    }
+
+const savedField = localStorage.getItem("savedField");
+if (savedField !== null) {
+  try {
+    field = JSON.parse(savedField);
+   // drawGrid(); // of jouw hertekenfunctie
+  } catch (e) {
+    console.error("Fout bij laden veld:", e);
+  }
+}
+
+const storedOffsetX = localStorage.getItem("gridOffsetX");
+if (storedOffsetX !== null) gridOffsetX = parseInt(storedOffsetX);
+console.log("gridOffset =", gridOffsetX)
+
+const storedOffsetY = localStorage.getItem("gridOffsetY");
+if (storedOffsetY !== null) gridOffsetY = parseInt(storedOffsetY);
+
+
+const storedPC1 = localStorage.getItem("passedChallenge1");
+if (storedPC1 !== null) passedChallenge1 = storedPC1 === "true";
+passedChallenge1c = passedChallenge1;
+
+const storedPC2 = localStorage.getItem("passedChallenge2");
+if (storedPC2 !== null) passedChallenge2 = storedPC2 === "true";
+passedChallenge2c = passedChallenge2;
+
+const storedPC3 = localStorage.getItem("passedChallenge3");
+if (storedPC3 !== null) passedChallenge3 = storedPC3 === "true";
+passedChallenge3c = passedChallenge3;
+
+const storedPC4 = localStorage.getItem("passedChallenge4");
+if (storedPC4 !== null) passedChallenge4 = storedPC4 === "true";
+passedChallenge4c = passedChallenge4;
+
+const storedPC5 = localStorage.getItem("passedChallenge5");
+if (storedPC5 !== null) passedChallenge5 = storedPC5 === "true";
+passedChallenge5c = passedChallenge5;
+
+updateChallengeStatusCell();
+updateChallenge2StatusCell();
+updateChallenge3StatusCell();
+updateChallenge4StatusCell();
+updateChallenge5StatusCell();
+
+drawGrid();
+
+  }
+
+  document.getElementById('startOverlay').style.display = 'none';
+//  startGame(1);
+
+  gamePaused = false;
+//  multicolorCount = 3;
+  updateMulticolorDisplay();
+  pauseUsesLeft = 1000;
+  updatePauseDisplay();
+
+
+}
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const stored = localStorage.getItem("testScore");
+  const continueBtn = document.getElementById("continueButton");
+  if (stored !== null && continueBtn) {
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = "1";
+  }
+});
+
+
+
+
+
+</script>
+<script>
+
+// was om testen te doen
+
+const startTime = performance.now();
+
+window.addEventListener("load", () => {
+  const loadTime = (performance.now() - startTime) / 1000;
+  console.log("Volledige laadtijd:", loadTime.toFixed(2), "seconden");
+
+  // Activeer knoppen
+  document.querySelectorAll(".main-button").forEach(btn => btn.disabled = false);
+
+  // Verwijder debugtekst
+  const loadingText = document.getElementById("loadingText");
+  if (loadingText) loadingText.remove();
+});
+
+</script>
+<script>
+
+  const debug = document.createElement("div");
+  debug.id = "debugStatus";
+  debug.style.cssText = "position:fixed;top:4px;left:4px;color:yellow;font-size:14px;z-index:10000;";
+  debug.textContent = "Laden van speldata...";
+  document.body.appendChild(debug);
+
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      debug.textContent = "Klaar!";
+      document.querySelectorAll(".main-button").forEach(btn => btn.disabled = false);
+      setTimeout(() => debug.remove(), 2000);
+    }, 100); // simulatie-wachttijd
+  });
+
+</script>
+<script>
+
+// is niet meer nodig denk ik maar w blijkbaar wel nog uitgevoerd
+
+
+window.addEventListener("load", () => {
+  const stored = localStorage.getItem("testScore");
+  const continueBtn = document.getElementById("continueButton");
+  if (stored !== null && continueBtn) {
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = "1";
+  }
+
+  const buttons = document.querySelectorAll(".main-button");
+  buttons.forEach((btn, index) => {
+    setTimeout(() => {
+      btn.style.animation = "fromLeft 0.6s ease forwards";
+      btn.disabled = false;
+    }, index * 50000);
+  });
+});
+
+
+
+</script>
+
+<script>
+
+// animatie van de knoppen bij de opstart
+
+window.addEventListener("DOMContentLoaded", () => {
+  const knoppen = [
+  { id: "teachButton", anim: "fromLeft" },
+  { id: "partyTogetherButton", anim: "fromLeft" },
+  { id: "proPlannerButton", anim: "fromLeft" },
+ //  { id: "continueButton", anim: "fromLeft" }
+];
+  const ids = [
+    "teachButton",
+    "partyTogetherButton",
+    "proPlannerButton",
+    "continueButton"
+  ];
+  ids.forEach((id, i) => {
+    const knop = document.getElementById(id);
+    if (knop) {
+      setTimeout(() => {
+        knop.style.animation = `${knoppen[i].anim} 0.8s ease-out forwards`;
+      }, i * 1000);
+    }
+  });
+});
+</script>
+
+
+
+
+</body>
+</html>
+
+

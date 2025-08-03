@@ -116,9 +116,8 @@ self.addEventListener("install", event => {
        "./images/fig103.jpg", 
        "./images/fig104.jpg", 
        "./images/fig105.jpg", 
-       "./images/fig106.jpg", 
+       "./images/fig106.jpg",
         "./icon-512.png"
-        // voeg hier je andere bestanden toe: JS, CSS, afbeeldingen...
       ]);
     })
   );

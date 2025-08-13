@@ -1,7 +1,7 @@
 {
   "name": "Block Party of 5",
   "short_name": "Block Party",
-  "start_url": "index.html",
+  "start_url": "/Blockparty/index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",

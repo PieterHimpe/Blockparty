@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "be.pieter.blockparty",
+    "sha256_cert_fingerprints": [
+      "77:E3:C7:94:B2:04:7E:C6:67:2D:08:24:94:D5:10:5D:12:28:18:7B:D0:15:A4:50:F5:C2:98:EA:B2:A5:6A:DD"
+    ]
+  }
+}]

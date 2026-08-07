@@ -3,6 +3,10 @@
 <!-- versie 364: Nieuwe formaties van 2 of 3 blokjes tonen al vanaf hun spawn het gezicht dat bij de formatiegrootte hoort (2 = fig37, 3 = fig38), in plaats van tijdelijk het gezicht van één blokje te gebruiken. -->
 <!-- versie 363: Pause wordt in level 5 niet meer pas na zes post-startblokken vrijgespeeld. Onmiddellijk nadat de grote level-5-startafbeelding verdwenen is, opent de Pause-cel via de bestaande unlockanimatie en volgt de NEED A BREAK?-uitleg. De latere level-5-unlock blijft alleen als veiligheidsfallback en grijpt normaal niet meer in. -->
 <!-- versie 366: De groepsvlucht van 5+ blokken toont elk blok duidelijker: de vliegende blokkopie zelf is iets groter, terwijl de draaiende halo/tintenrand en gloed bewust compacter zijn. In de info-cel met het Repair-blok heet de teller voortaan REPAIRS in plaats van LIVES. -->
+<!-- versie 369: Het testmenu staat niet meer automatisch open bij de start. Het verborgen Developer/Test-menu blijft in de code aanwezig en kan later opnieuw gebruikt worden, maar verschijnt nu niet meer zichtbaar bij het opstarten. -->
+<!-- versie 370: Achtergrondmuziek pauzeert nu mee wanneer het spel via Pause of andere centrale pausefuncties gepauzeerd wordt, en hervat weer bij Resume. -->
+<!-- versie 368: Tutorial-dead-ends in level 6 en 7 voorkomen. Als de verplichte Diva of de eerste verplichte Multicolor vóór landing tegen de buitenbarrière verloren gaat, wordt hetzelfde type stil opnieuw als volgend blok klaargezet totdat het werkelijk op de dansvloer aanwezig is. Level 8-10-progressie blijft ongewijzigd. -->
+<!-- versie 367: Level 5 activeert nu altijd zijn eigen blokprogressie, ook wanneer de speler nog geen barrière heeft beschadigd of Repair heeft gebruikt. Alleen de landing die level 4 afsluit wordt niet als level-5-blok meegeteld; daarna start level 6 exact na 9 werkelijk in level 5 afgehandelde blokken. Hervatten op level 5 telt het eerste echte blok wel normaal mee. -->
 <!-- versie 362: De 10x10-dansvloer wordt bij tutorial-levelverhogingen pas opnieuw gecentreerd nadat de grote centrale levelpopup volledig verdwenen is. Bij de eerste Repair-ontdekking opent het reparatiescherm niet meer automatisch: na REPAIR READY moet de speler eerst zelf op de Lives/Repair-knop drukken. -->
 <!-- versie 361: De Repair-uitleg is gebeurtenisgestuurd. Pas nadat de level-3-zijruimte is ontdekt, activeert de eerste echte schade aan de 30x30-partybarrière een eenmalige uitleg. Het eerstvolgende blok wordt een Repair-blok; na verzamelen opent automatisch de herstelmodus en moet de speler de schade zelf herstellen voordat Continue Party beschikbaar wordt. De vroegere vaste Heart/Repair-intro in level 5 is verwijderd; de overige level-5-progressie blijft behouden. -->
 <!-- versie 360: De drie grote passagepijlen verschijnen alleen nog bij de eerste level-3-opdracht om de dansvloer volledig naar links te bewegen. Tijdens de drie rechtertikken om het blok terug binnen te halen worden geen passagepijlen meer getoond. -->
@@ -13191,6 +13195,7 @@ let level5GreenUnlocked = false;
 
 // Level 6: Diva-tutorial.
 let level5BlocksAfterHeart = 0;
+let level5IgnoreTransitionLanding = false;
 let level6DivaTutorialActive = false;
 let level6DivaIntroduced = false;
 let level6DivaChangedPopupShown = false;
@@ -16278,6 +16283,9 @@ function startAtLevel6() {
 
 function pauseGame() {
   gamePaused = true;
+  if (typeof window.pauseBlockPartyBackgroundMusic === 'function') {
+    window.pauseBlockPartyBackgroundMusic();
+  }
   score -= 10;
   if (score < 0) score = 0;
   updateScoreDisplay();
@@ -16286,11 +16294,17 @@ function pauseGame() {
 
 function resumeGame() {
   gamePaused = false;
+  if (typeof window.resumeBlockPartyBackgroundMusic === 'function') {
+    window.resumeBlockPartyBackgroundMusic();
+  }
   console.log('Game hervat');
 }
 
 function pauseGame1() {
   gamePaused = true;
+  if (typeof window.pauseBlockPartyBackgroundMusic === 'function') {
+    window.pauseBlockPartyBackgroundMusic();
+  }
   console.log('Game gepauzeerd');
 }
 
@@ -26216,6 +26230,12 @@ function registerLevel5PostHeartBlock() {
     return;
   }
 
+  // V367: de landing die level 4 afsluit, mag niet meteen als level-5-blok tellen.
+  if (level5IgnoreTransitionLanding) {
+    level5IgnoreTransitionLanding = false;
+    return;
+  }
+
   level5BlocksAfterHeart += 1;
 
   if (level5BlocksAfterHeart === 3 && !level5GreenUnlocked) {
@@ -27077,7 +27097,7 @@ function showLevel5LifeRestored(livesBefore, livesAfter) {
   );
 }
 
-function startLevel5HeartScoreTutorial() {
+function startLevel5HeartScoreTutorial(options = {}) {
   if (level5HeartTutorialActive || level4TransitionStarted) return;
 
   // V361: level 5 blijft een progressiefase, maar Repair wordt hier niet meer
@@ -27092,8 +27112,13 @@ function startLevel5HeartScoreTutorial() {
   level5HeartAnnouncementShown = true;
   level5LifeRewardShown = true;
   level5BlocksAfterHeart = 0;
+  level5IgnoreTransitionLanding = options.ignoreTransitionLanding !== false;
   level5GreenUnlocked = false;
   heartFreed = firstBarrierRepairTutorialCompleted;
+
+  // V367: level 5 moet zijn progressieteller altijd laten meelopen, ook zonder
+  // voorafgaande Repair/levensgebeurtenis.
+  oneColorDirectionCycleActive = true;
 
   localStorage.setItem("tutorialLevelV3", "5");
   updateLevelDisplay();
@@ -27549,6 +27574,89 @@ function registerResolvedLevel2DirectionBlock() {
   return false;
 }
 
+
+// ===== V368: VEILIGE HERHALING VAN VERPLICHTE TUTORIALBLOKKEN =====
+// De verplichte Diva (level 6) en eerste Multicolor (level 7) mogen niet éénmalig
+// verloren kunnen gaan aan de buitenbarrière. Zolang de vereiste tutorialstap nog
+// niet bereikt is en er nergens zo'n blok aanwezig of reeds gepland is, wordt het
+// volgende blok opnieuw van dat type gemaakt. Er verschijnt geen extra popup.
+function tutorialFieldContains(predicate) {
+  for (let r = 0; r < gridRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      const block = field[r] && field[r][c];
+      if (block && predicate(block)) return true;
+    }
+  }
+  return false;
+}
+
+function ensureRequiredTutorialSpecialStillAvailable() {
+  if (
+    level === 6 &&
+    level6DivaTutorialActive &&
+    !level6DivaChangedPopupShown
+  ) {
+    const divaAlreadyOnFloor = tutorialFieldContains(block => block.isDiva);
+    const divaAlreadyQueued =
+      (forcedNextBlock && forcedNextBlock.isDiva) ||
+      (nextBlock && nextBlock.isDiva);
+
+    if (!divaAlreadyOnFloor && !divaAlreadyQueued) {
+      const level6Colors = getTutorialColorsForLevel(6);
+      nextBlock = {
+        color: level6Colors[level4TutorialColorIndex % level6Colors.length],
+        length: 1,
+        isSpecial: false,
+        isMulticolor: false,
+        isFreePicture: false,
+        isDiva: true,
+        divaCountdown: 9
+      };
+      level4TutorialColorIndex += 1;
+      updateNextBlockDisplay(
+        nextBlock.color,
+        nextBlock.length,
+        nextBlock.isDiva,
+        nextBlock.isSpecial,
+        nextBlock.isMulticolor
+      );
+    }
+  }
+
+  if (
+    level === 7 &&
+    level7MulticolorTutorialActive &&
+    level7MulticolorStage === "waiting_first_clear" &&
+    !level7FirstMulticolorFreed
+  ) {
+    const multicolorAlreadyOnFloor = tutorialFieldContains(block => block.isMulticolor);
+    const multicolorAlreadyQueued =
+      (forcedNextBlock && forcedNextBlock.isMulticolor) ||
+      (nextBlock && nextBlock.isMulticolor);
+
+    if (!multicolorAlreadyOnFloor && !multicolorAlreadyQueued) {
+      const level7Colors = getTutorialColorsForLevel(7);
+      nextBlock = {
+        color: level7Colors[level4TutorialColorIndex % level7Colors.length],
+        length: 1,
+        isSpecial: false,
+        isMulticolor: true,
+        isFreePicture: false,
+        isDiva: false,
+        divaCountdown: null
+      };
+      level4TutorialColorIndex += 1;
+      updateNextBlockDisplay(
+        nextBlock.color,
+        nextBlock.length,
+        nextBlock.isDiva,
+        nextBlock.isSpecial,
+        nextBlock.isMulticolor
+      );
+    }
+  }
+}
+
 function spawnNextOneColorDirectionBlock() {
   // Deze functie wordt aangeroepen zodra het vorige blok geland is
   // of een leven heeft gekost. De begeleide zijstrookformatie telt niet als
@@ -27563,6 +27671,10 @@ function spawnNextOneColorDirectionBlock() {
   registerLevel5PostHeartBlock();
   registerLevel6PostDivaBlock();
   registerLevel7PostMasteryBlock();
+
+  // V368: als een verplicht tutorial-special tegen de buitenbarrière verloren ging,
+  // zet het opnieuw klaar vóór het volgende blok wordt aangemaakt.
+  ensureRequiredTutorialSpecialStillAvailable();
 
   const directionCycle = [
     { useVertical: true,  direction: "down" },  // komt van boven
@@ -27804,6 +27916,7 @@ function finishRightDirectionTutorial() {
     level5HeartAnnouncementShown = false;
     level5LifeRewardShown = false;
     level5BlocksAfterHeart = 0;
+    level5IgnoreTransitionLanding = false;
     level5GreenUnlocked = false;
 
     level6DivaTutorialActive = false;
@@ -28131,6 +28244,7 @@ function startNormalGame() {
   level5HeartAnnouncementShown = false;
   level5LifeRewardShown = false;
   level5BlocksAfterHeart = 0;
+  level5IgnoreTransitionLanding = false;
   level5GreenUnlocked = false;
 
   level6DivaTutorialActive = false;
@@ -28397,7 +28511,7 @@ function startNormalGame() {
       oneColorDirectionCycleActive = true;
       level4TutorialActive = true;
       level4TutorialColorIndex = 0;
-      startLevel5HeartScoreTutorial();
+      startLevel5HeartScoreTutorial({ ignoreTransitionLanding: false });
 
       useVertical = true;
       directionToggle = true;
@@ -30391,6 +30505,7 @@ function resetRuntimeBeforeTutorialCheckpointResume() {
   level5HeartAnnouncementShown = false;
   level5LifeRewardShown = false;
   level5BlocksAfterHeart = 0;
+  level5IgnoreTransitionLanding = false;
   level5GreenUnlocked = false;
   heartFreed = false;
 
@@ -30537,7 +30652,7 @@ function resumeTutorialCheckpoint(checkpointLevel) {
     oneColorDirectionCycleActive = true;
     level4TutorialActive = true;
     level4TutorialColorIndex = 0;
-    startLevel5HeartScoreTutorial();
+    startLevel5HeartScoreTutorial({ ignoreTransitionLanding: false });
 
     useVertical = true;
     directionToggle = true;
@@ -31668,8 +31783,9 @@ function installDeveloperMenu() {
     }
   });
 
-  // V220: toon en actualiseer de testopties onmiddellijk bij het openen.
-  openDeveloperMenu();
+  // V369: open het verborgen testmenu niet meer automatisch bij de start.
+  // De long-press-hotspot en alle testopties blijven wel beschikbaar in de code.
+  closeDeveloperMenu();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -32456,6 +32572,29 @@ showTutorialLevelBanner = function(levelNumber) {
 
   // Beschikbaar voor latere volume-/pauzeknoppen zonder een tweede audioplayer te maken.
   window.blockPartyBackgroundMusic = backgroundMusic;
+
+  let backgroundMusicPausedByGame = false;
+
+  window.pauseBlockPartyBackgroundMusic = function pauseBlockPartyBackgroundMusic() {
+    if (backgroundMusic.paused) {
+      backgroundMusicPausedByGame = false;
+      return;
+    }
+    backgroundMusicPausedByGame = true;
+    backgroundMusic.pause();
+  };
+
+  window.resumeBlockPartyBackgroundMusic = function resumeBlockPartyBackgroundMusic() {
+    if (!backgroundMusicPausedByGame) return;
+    backgroundMusicPausedByGame = false;
+
+    const playAttempt = backgroundMusic.play();
+    if (playAttempt && typeof playAttempt.catch === 'function') {
+      playAttempt.catch(error => {
+        console.warn('Achtergrondmuziek kon niet hervatten:', error);
+      });
+    }
+  };
 
   function getStartMenuButton(target) {
     if (!(target instanceof Element)) return null;

@@ -5,6 +5,7 @@
 <!-- versie 366: De groepsvlucht van 5+ blokken toont elk blok duidelijker: de vliegende blokkopie zelf is iets groter, terwijl de draaiende halo/tintenrand en gloed bewust compacter zijn. In de info-cel met het Repair-blok heet de teller voortaan REPAIRS in plaats van LIVES. -->
 <!-- versie 369: Het testmenu staat niet meer automatisch open bij de start. Het verborgen Developer/Test-menu blijft in de code aanwezig en kan later opnieuw gebruikt worden, maar verschijnt nu niet meer zichtbaar bij het opstarten. -->
 <!-- versie 370: Achtergrondmuziek pauzeert nu mee wanneer het spel via Pause of andere centrale pausefuncties gepauzeerd wordt, en hervat weer bij Resume. -->
+<!-- versie 371: Productiemodus voor het startscherm: de volledige Developer/Test-strook en de verborgen hotspot zijn expliciet onzichtbaar gemaakt. De testcode blijft behouden voor later hergebruik. -->
 <!-- versie 368: Tutorial-dead-ends in level 6 en 7 voorkomen. Als de verplichte Diva of de eerste verplichte Multicolor vóór landing tegen de buitenbarrière verloren gaat, wordt hetzelfde type stil opnieuw als volgend blok klaargezet totdat het werkelijk op de dansvloer aanwezig is. Level 8-10-progressie blijft ongewijzigd. -->
 <!-- versie 367: Level 5 activeert nu altijd zijn eigen blokprogressie, ook wanneer de speler nog geen barrière heeft beschadigd of Repair heeft gebruikt. Alleen de landing die level 4 afsluit wordt niet als level-5-blok meegeteld; daarna start level 6 exact na 9 werkelijk in level 5 afgehandelde blokken. Hervatten op level 5 telt het eerste echte blok wel normaal mee. -->
 <!-- versie 362: De 10x10-dansvloer wordt bij tutorial-levelverhogingen pas opnieuw gecentreerd nadat de grote centrale levelpopup volledig verdwenen is. Bij de eerste Repair-ontdekking opent het reparatiescherm niet meer automatisch: na REPAIR READY moet de speler eerst zelf op de Lives/Repair-knop drukken. -->
@@ -5406,6 +5407,20 @@ TODO aangepast volgens feedback:
       inset 0 5px 10px rgba(0, 0, 0, 0.52),
       0 1px 2px rgba(0, 0, 0, 0.38) !important;
   }
+</style>
+
+<style id="v371-hide-test-menu">
+/* V371: productie-opstart — testmenu volledig verbergen ondanks oudere V220 !important-regels. */
+#developerMenuHotspot {
+  display: none !important;
+  pointer-events: none !important;
+}
+#developerMenuOverlay,
+#developerMenuOverlay.active {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 </style>
 </head>
 <!-- versie 288: de bewegingsachtergrond blijft per actief blok onveranderd; de zijdelingse stop geldt alleen terwijl de formatie werkelijk naast de 10x10 passeert. Zodra ze voorbij de vloer is, kan de vloer opnieuw vrij binnen haar oorspronkelijke bereik bewegen om de terugkerende formatie op te vangen. Een expliciete buiten-transitstatus voorkomt dat het blok tijdens die herpositionering verdwijnt of in de oude landingslogica terechtkomt. -->

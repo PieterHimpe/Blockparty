@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- versie 388: Bewegingsstrook-logica en geometrie volledig behouden zoals in v385. Alleen de zichtbaarheid is versterkt: de bestaande volledige bewegingsband is donkerder, de rand duidelijker en de max. 1-3 passagecellen iets beter leesbaar. Geen enkele bewegingsgrens of spelregel is gewijzigd. -->
 <!-- versie 385: Echte oorzaak van het startprobleem opgelost. V380 liet updateRenewDisplay() tijdens de allereerste createBlock() meteen updateSkipAvailabilityVisual() uitvoeren, terwijl fallingBlock nog in zijn let-initialisatie zat. Dat veroorzaakte een TDZ ReferenceError en stopte het grote gamescript tijdens het laden. De Skip-statusupdate gebeurt daar nu pas op het volgende animation frame. De oorspronkelijke startknoplogica is behouden. -->
 <!-- versie 383: Alle Party Mission-teksten afgestemd op de echte spelregels. Challenge 1 verwijst nu naar Repair Blocks i.p.v. Hearts; Challenge 2, 4, 5, 6 en 7 gebruiken de juiste aantallen/limieten; oude teksten over verboden specials en vaste rewards zijn verwijderd en vervangen door neutrale reward-teksten. -->
 <!-- versie 382: Party Mission 1 moet nu binnen 50 blokken gehaald worden in plaats van binnen 100. Zowel de logische bloklimiet als de zichtbare missie-omschrijvingen en voortgangsteksten zijn aangepast. -->
@@ -10553,7 +10554,7 @@ function drawMovementAreaGuide() {
   ctx.beginPath();
   ctx.rect(fullPlayAreaX, fullPlayAreaY, fullPlayAreaWidth, fullPlayAreaHeight);
   ctx.rect(areaX, areaY, areaWidth, areaHeight);
-  ctx.fillStyle = "rgba(18, 18, 22, 0.04)";
+  ctx.fillStyle = "rgba(18, 18, 22, 0.06)";
   ctx.fill("evenodd");
 
   // V373: de volledige strook waarover de 10x10 kan bewegen krijgt een
@@ -10563,9 +10564,9 @@ function drawMovementAreaGuide() {
   const bandGradient = guideForDrawing.axis === "horizontal"
     ? ctx.createLinearGradient(areaX, areaY, areaX + areaWidth, areaY)
     : ctx.createLinearGradient(areaX, areaY, areaX, areaY + areaHeight);
-  bandGradient.addColorStop(0, "rgba(18, 18, 22, 0.15)");
-  bandGradient.addColorStop(0.5, "rgba(18, 18, 22, 0.20)");
-  bandGradient.addColorStop(1, "rgba(18, 18, 22, 0.15)");
+  bandGradient.addColorStop(0, "rgba(18, 18, 22, 0.24)");
+  bandGradient.addColorStop(0.5, "rgba(18, 18, 22, 0.34)");
+  bandGradient.addColorStop(1, "rgba(18, 18, 22, 0.24)");
   ctx.fillStyle = bandGradient;
   ctx.fillRect(areaX, areaY, areaWidth, areaHeight);
 
@@ -10576,12 +10577,12 @@ function drawMovementAreaGuide() {
     if (passageVisibility <= 0.001) return;
     // V378: de passagecellen blijven leesbaar, maar worden duidelijk minder fel
     // zodat de zijzone naast de 10x10 niet als een licht paneel oogt.
-    const alpha = (0.030 + strength * 0.045) * passageVisibility;
+    const alpha = (0.045 + strength * 0.055) * passageVisibility;
     ctx.fillStyle = `rgba(150, 214, 228, ${alpha.toFixed(3)})`;
     ctx.fillRect(x, y, width, height);
 
-    ctx.strokeStyle = `rgba(214, 242, 248, ${(0.18 * passageVisibility).toFixed(3)})`;
-    ctx.lineWidth = Math.max(1, blockSize * 0.03);
+    ctx.strokeStyle = `rgba(214, 242, 248, ${(0.26 * passageVisibility).toFixed(3)})`;
+    ctx.lineWidth = Math.max(1, blockSize * 0.035);
     ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
   }
 
@@ -10710,8 +10711,8 @@ function drawMovementAreaGuide() {
 
   // Alleen de twee lange zijden van de bewegingsstrook blijven heel subtiel
   // zichtbaar. De vroegere ghost-kaders en dikke oranje eindlijnen zijn verwijderd.
-  ctx.strokeStyle = "rgba(255, 230, 128, 0.10)";
-  ctx.lineWidth = 1.25;
+  ctx.strokeStyle = "rgba(230, 244, 248, 0.22)";
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   if (guideForDrawing.axis === "horizontal") {
     ctx.moveTo(areaX, areaY + 0.75);

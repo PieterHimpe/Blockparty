@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!-- versie 383: Alle Party Mission-teksten afgestemd op de echte spelregels. Challenge 1 verwijst nu naar Repair Blocks i.p.v. Hearts; Challenge 2, 4, 5, 6 en 7 gebruiken de juiste aantallen/limieten; oude teksten over verboden specials en vaste rewards zijn verwijderd en vervangen door neutrale reward-teksten. -->
+<!-- versie 382: Party Mission 1 moet nu binnen 50 blokken gehaald worden in plaats van binnen 100. Zowel de logische bloklimiet als de zichtbare missie-omschrijvingen en voortgangsteksten zijn aangepast. -->
+<!-- versie 381: Party Missions 1 en 2 laten nu opnieuw specials en Skip toe. SKIP BLOCK, Multicolor en Free Picture zijn tijdens deze twee missies niet langer geblokkeerd. De missie-omschrijvingen zijn aangepast; de overige challenge-logica blijft ongewijzigd. -->
+<!-- versie 380: De SKIP BLOCK-cel wordt automatisch grijs zodra Skip voor de huidige formatie niet bruikbaar is (te laat in de aanloop, geen Skip-tokens, pauze of geblokkeerde Party Mission) en wordt bij een nieuw bruikbaar blok vanzelf opnieuw actief. De bestaande Skip-spelregels zijn niet gewijzigd. -->
+<!-- versie 379: Party Mission 3 aangepast aan de huidige barrièremechaniek. De speler moet nu 100 blokken verwerken zonder de buitenste Party Barrier te beschadigen. De oude voorwaarde 'zonder een leven te verliezen' is verwijderd; een echte barrière-impact laat de missie onmiddellijk mislukken. -->
+<!-- versie 378: De lichtblauwe passage-/zijzones naast de 10x10 zijn visueel subtieler gemaakt: minder heldere vulling en een zachtere rand, zodat de zone nog leesbaar blijft zonder te fel op te lichten. -->
+<!-- versie 377: Score- en puntenanimaties blijven boven het speelveld zichtbaar, maar liggen voortaan onder tutorial-, celebration- en andere voorgrondbeelden. De animatie zelf en de puntentelling zijn niet gewijzigd. -->
+<!-- versie 376: Free Picture hersteld: milestonecontrole gebeurt nu bij zowel verticale als horizontale spawns; de verouderde inline useFreePicture-handler is verwijderd; en een klaargezette Free Picture kan niet meer per ongeluk dubbel worden gekocht/overschreven voordat ze als volgend blok is gebruikt. -->
 <!-- versie 375: Tijdelijke vaste testfrequentie van speciale blokken verwijderd. Buiten tutorials en Party Missions gebruiken Repair, Multicolor en Diva opnieuw de normale kanslogica (basis: Repair 1/25, Multicolor 1/25, Diva 1/10), inclusief bestaande DJ- en rewardmultipliers. -->
 <!-- versie 374: Visuele focus verder verfijnd: de 10x10-dansvloer is nog neutraler en donkerder gemaakt, terwijl de actieve bewegingscorridor subtieler werd zodat ze minder als aparte zijpanelen oogt. Spelregels en passagezones blijven ongewijzigd. -->
 <!-- versie 373: Visuele focus verbeterd: de actieve bewegingsstrook krijgt een subtiele neutraal-donkere corridor, de 10x10-dansvloer een duidelijk sterker neutraal focusvlak en de rest van de DJ-achtergrond blijft vrijwel ongewijzigd zichtbaar. Passagezones en spelregels blijven ongewijzigd. -->
@@ -1246,6 +1254,20 @@ background-color: #c9a878;
 #renewCell:hover {
   transform: scale(1.03);
   box-shadow: 0 0 8px #e88a2d;
+}
+
+/* V380: toon onmiddellijk wanneer Skip voor het huidige blok niet bruikbaar is. */
+#renewCell.skip-unavailable:not(.feature-locked) {
+  filter: grayscale(1) brightness(0.58);
+  opacity: 0.52;
+  cursor: default;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#renewCell.skip-unavailable:not(.feature-locked):hover {
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 #dropButton img {
@@ -4705,7 +4727,7 @@ TODO aangepast volgens feedback:
   position: fixed;
   left: var(--score-x, 50vw);
   top: var(--score-y, 50vh);
-  z-index: 1000012;
+  z-index: 32;
   min-width: 94px;
   max-width: 150px;
   box-sizing: border-box;
@@ -4770,7 +4792,7 @@ TODO aangepast volgens feedback:
   position: fixed;
   left: var(--score-x, 50vw);
   top: var(--score-y, 50vh);
-  z-index: 1000011;
+  z-index: 31;
   color: var(--spark-color, #FFD86A);
   font-size: var(--spark-size, 12px);
   line-height: 1;
@@ -4960,7 +4982,7 @@ TODO aangepast volgens feedback:
 
 .v230-flying-block {
   position: fixed;
-  z-index: 1000300;
+  z-index: 30;
   pointer-events: none;
   box-sizing: border-box;
   overflow: visible;
@@ -5070,7 +5092,7 @@ TODO aangepast volgens feedback:
 
 .v230-score-plus {
   position: fixed;
-  z-index: 1000400;
+  z-index: 33;
   pointer-events: none;
   transform: translate(-50%, -50%);
   color: #fff;
@@ -5763,7 +5785,7 @@ TODO aangepast volgens feedback:
   <div style="background-color: #000; color: #FFE680; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
     1
   </div>
-  <span style="font-weight: bold;">30 Times Love</span>
+  <span style="font-weight: bold;">30 Times Repair</span>
 </div>
 
 <!-- Tekst + afbeelding -->
@@ -5783,7 +5805,7 @@ TODO aangepast volgens feedback:
   text-align: left;
 ">
   <div style="flex: 1; min-width: 160px; color: #FFE680; font-size: 0.95rem; line-height: 1.3;">
-    Brace yourself – 30 heart blocks are coming in a row! Make them all vanish within 100 block. No multicolor, skip or free picture tricks allowed.
+    Brace yourself – 30 Repair Blocks are coming in a row! Make them all vanish within 50 blocks. Specials and Skip may be used.
   </div>
   <div style="flex: 0 0 auto; width: 60px;">
     <img src="images/fig4.png" style="width: 100%; height: auto; border-radius: 8px;">
@@ -5966,7 +5988,7 @@ TODO aangepast volgens feedback:
   text-align: left;
 ">
   <div style="flex: 1; min-width: 160px; color: #FFE680; font-size: 0.95rem; line-height: 1.3;">
-    Are you ready cause every third block will be a multicolor during the mission! Make 30 of them leave the dancefloor within 100 block. No multicolor, skip or free picture tricks allowed.
+    Are you ready? Every third block will be a Multicolor during the mission! Make 30 of them leave the dancefloor within 100 blocks. Specials and Skip may be used.
   </div>
   <div style="flex: 0 0 auto; width: 60px;">
     <img src="images/fig32.png" alt="Multicolor block" style="width: 100%; height: auto; border-radius: 8px;">
@@ -6130,7 +6152,7 @@ TODO aangepast volgens feedback:
   <div style="background-color: #000; color: #FFE680; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
     3
   </div>
-  <span style="font-weight: bold;">No One Left Behind</span>
+  <span style="font-weight: bold;">Barrier Guard</span>
 </div>
 
 
@@ -6153,7 +6175,7 @@ TODO aangepast volgens feedback:
 
   <!-- Compacte tekst -->
   <div style="flex: 1; min-width: 160px; color: #FFE680; font-size: 0.95rem; line-height: 1.3;">
-    Stay sharp – survive the next 100 blocks without losing a single life!
+    Stay sharp – handle the next 100 blocks without damaging the outer Party Barrier!
   </div>
 
   <!-- Kleinere afbeelding -->
@@ -6346,7 +6368,7 @@ TODO aangepast volgens feedback:
   text-align: left;
 ">
   <div style="flex: 1; min-width: 160px; color: #FFE680; font-size: 0.95rem; line-height: 1.3;">
-    Time to party – hit 50+ blocks on the dance floor at least 10 times in the next 100 moves!
+    Time to party – hit 50+ blocks on the dance floor at least 10 times in the next 100 blocks!
   </div>
   <div style="flex: 0 0 auto; width: 60px;">
     <img src="images/fig82.png" alt="Block party" style="width: 100%; height: auto; border-radius: 8px;">
@@ -6529,7 +6551,7 @@ TODO aangepast volgens feedback:
   text-align: left;
 ">
   <div style="flex: 1; min-width: 160px; color: #FFE680; font-size: 0.95rem; line-height: 1.3;">
-    Survive the diva storm – all blocks turn into long-countdown divas! More are coming, and they take their sweet time. Outlast them and you win.
+    Survive the diva storm for 100 blocks – all blocks already on the dancefloor become long-countdown Divas, and extra Divas keep appearing. Outlast them and you win.
   </div>
   <div style="flex: 0 0 auto; width: 60px;">
     <img src="images/fig87.png" alt="Diva blocks" style="width: 100%; height: auto; border-radius: 8px;">
@@ -7378,7 +7400,7 @@ TODO aangepast volgens feedback:
 
 
 <!-- free picture -->
-<div class="info-cell" id="freePictureDisplay" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6px;" onclick="useFreePicture()">
+<div class="info-cell" id="freePictureDisplay" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 6px;">
   <div style="display: flex; align-items: center; width: 100%;">
     <img src="images/fig9.png" alt="Free Picture" style="width: 33.33%; object-fit: cover;" />
     <div style="width: 33.33%; display: flex; align-items: center; justify-content: center;">
@@ -9216,6 +9238,8 @@ function registerOuterSpawnMovement(block, beforeX, beforeY) {
     block._v365SkipMovementSteps = Number.isFinite(block._v365SkipMovementSteps)
       ? block._v365SkipMovementSteps + 1
       : 1;
+
+    updateSkipAvailabilityVisual();
   }
 
   if (!Number.isFinite(block._v330SpawnBlinkStepsRemaining)) return;
@@ -9364,6 +9388,10 @@ function resolveOuterBarrierImpact(block) {
     triggerOpenBarrierGameOver(block, side, indices);
     return;
   }
+
+  // V379: dit is het centrale moment waarop een nog gesloten buitenbarrière
+  // werkelijk schade krijgt. Dat is nu de faalvoorwaarde van Party Mission 3.
+  failChallenge3OnBarrierDamage();
 
   // Alle geraakte segmenten veranderen tegelijk; de formatie wordt nooit gesplitst.
   for (const index of indices) {
@@ -10545,12 +10573,14 @@ function drawMovementAreaGuide() {
   // hoe verder de vloer die zone in schuift, hoe meer van de formatie ernaast ligt.
   function drawPassageCell(x, y, width, height, strength) {
     if (passageVisibility <= 0.001) return;
-    const alpha = (0.075 + strength * 0.085) * passageVisibility;
-    ctx.fillStyle = `rgba(185, 239, 252, ${alpha.toFixed(3)})`;
+    // V378: de passagecellen blijven leesbaar, maar worden duidelijk minder fel
+    // zodat de zijzone naast de 10x10 niet als een licht paneel oogt.
+    const alpha = (0.030 + strength * 0.045) * passageVisibility;
+    ctx.fillStyle = `rgba(150, 214, 228, ${alpha.toFixed(3)})`;
     ctx.fillRect(x, y, width, height);
 
-    ctx.strokeStyle = `rgba(231, 251, 255, ${(0.38 * passageVisibility).toFixed(3)})`;
-    ctx.lineWidth = Math.max(1, blockSize * 0.035);
+    ctx.strokeStyle = `rgba(214, 242, 248, ${(0.18 * passageVisibility).toFixed(3)})`;
+    ctx.lineWidth = Math.max(1, blockSize * 0.03);
     ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
   }
 
@@ -11556,32 +11586,32 @@ let currentPartyMissionId = 0;
 
 const PARTY_MISSION_TEXTS = {
   1: {
-    startTitle: "❤️ 30 TIMES LOVE",
-    startBody: "Clear 1 Heart Block within 100 block. No Multicolors or Free Pictures.",
-    successTitle: "❤️ LOVE WINS!",
+    startTitle: "🛠️ 30 TIMES REPAIR",
+    startBody: "Clear 30 Repair Blocks within 50 blocks. Specials and Skip may be used.",
+    successTitle: "🛠️ REPAIR MASTER!",
     successBody: "You completed the Party Mission.",
-    failTitle: "💔 LOVE LOST...",
-    failBody: "Not every Heart Block made it in time."
+    failTitle: "⚠️ REPAIR MISSED",
+    failBody: "Not enough Repair Blocks were cleared in time."
   },
   2: {
     startTitle: "🌈 30 TIMES THE RAINBOW",
-    startBody: "Every third block is a Multicolor. Clear 1 Multicolor within 100 block.",
+    startBody: "Every third block is a Multicolor. Clear 30 Multicolors within 100 blocks. Specials and Skip may be used.",
     successTitle: "🌈 RAINBOW MASTER!",
     successBody: "Every colour joined the party.",
     failTitle: "🌈 RAINBOW OVER...",
     failBody: "Some Multicolors escaped."
   },
   3: {
-    startTitle: "🛡️ NO ONE LEFT BEHIND",
-    startBody: "Survive 20 blocks without losing a single life.",
-    successTitle: "🛡️ PERFECT SURVIVAL!",
-    successBody: "Everyone made it safely.",
-    failTitle: "💥 SOMEONE WAS LEFT BEHIND",
-    failBody: "A life was lost during the mission."
+    startTitle: "🛡️ BARRIER GUARD",
+    startBody: "Handle 100 blocks without damaging the outer Party Barrier.",
+    successTitle: "🛡️ BARRIER PERFECT!",
+    successBody: "The Party Barrier stayed intact for all 100 blocks.",
+    failTitle: "💥 BARRIER HIT!",
+    failBody: "The outer Party Barrier was damaged during the mission."
   },
   4: {
     startTitle: "⭐ 50+ BLOCK BONANZA",
-    startBody: "Have 50 or more blocks on the floor once within 100 block.",
+    startBody: "Have 50 or more blocks on the floor 10 times within 100 blocks.",
     successTitle: "⭐ DANCE FLOOR PACKED!",
     successBody: "You mastered the crowded dance floor.",
     failTitle: "⭐ NOT ENOUGH PARTY!",
@@ -11589,7 +11619,7 @@ const PARTY_MISSION_TEXTS = {
   },
   5: {
     startTitle: "💃 DIVA TAKEOVER",
-    startBody: "The Divas have taken over. Survive their attack for 20 block.",
+    startBody: "Survive 100 blocks while all blocks already on the dancefloor become long-countdown Divas and extra Divas keep appearing.",
     successTitle: "💃 DIVAS DEFEATED!",
     successBody: "The dance floor is yours again.",
     failTitle: "💃 THE DIVAS WON...",
@@ -11597,7 +11627,7 @@ const PARTY_MISSION_TEXTS = {
   },
   6: {
     startTitle: "🎨 ONE COLOUR RULES THEM ALL",
-    startBody: "Clear 1 group of 6 or more blocks within 100 block. Groups of 5 do not count.",
+    startBody: "Clear 10 groups of 6 or more blocks within 100 blocks. Groups of 5 do not count.",
     successTitle: "🎨 COLOUR POWER!",
     successBody: "You cleared every large colour group.",
     failTitle: "🎨 COLOUR CHAOS!",
@@ -11605,7 +11635,7 @@ const PARTY_MISSION_TEXTS = {
   },
   7: {
     startTitle: "🔥 NIGHT FEVER MODE",
-    startBody: "Clear 1 group of 5 within 100 block. The beat keeps getting faster.",
+    startBody: "Clear 10 groups of 5 or more blocks within 100 blocks. The beat keeps getting faster.",
     successTitle: "🏆 NIGHT FEVER CHAMPION!",
     successBody: "You kept up with the rising beat.",
     failTitle: "🔥 THE PARTY GOT TOO HOT!",
@@ -12943,7 +12973,7 @@ let originalChallenge7Level = challenge7Level;
 
 
 // param chal 1
-let challengeBlockLimit = CHALLENGE_TEST_MODE ? 100 : 100;
+let challengeBlockLimit = CHALLENGE_TEST_MODE ? 100 : 50;
 let challengeHeartTarget = CHALLENGE_TEST_MODE ? 1 : 30; // AANPASSEN
 
 // param chal 2
@@ -13027,6 +13057,33 @@ let challenge3Started = false;
 let challenge3Failed = false;
 let challenge3Success = false;
 let challenge3Count = 0;
+
+// V379: Challenge 3 draait niet langer rond 'lives'. Lives zijn in de huidige
+// spelversie Repairs geworden. De missie faalt daarom uitsluitend wanneer een
+// actieve formatie de buitenste Party Barrier werkelijk beschadigt.
+function failChallenge3OnBarrierDamage() {
+  if (!challenge3Active || challenge3Failed || challenge3Success) return;
+
+  challenge3Failed = true;
+  challenge3Active = false;
+  challenge3RewardGiven = true;
+
+  updateChallenge3StatusCell();
+
+  const inChallenge3Practice =
+    practiceModech31 || practiceModech32 || practiceModech33 ||
+    practiceModech34 || practiceModech35 || practiceModech36 ||
+    practiceModech37 || practiceModech38 || practiceModech39;
+
+  if (inChallenge3Practice) {
+    pauseGameAndShowMessage(
+      "The outer Party Barrier was damaged. Retry the mission and keep it intact for all 100 blocks."
+    );
+    return;
+  }
+
+  showPartyMissionResult(false, 3);
+}
 
 let challenge4Active = false;
 
@@ -13365,6 +13422,7 @@ let nextBlock = null;
 let multicolorCount = 0;
 let skipUsesLeft = 0;
 let nextBlockIsMulticolor = false;
+let nextBlockIsFreePicture = false;
 let lives = 5;
 let renewcounter = 2;
 let score = 0;
@@ -13707,6 +13765,44 @@ function canUseSkipOnCurrentBlock(block = fallingBlock) {
   );
 }
 
+// V380: visuele toestand gebruikt exact dezelfde geldigheidsregels als de klik.
+// De verplichte level-9-Skip blijft bruikbaar terwijl de tutorial daarvoor pauzeert.
+function updateSkipAvailabilityVisual() {
+  const cell = document.getElementById("renewCell");
+  if (!cell) return;
+
+  const featureLocked = cell.classList.contains("feature-locked");
+
+  const tutorialRequiresSkipClick =
+    level9SkipTutorialActive &&
+    level === 9 &&
+    level9SkipStage === "awaiting_skip_click";
+
+  const tutorialTemporarilyBlocksSkip =
+    level9SkipTutorialActive &&
+    level === 9 &&
+    (
+      level9SkipStage === "showing_skip_popup" ||
+      level9SkipStage === "arming_skip_click"
+    );
+
+  let usable = false;
+
+  if (!featureLocked && renewTokenCount > 0 && fallingBlock) {
+    if (tutorialRequiresSkipClick) {
+      usable = canUseSkipOnCurrentBlock();
+    } else {
+      usable =
+        !tutorialTemporarilyBlocksSkip &&
+        !gamePaused &&
+        canUseSkipOnCurrentBlock();
+    }
+  }
+
+  cell.classList.toggle("skip-unavailable", !usable);
+  cell.setAttribute("aria-disabled", usable ? "false" : "true");
+}
+
 const renewCell = document.getElementById("renewCell");
 
 renewCell.addEventListener("click", () => {
@@ -13762,15 +13858,6 @@ renewCell.addEventListener("click", () => {
     return;
   }
 
-  if (challengeActive) {
-    showCelebrationOverlay("images/fig42.png", 1600); // waarschuwing Challenge 1
-    return;
-  }
-
-  if (challenge2Active) {
-    showCelebrationOverlay("images/fig42.png", 1600); // waarschuwing Challenge 2
-    return;
-  }
 
   if (renewTokenCount < 1) {
     return; // eventueel later een aparte melding of animatie
@@ -17222,6 +17309,11 @@ function updateRenewDisplay() {
   if (renewCounter) {
     renewCounter.textContent = `${renewTokenCount}`;
   }
+
+  // Het nieuwe blok kan pas net na deze tellerupdate aan fallingBlock toegewezen
+  // worden; daarom ook één frame later opnieuw evalueren.
+  updateSkipAvailabilityVisual();
+  requestAnimationFrame(updateSkipAvailabilityVisual);
 }
 
 // score en level tonen
@@ -17607,7 +17699,9 @@ updateChallengeStatusCell();
   updateLevelAndBpmDisplay();
 
   const block = forcedNextBlock || nextBlock;
+  const consumedQueuedFreePicture = !forcedNextBlock && block === nextBlock && !!block?.isFreePicture;
 if (forcedNextBlock) forcedNextBlock = null;
+  if (consumedQueuedFreePicture) nextBlockIsFreePicture = false;
 
   if (block.isFreePicture) {
     showLevel8FreePicturePlacementMessage();
@@ -17845,7 +17939,7 @@ if (practiceModech59) {
 // skip block teller
   blockSpawnCount++;
   blockSpawnCountfree++;
-  checkFreePicMilestone()
+  checkFreePicMilestone();
   if (blockSpawnCount >= 10) {
     blockSpawnCount = 0;
     renewTokenCount++;
@@ -17972,7 +18066,9 @@ updateChallengeStatusCell();
   updateLevelAndBpmDisplay();
 
   const block = forcedNextBlock || nextBlock;
+  const consumedQueuedFreePicture = !forcedNextBlock && block === nextBlock && !!block?.isFreePicture;
 if (forcedNextBlock) forcedNextBlock = null;
+  if (consumedQueuedFreePicture) nextBlockIsFreePicture = false;
 
   if (block.isFreePicture) {
     showLevel8FreePicturePlacementMessage();
@@ -18196,6 +18292,7 @@ if (practiceModech59) {
 
   blockSpawnCount++;
   blockSpawnCountfree++;
+  checkFreePicMilestone();
   if (blockSpawnCount >= 10) {
     blockSpawnCount = 0;
     renewTokenCount++;
@@ -18742,7 +18839,7 @@ gtag('event', 'game_over', {
 
             updateLivesDisplay();
             
-            if (challenge3Active && !challenge3Failed) { // als leven verloren dan is chal 3 verloren
+            if (false && challenge3Active && !challenge3Failed) { // als leven verloren dan is chal 3 verloren
             challenge3Failed = true;
             challenge3Active = false;
             challenge3RewardGiven = true;
@@ -19373,7 +19470,7 @@ if (isLevel2TopOnlyTutorial()) {
 }
 
             updateLivesDisplay();
-if (challenge3Active && !challenge3Failed) {
+if (false && challenge3Active && !challenge3Failed) {
   challenge3Failed = true;
   challenge3Active = false;
   challenge3RewardGiven = true;
@@ -19859,7 +19956,7 @@ function updateH() {
 }
 
 updateLivesDisplay();
-if (challenge3Active && !challenge3Failed) {
+if (false && challenge3Active && !challenge3Failed) {
   challenge3Failed = true;
   challenge3Active = false;
   challenge3RewardGiven = true;
@@ -20320,7 +20417,7 @@ updateLevelAndBpmDisplay();
 }
 
 updateLivesDisplay();
-if (challenge3Active && !challenge3Failed) {
+if (false && challenge3Active && !challenge3Failed) {
   challenge3Failed = true;
   challenge3Active = false;
   challenge23RewardGiven = true;
@@ -23572,6 +23669,8 @@ function drawFallingBlockOutsideWorldInFront() {
 }
 
 function drawFallingBlock() {
+  updateSkipAvailabilityVisual();
+
   if (isMovementAreaTransitionActive()) return;
   if (!fallingBlock) return;
   if (fallingBlock._v330SpawnBlinkHidden) return;
@@ -23894,8 +23993,6 @@ updateLevelAndBpmDisplay();
     updateScoreDisplay();
     scheduleFeatureAvailabilityUpdate({ animate: false });
 
-nextBlockIsFreePicture = false;
-
 document.getElementById("freePictureDisplay").addEventListener("click", () => {
   const freePictureCellElement = document.getElementById("freePictureDisplay");
   if (freePictureCellElement && freePictureCellElement.classList.contains("feature-locked")) return;
@@ -23904,23 +24001,17 @@ document.getElementById("freePictureDisplay").addEventListener("click", () => {
     return;
   }
 
-if (challengeActive) {
-    showCelebrationOverlay("images/fig55.png", 1600); // waarschuwing voor Challenge 1
-    return;
-  }
-
-  if (challenge2Active) {
-    showCelebrationOverlay("images/fig55.png", 1600); // waarschuwing voor Challenge 2
-    return;
-  } 
   const tutorialRequiresFreePictureClick =
     level8FreePictureTutorialActive &&
     level === 8 &&
     level8FreePictureStage === "awaiting_free_picture_click";
 
+  const freePictureAlreadyQueued =
+    nextBlockIsFreePicture || !!(nextBlock && nextBlock.isFreePicture);
+
   if (
     freePictureCount > 0 &&
-    !nextBlockIsFreePicture &&
+    !freePictureAlreadyQueued &&
     (!gamePaused || tutorialRequiresFreePictureClick)
   ) {
     const tutorialFreePictureClick = onLevel8FreePictureClicked();
@@ -23938,7 +24029,6 @@ if (challengeActive) {
       isDiva: false,
       divaCountdown: null
     };
-    nextBlockIsFreePicture = false;
   updateNextBlockDisplay(nextBlock.color, nextBlock.length, nextBlock.isDiva, nextBlock.isSpecial, nextBlock.isMulticolor);
 
     if (tutorialFreePictureClick) {
@@ -23967,15 +24057,6 @@ document.getElementById("multicolorDisplay").addEventListener("click", () => {
     return;
   }
 
-if (challengeActive) {
-    showCelebrationOverlay("images/fig57.png", 1600); // waarschuwing voor Challenge 1
-    return;
-  }
-
-  if (challenge2Active) {
-    showCelebrationOverlay("images/fig57.png", 1600); // waarschuwing voor Challenge 2
-    return;
-  }
 
   const tutorialRequiresJokerClick =
     level7MulticolorTutorialActive &&
@@ -28776,15 +28857,15 @@ function updateChallengeStatusCell() {
 
   renderMissionOverviewCard({
     cellId: "challengeStatusCell",
-    title: "30 TIMES LOVE",
-    objective: "Clear 30 Heart Blocks within 100 block. No Multicolors, skips or Free Pictures.",
+    title: "30 TIMES REPAIR",
+    objective: "Clear 30 Repair Blocks within 50 blocks. Specials and Skip may be used.",
     image: "images/fig77.png",
     isLocked: level < challengeLevel,
     isCompleted: challenge1Success,
     isFailed: challengeRewardGiven && !challenge1Success,
     isActive: challengeActive,
     progress: [
-      `❤️ ${challengeHeartCount} / ${challengeHeartTarget}`,
+      `🛠️ ${challengeHeartCount} / ${challengeHeartTarget}`,
       `⏳ ${challengeBlockCounter} / ${challengeBlockLimit}`
     ],
     onClick: restartChallenge1
@@ -28797,7 +28878,7 @@ function updateChallenge2StatusCell() {
   renderMissionOverviewCard({
     cellId: "challenge2StatusCell",
     title: "MULTICOLOR RUSH",
-    objective: "Clear 30 Multicolors within 100 block. Every third block becomes a Multicolor.",
+    objective: "Clear 30 Multicolors within 100 blocks. Every third block becomes a Multicolor. Specials and Skip may be used.",
     image: "images/fig89.png",
     isLocked: level <= challenge2Level,
     isCompleted: challenge2Success,
@@ -28816,8 +28897,8 @@ function updateChallenge3StatusCell() {
 
   renderMissionOverviewCard({
     cellId: "challenge3StatusCell",
-    title: "STAY ALIVE",
-    objective: "Survive the next 100 blocks without losing a single life.",
+    title: "BARRIER GUARD",
+    objective: "Handle 100 blocks without damaging the outer Party Barrier.",
     image: "images/fig86.png",
     isLocked: level < challenge3Level,
     isCompleted: challenge3Success,
@@ -28838,7 +28919,7 @@ function updateChallenge4StatusCell() {
   renderMissionOverviewCard({
     cellId: "challenge4StatusCell",
     title: "PACK THE FLOOR",
-    objective: "Reach at least 50 blocks on the dancefloor 10 times within 100 moves.",
+    objective: "Reach at least 50 blocks on the dancefloor 10 times within 100 blocks.",
     image: "images/fig82.png",
     isLocked: level < challenge4Level,
     isCompleted: challenge4Success,
@@ -28859,7 +28940,7 @@ function updateChallenge5StatusCell() {
   renderMissionOverviewCard({
     cellId: "challenge5StatusCell",
     title: "DIVA STORM",
-    objective: "Survive the Diva storm while every block turns into a long-countdown Diva.",
+    objective: "Survive 100 blocks while all blocks already on the dancefloor become long-countdown Divas and extra Divas keep appearing.",
     image: "images/fig87.png",
     isLocked: level < challenge5StartLevel,
     isCompleted: challenge5Success,
@@ -28878,7 +28959,7 @@ function updateChallenge6StatusCell() {
   renderMissionOverviewCard({
     cellId: "challenge6StatusCell",
     title: "BIG GROUPS",
-    objective: "Clear 10 groups of at least 6 matching blocks within 100 block.",
+    objective: "Clear 10 groups of at least 6 matching blocks within 100 blocks.",
     image: "images/fig88.png",
     isLocked: level < challenge6Level,
     isCompleted: challenge6Success,
@@ -28966,7 +29047,7 @@ left.style.alignItems = "center";
 
 // Tekst links van de afbeelding
 const leftText = document.createElement("div");
-leftText.textContent = "Brace yourself – 30 heart blocks are coming in a row! Make them all vanish within 100 block. No multicolor, skip or free picture tricks allowed. Beat it and earn 3 extra lives!"; // ← dynamisch als je wil
+leftText.textContent = "Brace yourself – 30 Repair Blocks are coming in a row! Make them all vanish within 50 blocks. Specials and Skip may be used. Beat it and earn 3 extra lives!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29015,7 +29096,7 @@ left.appendChild(img);
   } else {
 //    const textColor = isInactive ? "#888" : "#FFE680";
     right.innerHTML = `
-      <div>❤️ <span id="challengeHeartCount">${challengeHeartCount}</span> / ${challengeHeartTarget}</div>
+      <div>🛠️ <span id="challengeHeartCount">${challengeHeartCount}</span> / ${challengeHeartTarget}</div>
       <div>⏳ <span id="challengeBlockCounter">${challengeBlockCounter}</span> / ${challengeBlockLimit}</div>
     `;
   }
@@ -29125,7 +29206,7 @@ left.style.alignItems = "center";
 
 // Tekst (links)
 const leftText = document.createElement("div");
-leftText.textContent = "Stay sharp – survive the next 100 blocks without losing a single life! Pull it off and score 3 bonus lives!"; // ← dynamisch als je wil
+leftText.textContent = "Stay sharp – handle the next 100 blocks without damaging the outer Party Barrier! Keep it intact to complete the mission!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29266,7 +29347,7 @@ left.style.alignItems = "center";
 
 // Tekst (links)
 const leftText = document.createElement("div");
-leftText.textContent = "Time to party – hit 50+ blocks on the dance floor at least 10 times in the next 100 moves! Do it right and earn 3 multicolors!"; // ← dynamisch als je wil
+leftText.textContent = "Time to party – hit 50+ blocks on the dance floor at least 10 times in the next 100 blocks! Do it right and earn 3 multicolors!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29404,7 +29485,7 @@ left.style.alignItems = "center";
 
 // Tekst (links)
 const leftText = document.createElement("div");
-leftText.textContent = "Survive the diva storm – all blocks turn into long-countdown divas! More are coming, and they take their sweet time. Outlast them and score 3 multicolors!"; // ← dynamisch als je wil
+leftText.textContent = "Survive the diva storm for 100 blocks – all blocks already on the dancefloor become long-countdown Divas, and extra Divas keep appearing. Outlast them and choose your reward!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29553,7 +29634,7 @@ left.style.alignItems = "center";
 
 // Tekst (links)
 const leftText = document.createElement("div");
-leftText.textContent = "Think bigger – clear 10 groups of 6 matching blocks (5 won’t cut it)! Do it and snap up 3 free pictures!"; // ← dynamisch als je wil
+leftText.textContent = "Think bigger – clear 10 groups of 6 matching blocks within 100 blocks (5 won’t cut it)! Beat it and choose your reward!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29662,7 +29743,7 @@ left.style.alignItems = "center";
 
 // Tekst (links)
 const leftText = document.createElement("div");
-leftText.textContent = "Speed mode on – 10 groups of 5 blocks must vanish within 100 drops! But beware: each block hits the dancefloor faster and faster..."; // ← dynamisch als je wil
+leftText.textContent = "Speed mode on – clear 10 groups of at least 5 blocks within 100 drops while the tempo keeps rising!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29778,7 +29859,7 @@ left.style.alignItems = "center";
 
 // Linkerzijde: tekst
 const leftText = document.createElement("div");
-leftText.textContent = "Are you ready cause every third block will be a multicolor during the mission! Make 30 of them leave the dancefloor within 100 block. No multicolor, skip or free picture tricks allowed. Beat it and earn 3 extra lives!"; // ← dynamisch als je wil
+leftText.textContent = "Are you ready? Every third block will be a Multicolor during the mission! Make 30 of them leave the dancefloor within 100 blocks. Specials and Skip may be used. Beat it and earn 3 extra lives!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";

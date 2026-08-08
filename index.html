@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- versie 373: Visuele focus verbeterd: de actieve bewegingsstrook krijgt een subtiele neutraal-donkere corridor, de 10x10-dansvloer een duidelijk sterker neutraal focusvlak en de rest van de DJ-achtergrond blijft vrijwel ongewijzigd zichtbaar. Passagezones en spelregels blijven ongewijzigd. -->
 <!-- versie 372: Het gameCanvas is opnieuw transparant, zodat de bestaande DJ-achtergrondafbeelding tijdens het spel zichtbaar blijft. Verder niets gewijzigd. -->
 <!-- versie 365: Skip Block kan alleen tijdens de vroege aanloop van de actieve formatie worden gebruikt: maximaal de eerste 8 echte valstappen en nooit meer zodra de formatie de rij/kolom van de 10x10-dansvloer heeft bereikt, ook wanneer ze volledig naast de 10x10 passeert. -->
 <!-- versie 364: Nieuwe formaties van 2 of 3 blokjes tonen al vanaf hun spawn het gezicht dat bij de formatiegrootte hoort (2 = fig37, 3 = fig38), in plaats van tijdelijk het gezicht van één blokje te gebruiken. -->
@@ -10515,22 +10516,25 @@ function drawMovementAreaGuide() {
 
   ctx.save();
 
-  // Alles buiten de volledige bewegingsstrook blijft rustig gedimd. De laag is
-  // transparant, zodat de DJ-/Block Party-achtergrond zichtbaar kan blijven.
+  // V373: buiten de actieve bewegingsstrook blijft de DJ-achtergrond vrijwel
+  // onaangeroerd. Alleen een minimale sluier voorkomt dat het verschil met de
+  // actieve corridor te hard wordt.
   ctx.beginPath();
   ctx.rect(fullPlayAreaX, fullPlayAreaY, fullPlayAreaWidth, fullPlayAreaHeight);
   ctx.rect(areaX, areaY, areaWidth, areaHeight);
-  ctx.fillStyle = "rgba(22, 12, 28, 0.18)";
+  ctx.fillStyle = "rgba(18, 18, 22, 0.04)";
   ctx.fill("evenodd");
 
-  // De volledige strook waarover de 10x10 kan bewegen krijgt slechts een zeer
-  // zachte warme tint. Zo blijft ze herkenbaar zonder een extra kader te vormen.
+  // V373: de volledige strook waarover de 10x10 kan bewegen krijgt een
+  // neutraal-donkere corridor. De sterkte loopt subtiel op naar het midden:
+  // duidelijk genoeg om de bewegingsruimte te lezen, maar zonder een tweede
+  // speelbord of harde rechthoek te maken.
   const bandGradient = guideForDrawing.axis === "horizontal"
     ? ctx.createLinearGradient(areaX, areaY, areaX + areaWidth, areaY)
     : ctx.createLinearGradient(areaX, areaY, areaX, areaY + areaHeight);
-  bandGradient.addColorStop(0, "rgba(255, 230, 128, 0.010)");
-  bandGradient.addColorStop(0.5, "rgba(255, 230, 128, 0.032)");
-  bandGradient.addColorStop(1, "rgba(255, 230, 128, 0.010)");
+  bandGradient.addColorStop(0, "rgba(18, 18, 22, 0.20)");
+  bandGradient.addColorStop(0.5, "rgba(18, 18, 22, 0.26)");
+  bandGradient.addColorStop(1, "rgba(18, 18, 22, 0.20)");
   ctx.fillStyle = bandGradient;
   ctx.fillRect(areaX, areaY, areaWidth, areaHeight);
 
@@ -23287,7 +23291,11 @@ function drawGrid() {
   }
 // einde getgroupsize
 
-  ctx.fillStyle = "rgba(30, 16, 38, 0.24)"; // Rustige donkere tint voor de actieve 10x10-dansvloer
+  // V373: boven op de corridor krijgt de actuele 10x10 een sterker, neutraal
+  // focusvlak. In combinatie met de corridor komt de effectieve verduistering
+  // rond 58-62%, terwijl de gekleurde blokken pas daarna worden getekend en dus
+  // zelf helder blijven.
+  ctx.fillStyle = "rgba(18, 18, 22, 0.48)";
 ctx.fillRect(
   playAreaOrigin + (extraColsLeft + gridOffsetX) * blockSize, // linkerkant van het 10x10 blok
   playAreaOrigin + (extraRowsAbove - gridOffsetY) * blockSize, // bovenkant van het 10x10 blok

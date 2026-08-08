@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- versie 372: Het gameCanvas is opnieuw transparant, zodat de bestaande DJ-achtergrondafbeelding tijdens het spel zichtbaar blijft. Verder niets gewijzigd. -->
 <!-- versie 365: Skip Block kan alleen tijdens de vroege aanloop van de actieve formatie worden gebruikt: maximaal de eerste 8 echte valstappen en nooit meer zodra de formatie de rij/kolom van de 10x10-dansvloer heeft bereikt, ook wanneer ze volledig naast de 10x10 passeert. -->
 <!-- versie 364: Nieuwe formaties van 2 of 3 blokjes tonen al vanaf hun spawn het gezicht dat bij de formatiegrootte hoort (2 = fig37, 3 = fig38), in plaats van tijdelijk het gezicht van één blokje te gebruiken. -->
 <!-- versie 363: Pause wordt in level 5 niet meer pas na zes post-startblokken vrijgespeeld. Onmiddellijk nadat de grote level-5-startafbeelding verdwenen is, opent de Pause-cel via de bestaande unlockanimatie en volgt de NEED A BREAK?-uitleg. De latere level-5-unlock blijft alleen als veiligheidsfallback en grijpt normaal niet meer in. -->
@@ -387,7 +388,7 @@ body {
   aspect-ratio: 1 / 1;
   display: block;
   flex: 0 0 auto;
-  background-color: #c9a878;
+  background-color: transparent;
 }
 
 .backgroundLayer {

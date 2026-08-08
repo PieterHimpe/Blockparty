@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- versie 385: Echte oorzaak van het startprobleem opgelost. V380 liet updateRenewDisplay() tijdens de allereerste createBlock() meteen updateSkipAvailabilityVisual() uitvoeren, terwijl fallingBlock nog in zijn let-initialisatie zat. Dat veroorzaakte een TDZ ReferenceError en stopte het grote gamescript tijdens het laden. De Skip-statusupdate gebeurt daar nu pas op het volgende animation frame. De oorspronkelijke startknoplogica is behouden. -->
 <!-- versie 383: Alle Party Mission-teksten afgestemd op de echte spelregels. Challenge 1 verwijst nu naar Repair Blocks i.p.v. Hearts; Challenge 2, 4, 5, 6 en 7 gebruiken de juiste aantallen/limieten; oude teksten over verboden specials en vaste rewards zijn verwijderd en vervangen door neutrale reward-teksten. -->
 <!-- versie 382: Party Mission 1 moet nu binnen 50 blokken gehaald worden in plaats van binnen 100. Zowel de logische bloklimiet als de zichtbare missie-omschrijvingen en voortgangsteksten zijn aangepast. -->
 <!-- versie 381: Party Missions 1 en 2 laten nu opnieuw specials en Skip toe. SKIP BLOCK, Multicolor en Free Picture zijn tijdens deze twee missies niet langer geblokkeerd. De missie-omschrijvingen zijn aangepast; de overige challenge-logica blijft ongewijzigd. -->
@@ -17310,9 +17311,12 @@ function updateRenewDisplay() {
     renewCounter.textContent = `${renewTokenCount}`;
   }
 
-  // Het nieuwe blok kan pas net na deze tellerupdate aan fallingBlock toegewezen
-  // worden; daarom ook één frame later opnieuw evalueren.
-  updateSkipAvailabilityVisual();
+  // V385: NIET onmiddellijk updateSkipAvailabilityVisual() uitvoeren.
+  // Bij de allereerste initialisatie loopt createBlock() namelijk als rechterlid van:
+  //   let fallingBlock = createBlock("down");
+  // Een directe toegang tot fallingBlock zit op dat moment nog in de TDZ en
+  // stopt het volledige gamescript met een ReferenceError.
+  // Eén frame later is fallingBlock veilig geïnitialiseerd.
   requestAnimationFrame(updateSkipAvailabilityVisual);
 }
 
@@ -29047,7 +29051,7 @@ left.style.alignItems = "center";
 
 // Tekst links van de afbeelding
 const leftText = document.createElement("div");
-leftText.textContent = "Brace yourself – 30 Repair Blocks are coming in a row! Make them all vanish within 50 blocks. Specials and Skip may be used. Beat it and earn 3 extra lives!"; // ← dynamisch als je wil
+leftText.textContent = "Brace yourself – 30 Repair Blocks are coming in a row! Make them all vanish within 50 blocks. Specials and Skip may be used. Beat it and choose your reward!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29347,7 +29351,7 @@ left.style.alignItems = "center";
 
 // Tekst (links)
 const leftText = document.createElement("div");
-leftText.textContent = "Time to party – hit 50+ blocks on the dance floor at least 10 times in the next 100 blocks! Do it right and earn 3 multicolors!"; // ← dynamisch als je wil
+leftText.textContent = "Time to party – hit 50+ blocks on the dance floor at least 10 times in the next 100 blocks! Beat it and choose your reward!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -29859,7 +29863,7 @@ left.style.alignItems = "center";
 
 // Linkerzijde: tekst
 const leftText = document.createElement("div");
-leftText.textContent = "Are you ready? Every third block will be a Multicolor during the mission! Make 30 of them leave the dancefloor within 100 blocks. Specials and Skip may be used. Beat it and earn 3 extra lives!"; // ← dynamisch als je wil
+leftText.textContent = "Are you ready? Every third block will be a Multicolor during the mission! Make 30 of them leave the dancefloor within 100 blocks. Specials and Skip may be used. Beat it and choose your reward!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";

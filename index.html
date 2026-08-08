@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- versie 374: Visuele focus verder verfijnd: de 10x10-dansvloer is nog neutraler en donkerder gemaakt, terwijl de actieve bewegingscorridor subtieler werd zodat ze minder als aparte zijpanelen oogt. Spelregels en passagezones blijven ongewijzigd. -->
 <!-- versie 373: Visuele focus verbeterd: de actieve bewegingsstrook krijgt een subtiele neutraal-donkere corridor, de 10x10-dansvloer een duidelijk sterker neutraal focusvlak en de rest van de DJ-achtergrond blijft vrijwel ongewijzigd zichtbaar. Passagezones en spelregels blijven ongewijzigd. -->
 <!-- versie 372: Het gameCanvas is opnieuw transparant, zodat de bestaande DJ-achtergrondafbeelding tijdens het spel zichtbaar blijft. Verder niets gewijzigd. -->
 <!-- versie 365: Skip Block kan alleen tijdens de vroege aanloop van de actieve formatie worden gebruikt: maximaal de eerste 8 echte valstappen en nooit meer zodra de formatie de rij/kolom van de 10x10-dansvloer heeft bereikt, ook wanneer ze volledig naast de 10x10 passeert. -->
@@ -10532,9 +10533,9 @@ function drawMovementAreaGuide() {
   const bandGradient = guideForDrawing.axis === "horizontal"
     ? ctx.createLinearGradient(areaX, areaY, areaX + areaWidth, areaY)
     : ctx.createLinearGradient(areaX, areaY, areaX, areaY + areaHeight);
-  bandGradient.addColorStop(0, "rgba(18, 18, 22, 0.20)");
-  bandGradient.addColorStop(0.5, "rgba(18, 18, 22, 0.26)");
-  bandGradient.addColorStop(1, "rgba(18, 18, 22, 0.20)");
+  bandGradient.addColorStop(0, "rgba(18, 18, 22, 0.15)");
+  bandGradient.addColorStop(0.5, "rgba(18, 18, 22, 0.20)");
+  bandGradient.addColorStop(1, "rgba(18, 18, 22, 0.15)");
   ctx.fillStyle = bandGradient;
   ctx.fillRect(areaX, areaY, areaWidth, areaHeight);
 
@@ -23295,7 +23296,7 @@ function drawGrid() {
   // focusvlak. In combinatie met de corridor komt de effectieve verduistering
   // rond 58-62%, terwijl de gekleurde blokken pas daarna worden getekend en dus
   // zelf helder blijven.
-  ctx.fillStyle = "rgba(18, 18, 22, 0.48)";
+  ctx.fillStyle = "rgba(18, 18, 22, 0.56)";
 ctx.fillRect(
   playAreaOrigin + (extraColsLeft + gridOffsetX) * blockSize, // linkerkant van het 10x10 blok
   playAreaOrigin + (extraRowsAbove - gridOffsetY) * blockSize, // bovenkant van het 10x10 blok

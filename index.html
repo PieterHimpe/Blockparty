@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- versie 386: De bewegingsstrook is visueel duidelijker gemaakt. De corridor is donkerder en contrastrijker, de buitenzone iets sterker gedimd, en de actieve strook krijgt een subtiele rand/geleidelijn zodat spelers sneller zien waar de 10x10 zich kan verplaatsen. Spelregels en logica zijn niet gewijzigd. -->
 <!-- versie 385: Echte oorzaak van het startprobleem opgelost. V380 liet updateRenewDisplay() tijdens de allereerste createBlock() meteen updateSkipAvailabilityVisual() uitvoeren, terwijl fallingBlock nog in zijn let-initialisatie zat. Dat veroorzaakte een TDZ ReferenceError en stopte het grote gamescript tijdens het laden. De Skip-statusupdate gebeurt daar nu pas op het volgende animation frame. De oorspronkelijke startknoplogica is behouden. -->
 <!-- versie 383: Alle Party Mission-teksten afgestemd op de echte spelregels. Challenge 1 verwijst nu naar Repair Blocks i.p.v. Hearts; Challenge 2, 4, 5, 6 en 7 gebruiken de juiste aantallen/limieten; oude teksten over verboden specials en vaste rewards zijn verwijderd en vervangen door neutrale reward-teksten. -->
 <!-- versie 382: Party Mission 1 moet nu binnen 50 blokken gehaald worden in plaats van binnen 100. Zowel de logische bloklimiet als de zichtbare missie-omschrijvingen en voortgangsteksten zijn aangepast. -->
@@ -10548,48 +10547,27 @@ function drawMovementAreaGuide() {
 
   ctx.save();
 
-  // V386: buiten de actieve bewegingsstrook dimmen we iets sterker dan voordien,
-  // zodat de corridor sneller afleesbaar is zonder de DJ-achtergrond helemaal weg
-  // te drukken.
+  // V373: buiten de actieve bewegingsstrook blijft de DJ-achtergrond vrijwel
+  // onaangeroerd. Alleen een minimale sluier voorkomt dat het verschil met de
+  // actieve corridor te hard wordt.
   ctx.beginPath();
   ctx.rect(fullPlayAreaX, fullPlayAreaY, fullPlayAreaWidth, fullPlayAreaHeight);
   ctx.rect(areaX, areaY, areaWidth, areaHeight);
-  ctx.fillStyle = "rgba(18, 18, 22, 0.07)";
+  ctx.fillStyle = "rgba(18, 18, 22, 0.04)";
   ctx.fill("evenodd");
 
-  // V386: de volledige strook waarover de 10x10 kan bewegen wordt duidelijker
-  // zichtbaar gemaakt met een contrastrijkere neutraal-donkere corridor.
+  // V373: de volledige strook waarover de 10x10 kan bewegen krijgt een
+  // neutraal-donkere corridor. De sterkte loopt subtiel op naar het midden:
+  // duidelijk genoeg om de bewegingsruimte te lezen, maar zonder een tweede
+  // speelbord of harde rechthoek te maken.
   const bandGradient = guideForDrawing.axis === "horizontal"
     ? ctx.createLinearGradient(areaX, areaY, areaX + areaWidth, areaY)
     : ctx.createLinearGradient(areaX, areaY, areaX, areaY + areaHeight);
-  bandGradient.addColorStop(0, "rgba(18, 18, 22, 0.22)");
-  bandGradient.addColorStop(0.5, "rgba(18, 18, 22, 0.30)");
-  bandGradient.addColorStop(1, "rgba(18, 18, 22, 0.22)");
+  bandGradient.addColorStop(0, "rgba(18, 18, 22, 0.15)");
+  bandGradient.addColorStop(0.5, "rgba(18, 18, 22, 0.20)");
+  bandGradient.addColorStop(1, "rgba(18, 18, 22, 0.15)");
   ctx.fillStyle = bandGradient;
   ctx.fillRect(areaX, areaY, areaWidth, areaHeight);
-
-  // Extra zachte rand/geleidelijn rond de corridor, zodat spelers intuïtiever
-  // zien in welke baan de dansvloer zich kan verplaatsen.
-  ctx.strokeStyle = "rgba(255, 233, 170, 0.18)";
-  ctx.lineWidth = Math.max(1, blockSize * 0.04);
-  ctx.strokeRect(areaX + 0.5, areaY + 0.5, areaWidth - 1, areaHeight - 1);
-
-  // Leg vooral de lange bewegingsranden extra licht aan.
-  ctx.beginPath();
-  if (guideForDrawing.axis === "horizontal") {
-    ctx.moveTo(areaX, areaY + 0.5);
-    ctx.lineTo(areaX + areaWidth, areaY + 0.5);
-    ctx.moveTo(areaX, areaY + areaHeight - 0.5);
-    ctx.lineTo(areaX + areaWidth, areaY + areaHeight - 0.5);
-  } else {
-    ctx.moveTo(areaX + 0.5, areaY);
-    ctx.lineTo(areaX + 0.5, areaY + areaHeight);
-    ctx.moveTo(areaX + areaWidth - 0.5, areaY);
-    ctx.lineTo(areaX + areaWidth - 0.5, areaY + areaHeight);
-  }
-  ctx.strokeStyle = "rgba(255, 243, 204, 0.20)";
-  ctx.lineWidth = Math.max(1, blockSize * 0.03);
-  ctx.stroke();
 
   // Aan beide uiteinden worden exact 1, 2 of 3 celstroken aangeduid, gelijk aan
   // de lengte van de actieve formatie. De tint wordt sterker naar de buitenrand:

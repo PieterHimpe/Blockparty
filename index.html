@@ -32,7 +32,7 @@
 <!-- v560: central onboarding banner policy: generic large tutorialLevelBanner images are allowed only for levels 1-3. Levels 4-10 use the current event-driven introductions (RED/GREEN/Diva/Multicolor/Free Picture/Skip/Full Party) and may never trigger legacy tut4-tut10 level banners, including developer direct starts. -->
 <!-- v561: developer TEST menu adds NEW PLAYER TEST, CLOSE + REOPEN, and RESTORE TEST DATA; clean-player mode backs up original localStorage before a true first-use reset. -->
 <!-- v564: resume autosave hardening: safety autosave is disabled while the start/menu screen is active, so a valid onboarding checkpoint (e.g. level 2) cannot be overwritten by the default level-1 runtime before CONTINUE PARTY is pressed; gameplay activation is centralized for normal starts, direct tests and resume. -->
-<!-- v572: WHAT'S COMING NEXT? now uses the exact NEXT SET UI artwork (fig13.png); DROP BLOCK uses the exact Drop UI artwork (fig17.png). Changed directly in the active V470 hint mapping, no extra runtime wrapper. -->
+<!-- v572/v586: WHAT'S COMING NEXT? uses fig13.png. DROP BLOCK now uses the square drop_block_square.png icon; the live button renders BLOCK/DROP as real Baloo Bhaina 2 text around it. -->
 <!DOCTYPE html>
 <!-- v544: score milestone celebrations now use personal, milestone-specific two-line copy for 100, 500 and 1000 points. -->
 <!-- v540: first Multicolor adaptive hint waits until three subsequent blocks/sets have resolved after the Multicolor lands. -->
@@ -8881,10 +8881,10 @@ drop cell
 
 
 
-<button id="dropButtonVertical" class="home-btn drop-block-button" onclick="dropButton()" aria-label="Block Drop">
-  <span class="drop-block-word">BLOCK</span>
-  <img class="drop-block-cart-image" alt="" src="images/drop_block_cart.png" />
-  <span class="drop-block-word">DROP</span>
+<button id="dropButtonVertical" class="home-btn drop-block-button v586-drop-layout" onclick="dropButton()">
+  <span class="v586-drop-word">BLOCK</span>
+  <img class="v586-drop-square-icon" alt="Drop Block" src="images/drop_block_square.png" />
+  <span class="v586-drop-word">DROP</span>
 </button>
 
 
@@ -8944,10 +8944,10 @@ drop cell
 
 
 
-<button id="dropButtonHorizontal" class="home-btn drop-block-button" onclick="dropButton()" aria-label="Block Drop">
-  <span class="drop-block-word">BLOCK</span>
-  <img class="drop-block-cart-image" alt="" src="images/drop_block_cart.png" />
-  <span class="drop-block-word">DROP</span>
+<button id="dropButtonHorizontal" class="home-btn drop-block-button v586-drop-layout" onclick="dropButton()">
+  <span class="v586-drop-word">BLOCK</span>
+  <img class="v586-drop-square-icon" alt="Drop Block" src="images/drop_block_square.png" />
+  <span class="v586-drop-word">DROP</span>
 </button>
 
   <!--
@@ -39897,9 +39897,85 @@ window.addEventListener("orientationchange", () => {
 // Als Pause opnieuw opgebouwd wordt, lockstatus onmiddellijk toepassen.
 const v448BaseUpdatePauseDisplay = updatePauseDisplay;
 updatePauseDisplay = function() {
-  const result = v448BaseUpdatePauseDisplay.apply(this, arguments);
-  v448SyncControlLocks();
-  return result;
+  const pauseCell = document.getElementById("pauseCell");
+  if (!pauseCell) return;
+
+  pauseCell.title = isPaused ? "Resume" : "Pause";
+  pauseCell.innerHTML = "";
+  pauseCell.classList.remove("feature-locked");
+  pauseCell.dataset.featureAvailable = "true";
+  pauseCell.setAttribute("aria-disabled", "false");
+
+  const button = document.createElement("button");
+  button.id = "pauseButton";
+  button.type = "button";
+  button.style.all = "unset";
+  button.style.display = "block";
+  button.style.width = "100%";
+  button.style.height = "100%";
+  button.style.cursor = "pointer";
+
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.width = "100%";
+  row.style.height = "100%";
+  row.style.alignItems = "center";
+
+  const img = document.createElement("img");
+  img.src = "images/fig5.png";
+  img.alt = "Pause";
+  img.style.width = "50%";
+  img.style.height = "90%";
+  img.style.objectFit = "contain";
+  img.style.filter = pauseUsesLeft === 0 ? "grayscale(100%)" : "none";
+  img.style.opacity = pauseUsesLeft === 0 ? ".45" : "1";
+
+  const textWrap = document.createElement("div");
+  textWrap.style.width = "50%";
+  textWrap.style.display = "flex";
+  textWrap.style.alignItems = "center";
+  textWrap.style.justifyContent = "center";
+
+  const label = document.createElement("div");
+  label.style.textAlign = "center";
+  label.style.fontFamily = "'Baloo Bhaina 2', sans-serif";
+  label.style.fontWeight = "bold";
+  label.style.fontSize = "0.60rem";
+  label.style.color = "#f4c644";
+  label.style.textTransform = "uppercase";
+  label.style.lineHeight = "1.1";
+  label.style.paddingTop = "2px";
+  label.textContent = isPaused ? "RESUME" : "PAUSE";
+
+  textWrap.appendChild(label);
+  row.appendChild(img);
+  row.appendChild(textWrap);
+  button.appendChild(row);
+  pauseCell.appendChild(button);
+
+  button.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!isPaused) {
+      if (pauseUsesLeft <= 0) return;
+      pauseUsesLeft--;
+      pauseGame();
+      isPaused = true;
+      openPauseModal();
+      updatePauseDisplay();
+      v468ScheduleAutosave(0);
+      return;
+    }
+
+    const modal = document.getElementById("pauseModal");
+    if (modal && modal.style.display !== "flex") {
+      openPauseModal();
+    } else {
+      closePauseModal();
+    }
+    v468ScheduleAutosave(0);
+  };
 };
 
 // Wanneer de richting van het vallende set wisselt, onmiddellijk juiste
@@ -45137,7 +45213,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (t.includes('BLUE')) return 'images/tut2.png';
     // V572: tutorial cards reuse the exact same artwork as the real UI cells.
     if (t === "WHAT'S COMING NEXT?" || t.includes('NEXT SET')) return 'images/fig13.png';
-    if (t.includes('DROP BLOCK')) return 'images/fig17.png';
+    if (t.includes('DROP BLOCK')) return 'images/drop_block_square.png';
     return 'images/tut1d.png';
   }
 
@@ -53401,51 +53477,199 @@ body.v546-onboarding-levels #levelProgressBar {
 </style>
 
 
-<style id="v586-three-part-drop-button">
-/* V586: BLOCK | cart | DROP is built from real UI text + one square image. */
-.button-wrapper .drop-block-button {
+<style id="v586-square-drop-block-style">
+/* V586: square Drop Block character artwork + real UI typography. */
+.button-wrapper .drop-block-button.v586-drop-layout {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) !important;
   align-items: center !important;
   justify-items: center !important;
-  column-gap: clamp(2px, .8vw, 5px) !important;
-  padding: 2px clamp(5px, 1.5vw, 9px) !important;
+  column-gap: 2px !important;
+  padding: 2px 7px !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
-.button-wrapper .drop-block-button .drop-block-word {
-  width: 100%;
+.button-wrapper .drop-block-button.v586-drop-layout .v586-drop-word {
   min-width: 0;
   font-family: 'Baloo Bhaina 2', sans-serif !important;
-  font-size: clamp(.60rem, 2.75vw, .88rem);
-  line-height: .9;
-  font-weight: 800;
-  color: #f4c644;
-  text-align: center;
-  white-space: nowrap;
-  text-transform: uppercase;
-  text-shadow: 0 1px 1px rgba(0,0,0,.45);
+  font-size: clamp(.48rem, 2.15vw, .72rem) !important;
+  line-height: .88 !important;
+  font-weight: 900 !important;
+  color: #f4c644 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,.48) !important;
   padding-top: 2px;
-  box-sizing: border-box;
 }
-.button-wrapper .drop-block-button .drop-block-cart-image {
-  width: clamp(30px, 10vw, 48px) !important;
-  height: clamp(30px, 10vw, 48px) !important;
-  max-width: 48px !important;
-  max-height: 48px !important;
+.button-wrapper .drop-block-button.v586-drop-layout img.v586-drop-square-icon {
+  width: auto !important;
+  height: 88% !important;
+  max-width: none !important;
+  max-height: 88% !important;
+  aspect-ratio: 1 / 1 !important;
   object-fit: contain !important;
   display: block !important;
   margin: 0 !important;
-  flex: none !important;
 }
-/* Override the older generic V583 image sizing only for the new centre art. */
-.button-wrapper .drop-block-button img.drop-block-cart-image {
-  width: clamp(30px, 10vw, 48px) !important;
-  height: clamp(30px, 10vw, 48px) !important;
-  max-width: 48px !important;
-  max-height: 48px !important;
+/* Locked Drop Block dims icon and words together; the existing lock overlay remains on top. */
+.drop-block-button.v586-drop-layout.feature-locked > * {
+  filter: grayscale(1) brightness(.38) !important;
+  opacity: .42 !important;
 }
 </style>
+
+
+<style id="v587-ui-polish">
+/* V587: restore pause visuals, refine square Drop Block layout, and free up record space. */
+.button-wrapper .drop-block-button.v586-drop-layout {
+  align-items: center !important;
+  justify-items: center !important;
+  padding: 1px 7px !important;
+}
+.button-wrapper .drop-block-button.v586-drop-layout .v586-drop-word {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: center !important;
+  height: 100% !important;
+  line-height: 1 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.button-wrapper .drop-block-button.v586-drop-layout img.v586-drop-square-icon {
+  height: 84% !important;
+  max-height: 84% !important;
+  transform: translateY(-4px) !important;
+}
+/* Remove the small icons from the personal-record strip to gain width. */
+.record-stat-icon {
+  display: none !important;
+}
+.record-stat {
+  grid-template-columns: minmax(0,1fr) !important;
+  column-gap: 0 !important;
+  padding: 0 8px !important;
+}
+.record-stat-copy {
+  align-items: center !important;
+}
+.record-stats-inner {
+  grid-template-columns: 1fr 16px 1fr !important;
+}
+.record-stats-divider {
+  height: 50% !important;
+}
+.record-stat-label {
+  font-size: clamp(.34rem, 1.52vw, .46rem) !important;
+}
+.record-stat-value {
+  font-size: clamp(.70rem, 3vw, .96rem) !important;
+}
+</style>
+
+
+<style id="v588-tracker-border-tune">
+/* V588: make the 7-color tracker border thin orange instead of pale/white. */
+.tutorial-color-tracker {
+  box-shadow: inset 0 0 0 1px rgba(232,138,45,.72), 0 3px 9px rgba(0,0,0,.38) !important;
+}
+</style>
+
+<script id="v588-neon-movement-guide">
+(function(){
+  function v588GetGuidePayload(){
+    if (!movementAreaGuide || isMovementAreaTransitionActive()) return null;
+    const areaRect = calculateMovementAreaGuideRect(movementAreaGuide);
+    if (!areaRect || areaRect.width <= 0 || areaRect.height <= 0) return null;
+    const floorRect = getCurrentDanceFloorRect();
+    if (!floorRect || floorRect.width <= 0 || floorRect.height <= 0) return null;
+    return { guide: movementAreaGuide, areaRect, floorRect };
+  }
+
+  function v588FillSoftZone(x, y, w, h, dir){
+    if (!(w > 0.5 && h > 0.5)) return;
+    ctx.save();
+    let g;
+    if (dir === 'left') g = ctx.createLinearGradient(x, y, x + w, y);
+    else if (dir === 'right') g = ctx.createLinearGradient(x + w, y, x, y);
+    else if (dir === 'top') g = ctx.createLinearGradient(x, y, x, y + h);
+    else g = ctx.createLinearGradient(x, y + h, x, y);
+
+    g.addColorStop(0, 'rgba(7, 14, 24, 0.24)');
+    g.addColorStop(0.55, 'rgba(8, 17, 27, 0.18)');
+    g.addColorStop(1, 'rgba(9, 18, 28, 0.10)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = 'rgba(0, 7, 14, 0.05)';
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  function v588StrokeNeonRect(x, y, w, h){
+    if (!(w > 0.5 && h > 0.5)) return;
+    const crispX = Math.round(x) + 0.5;
+    const crispY = Math.round(y) + 0.5;
+    const crispW = Math.max(0, Math.round(x + w) - Math.round(x) - 1);
+    const crispH = Math.max(0, Math.round(y + h) - Math.round(y) - 1);
+
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    // soft glow underlay
+    ctx.strokeStyle = 'rgba(112, 231, 255, 0.42)';
+    ctx.lineWidth = 3.6;
+    ctx.shadowColor = 'rgba(112, 231, 255, 0.58)';
+    ctx.shadowBlur = 10;
+    ctx.strokeRect(crispX, crispY, crispW, crispH);
+
+    // main thin neon line
+    ctx.strokeStyle = 'rgba(148, 242, 255, 0.92)';
+    ctx.lineWidth = 1.35;
+    ctx.shadowBlur = 6;
+    ctx.strokeRect(crispX, crispY, crispW, crispH);
+
+    // tiny inner highlight to keep it crisp on mobile
+    ctx.strokeStyle = 'rgba(238, 252, 255, 0.55)';
+    ctx.lineWidth = 0.6;
+    ctx.shadowBlur = 0;
+    ctx.strokeRect(crispX, crispY, crispW, crispH);
+
+    ctx.restore();
+  }
+
+  drawMovementAreaGuide = function(){
+    const payload = v588GetGuidePayload();
+    if (!payload) return;
+    const { guide, areaRect, floorRect } = payload;
+
+    ctx.save();
+    if (guide.axis === 'horizontal') {
+      const leftW = Math.max(0, floorRect.x - areaRect.x);
+      const rightX = floorRect.x + floorRect.width;
+      const rightW = Math.max(0, areaRect.x + areaRect.width - rightX);
+      v588FillSoftZone(areaRect.x, floorRect.y, leftW, floorRect.height, 'left');
+      v588FillSoftZone(rightX, floorRect.y, rightW, floorRect.height, 'right');
+    } else {
+      const topH = Math.max(0, floorRect.y - areaRect.y);
+      const bottomY = floorRect.y + floorRect.height;
+      const bottomH = Math.max(0, areaRect.y + areaRect.height - bottomY);
+      v588FillSoftZone(floorRect.x, areaRect.y, floorRect.width, topH, 'top');
+      v588FillSoftZone(floorRect.x, bottomY, floorRect.width, bottomH, 'bottom');
+    }
+    ctx.restore();
+  };
+
+  drawMovementLaneForeground = function(){
+    const payload = v588GetGuidePayload();
+    if (!payload) return;
+    const { areaRect } = payload;
+    v588StrokeNeonRect(areaRect.x, areaRect.y, areaRect.width, areaRect.height);
+  };
+})();
+</script>
 
 </body>
 </html>

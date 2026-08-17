@@ -32,6 +32,7 @@
 <!-- v560: central onboarding banner policy: generic large tutorialLevelBanner images are allowed only for levels 1-3. Levels 4-10 use the current event-driven introductions (RED/GREEN/Diva/Multicolor/Free Picture/Skip/Full Party) and may never trigger legacy tut4-tut10 level banners, including developer direct starts. -->
 <!-- v561: developer TEST menu adds NEW PLAYER TEST, CLOSE + REOPEN, and RESTORE TEST DATA; clean-player mode backs up original localStorage before a true first-use reset. -->
 <!-- v564: resume autosave hardening: safety autosave is disabled while the start/menu screen is active, so a valid onboarding checkpoint (e.g. level 2) cannot be overwritten by the default level-1 runtime before CONTINUE PARTY is pressed; gameplay activation is centralized for normal starts, direct tests and resume. -->
+<!-- v572: WHAT'S COMING NEXT? now uses the exact NEXT SET UI artwork (fig13.png); DROP BLOCK uses the exact Drop UI artwork (fig17.png). Changed directly in the active V470 hint mapping, no extra runtime wrapper. -->
 <!DOCTYPE html>
 <!-- v544: score milestone celebrations now use personal, milestone-specific two-line copy for 100, 500 and 1000 points. -->
 <!-- v540: first Multicolor adaptive hint waits until three subsequent blocks/sets have resolved after the Multicolor lands. -->
@@ -955,26 +956,40 @@ canvas {
   width: min(6.8vw, 28px);
   max-width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 6px;
-  border: 3px solid var(--tutorial-slot-color, #FFE680);
+  border-radius: 7px;
+  border: 3px solid rgba(255, 227, 132, .72);
   box-shadow:
-    0 2px 5px rgba(0,0,0,.68),
-    0 0 7px color-mix(in srgb, var(--tutorial-slot-color, #FFE680) 65%, transparent);
+    inset 0 0 0 1px rgba(255,255,255,.08),
+    0 2px 5px rgba(0,0,0,.60);
   overflow: hidden;
   transform: scale(.94);
-  opacity: .48;
-  filter: grayscale(.82) brightness(.55);
-  transition: transform 420ms ease, opacity 420ms ease, filter 420ms ease, box-shadow 420ms ease;
+  opacity: .52;
+  filter: grayscale(.82) brightness(.52) saturate(.72);
+  transition: transform 420ms ease, opacity 420ms ease, filter 420ms ease, box-shadow 420ms ease, border-color 420ms ease;
 }
 .tutorial-color-slot.unlocked {
   transform: scale(1);
   opacity: 1;
-  filter: none;
+  filter: brightness(.92) saturate(.90);
+  border-color: rgba(255, 235, 168, .94);
   box-shadow:
-    0 0 5px rgba(255,255,255,.42),
-    0 0 13px var(--tutorial-slot-color, #FFE680);
+    inset 0 0 0 1px rgba(255,255,255,.16),
+    0 2px 6px rgba(0,0,0,.42),
+    0 0 6px color-mix(in srgb, var(--tutorial-slot-color, #FFE680) 28%, transparent);
 }
 .tutorial-color-slot.just-unlocked { animation: tutorialColorUnlock 900ms ease-out both; }
+.tutorial-color-face {
+  position: absolute;
+  inset: 0;
+  width: 78%;
+  height: 78%;
+  left: 11%;
+  top: 11%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.42));
+  opacity: .96;
+}
 
 .tutorial-color-lock {
   position: absolute;
@@ -1000,9 +1015,9 @@ canvas {
 .tutorial-color-slot:nth-child(7) { grid-column: 6; grid-row: 2; }
 
 @keyframes tutorialColorUnlock {
-  0%   { transform: scale(.86); opacity: .45; filter: grayscale(1) brightness(.45); }
-  45%  { transform: scale(1.22); opacity: 1; filter: none; box-shadow: 0 0 24px #FFE680; }
-  100% { transform: scale(1); opacity: 1; filter: none; box-shadow: 0 0 10px rgba(255,230,128,.88); }
+  0%   { transform: scale(.86); opacity: .45; filter: grayscale(1) brightness(.45) saturate(.65); }
+  45%  { transform: scale(1.18); opacity: 1; filter: brightness(.96) saturate(.95); box-shadow: 0 0 12px rgba(255,230,128,.55); }
+  100% { transform: scale(1); opacity: 1; filter: brightness(.92) saturate(.90); box-shadow: 0 0 6px rgba(255,230,128,.38); }
 }
 
 /* ===== V198: ook de onderste DROP BLOCK-knop kan vergrendeld worden ===== */
@@ -1354,6 +1369,75 @@ background-color: #c9a878;
   align-items: center;
   justify-content: center;
   padding-top: 2px;
+}
+
+
+/* V577: compact personal-record cards using the SAME SCORE and LEVEL icons as above. */
+.button-wrapper .text-button.record-stats {
+  padding: 3px 4px !important;
+  gap: 0 !important;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.record-stats-inner {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: center;
+  min-width: 0;
+}
+.record-stats-divider {
+  width: 1px;
+  height: 66%;
+  background: rgba(232,138,45,.50);
+  align-self: center;
+}
+.record-stat {
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  grid-template-columns: clamp(20px, 6vw, 27px) minmax(0,1fr);
+  align-items: center;
+  column-gap: 3px;
+  padding: 0 3px;
+  box-sizing: border-box;
+}
+.record-stat-icon {
+  width: 100%;
+  max-width: 27px;
+  max-height: 28px;
+  object-fit: contain;
+  justify-self: center;
+  opacity: .96;
+}
+.record-stat-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding-top: 1px;
+}
+.record-stat-label {
+  width: 100%;
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-size: clamp(.35rem, 1.65vw, .46rem);
+  line-height: .95;
+  font-weight: 800;
+  color: rgba(244,198,68,.84);
+  white-space: nowrap;
+  text-align: center;
+}
+.record-stat-value {
+  font-family: 'Baloo Bhaina 2', sans-serif;
+  font-size: clamp(.70rem, 3.15vw, .98rem);
+  line-height: .92;
+  font-weight: 1000;
+  color: #FFE680;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,.7);
 }
 
 .button-wrapper .reset-btn {
@@ -6675,7 +6759,7 @@ button.image-fallback-label,
   <div id="firstUseIntro" class="first-use-intro" role="button" tabindex="0" aria-label="Start Block Party">
 
     <div class="first-use-action">
-      <button id="firstUseStartButton" type="button">START<br>GAME</button>
+      <button id="firstUseStartButton" type="button" style="display: none;">START<br>GAME</button>
       <button id="continueTutorialButton" type="button" style="display: none;">
         CONTINUE<br>GAME
       </button>
@@ -8762,9 +8846,24 @@ drop cell
 
 
 
-<button class="info-cell text-button" id="allTimeDisplay">
-   <span id="highScoreValue"></span><br>
-   <span id="highRoundValue"></span>
+<button class="info-cell text-button record-stats" id="allTimeDisplay" type="button" aria-label="Personal records">
+  <div class="record-stats-inner">
+    <div class="record-stat">
+      <img class="record-stat-icon" src="images/fig7.png" alt="Score">
+      <div class="record-stat-copy">
+        <span class="record-stat-label">LONGEST PARTY</span>
+        <span class="record-stat-value" data-record="party">0</span>
+      </div>
+    </div>
+    <div class="record-stats-divider" aria-hidden="true"></div>
+    <div class="record-stat">
+      <img class="record-stat-icon" src="images/fig10.png" alt="Level">
+      <div class="record-stat-copy">
+        <span class="record-stat-label">HIGHEST LEVEL</span>
+        <span class="record-stat-value" data-record="level">1</span>
+      </div>
+    </div>
+  </div>
 </button>
 
 
@@ -8810,9 +8909,24 @@ drop cell
 
 <div class="button-wrapper">
 
-<button class="info-cell text-button" id="allTimeDisplay1">
-   <span id="highScoreValue"></span><br>
-   <span id="highRoundValue"></span>
+<button class="info-cell text-button record-stats" id="allTimeDisplay1" type="button" aria-label="Personal records">
+  <div class="record-stats-inner">
+    <div class="record-stat">
+      <img class="record-stat-icon" src="images/fig7.png" alt="Score">
+      <div class="record-stat-copy">
+        <span class="record-stat-label">LONGEST PARTY</span>
+        <span class="record-stat-value" data-record="party">0</span>
+      </div>
+    </div>
+    <div class="record-stats-divider" aria-hidden="true"></div>
+    <div class="record-stat">
+      <img class="record-stat-icon" src="images/fig10.png" alt="Level">
+      <div class="record-stat-copy">
+        <span class="record-stat-label">HIGHEST LEVEL</span>
+        <span class="record-stat-value" data-record="level">1</span>
+      </div>
+    </div>
+  </div>
 </button>
 
 <!--
@@ -15159,6 +15273,13 @@ function buildTutorialColorTrackers() {
       slot.style.setProperty("--tutorial-slot-color", entry.color);
       slot.style.backgroundColor = entry.color;
 
+      const face = document.createElement("img");
+      face.className = "tutorial-color-face";
+      face.src = "images/fig38.png";
+      face.alt = "";
+      face.draggable = false;
+      slot.appendChild(face);
+
       const lock = document.createElement("div");
       lock.className = "tutorial-color-lock";
       lock.innerHTML = tutorialColorLockSvg();
@@ -17151,15 +17272,14 @@ function updateAllTimeDisplay() {
     localStorage.setItem("allTimeHighestLevel", String(highestLevel));
   }
 
-  const display = document.getElementById("allTimeDisplay");
-  if (display) {
-    display.innerHTML = `Longest Party: ${highScore}<br>Highest Level: ${highestLevel}`;
-  }
-
-  const display1 = document.getElementById("allTimeDisplay1");
-  if (display1) {
-    display1.innerHTML = `Longest Party: ${highScore}<br>Highest Level: ${highestLevel}`;
-  }
+  ["allTimeDisplay", "allTimeDisplay1"].forEach((id) => {
+    const display = document.getElementById(id);
+    if (!display) return;
+    const partyValue = display.querySelector('[data-record="party"]');
+    const levelValue = display.querySelector('[data-record="level"]');
+    if (partyValue) partyValue.textContent = String(highScore);
+    if (levelValue) levelValue.textContent = String(highestLevel);
+  });
 }
 
 
@@ -17895,7 +18015,7 @@ function updateFreePictureDisplay() {
 
 
 function openPauseModal() {
-  document.getElementById("pauseModal").style.display = "block";
+  document.getElementById("pauseModal").style.display = "flex";
 }
 
 function closePauseModal() {
@@ -18074,12 +18194,11 @@ function darkenColor(color, percent) {
 
 function updatePauseDisplay() {
   const pauseCell = document.getElementById('pauseCell');
+  if (!pauseCell) return;
   pauseCell.title = `Pauze`;
 
-  // Leeg de cel eerst
   pauseCell.innerHTML = '';
 
-  // Maak de knop
   const button = document.createElement('button');
   button.id = 'pauseButton';
   button.style.all = 'unset';
@@ -18090,72 +18209,39 @@ function updatePauseDisplay() {
   button.style.height = '100%';
   button.style.width = '100%';
 
-  // Container voor twee afbeeldingen
   const innerDiv = document.createElement('div');
   innerDiv.style.display = 'flex';
   innerDiv.style.width = '100%';
+  innerDiv.style.height = '100%';
   innerDiv.style.alignItems = 'center';
+  innerDiv.style.justifyContent = 'center';
+  innerDiv.style.gap = '4px';
 
-  // Selecteer juiste afbeeldingen per status
-  const img1 = document.createElement('img');
-
-
-
-  const img2 = document.createElement('img');
+  const mainImg = document.createElement('img');
+  const sideImg = document.createElement('img');
 
   if (isPaused) {
-    img1.src = 'images/fig46.png'; // afbeelding 1 bij pauze
-    img2.src = 'images/fig47.png'; // afbeelding 2 bij pauze
+    mainImg.src = 'images/fig46.png';
+    sideImg.src = 'images/fig47.png';
   } else {
-    img1.src = 'images/fig48.png'; // afbeelding 1 bij spelen
-    img2.src = 'imagess/fig49.png'; // afbeelding 2 bij spelen
+    mainImg.src = 'images/fig48.png';
+    sideImg.src = 'images/fig49.png';
   }
 
+  [mainImg, sideImg].forEach((img, idx) => {
+    img.alt = idx === 0 ? 'PauseMain' : 'PauseSide';
+    img.style.objectFit = 'contain';
+    img.style.filter = pauseUsesLeft === 0 ? 'grayscale(100%)' : 'none';
+    img.style.flex = idx === 0 ? '0 0 48%' : '0 0 38%';
+    img.style.maxWidth = idx === 0 ? '48%' : '38%';
+    img.style.maxHeight = '80%';
+  });
 
-if (isPaused) {
-  img1.src = 'images/fig46.png';
-} else {
-  img1.src = 'images/fig48.png';
-}
-
-img1.alt = 'PauseState1';
-img1.style.width = '50%';
-img1.style.objectFit = 'contain';
-img1.style.filter = pauseUsesLeft === 0 ? 'grayscale(100%)' : 'none';
-
-// Tekst vervangen img2
-const textDivWrapper = document.createElement('div');
-textDivWrapper.style.width = '50%';
-textDivWrapper.style.display = 'flex';
-textDivWrapper.style.alignItems = 'center';
-textDivWrapper.style.justifyContent = 'center';
-
-const textDiv = document.createElement('div');
-textDiv.style.textAlign = 'center';
-textDiv.style.fontFamily = "'Baloo Bhaina 2', sans-serif";
-textDiv.style.fontWeight = 'bold';
-textDiv.style.fontSize = '0.7rem';
-textDiv.style.color = '#f4c644';
-textDiv.style.lineHeight = '1.1';
-textDiv.style.paddingTop = '5px';
-textDiv.style.textTransform = 'uppercase';
-
-textDiv.innerHTML = isPaused ? 'RESUME' : 'NEED A<br>BREAK ?';
-
-textDivWrapper.appendChild(textDiv);
-
-// Voeg toe
-innerDiv.appendChild(img1);
-innerDiv.appendChild(textDivWrapper);
-
-
-
-
-
+  innerDiv.appendChild(mainImg);
+  innerDiv.appendChild(sideImg);
   button.appendChild(innerDiv);
   pauseCell.appendChild(button);
 
-  // Eventlistener opnieuw koppelen
   button.onclick = () => {
     if (pauseCell.classList.contains("feature-locked")) return;
     if (!isPaused) {
@@ -18171,9 +18257,6 @@ innerDiv.appendChild(textDivWrapper);
     updatePauseDisplay();
   };
 }
-
-
-
 
 
 // tonen van het volgende blokje in cel 9
@@ -18767,7 +18850,7 @@ function showLevel3BasicsBanner(onComplete = null) {
 
   const banner = document.getElementById("tutorialLevelBanner");
   const currentImageEl = document.getElementById("tutorialLevelBannerImage");
-  const imageSrc = "images/tut3extra.png";
+  const imageSrc = "images/tut_extra_space.png";
 
   if (!tutorialLevelBannerEnabled || !banner || !currentImageEl) {
     if (typeof onComplete === "function") onComplete();
@@ -25354,9 +25437,11 @@ const specialCenterDrawn = drawSpecialBlockCenter(x, y, blockData, true);
 
 if (!specialCenterDrawn) {
   let imageToUse = null;
-  // V535: preserve the exact ordinary face the block had while falling.
-  // Older saved blocks without visualFormationSize keep the legacy group-size fallback.
-  const visualSize = Math.max(1, Math.min(5, Number(blockData.visualFormationSize) || groupSize || 1));
+  // V567: once ordinary blocks have landed, their faces must react to the
+  // CURRENT connected group size on the dance floor. This restores the older
+  // behaviour where e.g. a landed trio next to a single block becomes a happier
+  // "group of four" for all connected blocks.
+  const visualSize = Math.max(1, Math.min(5, Number(groupSize) || Number(blockData.visualFormationSize) || 1));
   const index = Math.min(visualSize - 1, 4);
   const altColors = ["#9B51E0", "#4A90E2", "#E53935"];
 
@@ -44152,7 +44237,17 @@ function v468RestoreActiveAndNextSet(snapshot) {
 
   nextBlock = v468Clone(activeTemplate);
   const activeDirection = activeTemplate.direction || "down";
-  fallingBlock = createBlock(activeDirection);
+
+  // V575: resume must rebuild the active formation with the correct spawn
+  // constructor. createBlock() is vertical-only (down/up). Passing left/right
+  // to it makes the formation spawn at the bottom while still carrying a
+  // horizontal direction, which creates impossible positions and movement
+  // guides after reopening. Horizontal formations must use createBlockH().
+  if ((activeDirection === "left" || activeDirection === "right") && typeof createBlockH === "function") {
+    fallingBlock = createBlockH(activeDirection);
+  } else {
+    fallingBlock = createBlock(activeDirection);
+  }
 
   if (snapshot.nextSet) {
     nextBlock = v468Clone(snapshot.nextSet);
@@ -45019,13 +45114,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function v470HintImageForTitle(title) {
     const t = String(title || '').toUpperCase();
     if (t === 'MOVE LEFT') return 'images/tut1b.png';
+    if (t === 'MOVE THE DANCE FLOOR ALL THE WAY LEFT') return 'images/tut1b.png';
     if (t === 'NOW RIGHT' || t === 'NOW MOVE IT RIGHT') return 'images/tut1c.png';
     if (t.includes('YOU MOVE THE DANCE FLOOR')) return 'images/tut1c.png';
     if (t === 'DID YOU NOTICE?') return 'images/tut1c.png';
     if (t === 'GREAT!' || t.includes('ONE MORE') || t.includes("YOU'VE GOT IT")) return 'images/tut1d.png';
     if (t.includes('BLUE')) return 'images/tut2.png';
-    if (t.includes('NEXT SET')) return 'images/tut_nextset.png';
-    if (t.includes('DROP BLOCK')) return 'images/tut_dropblock.png';
+    // V572: tutorial cards reuse the exact same artwork as the real UI cells.
+    if (t === "WHAT'S COMING NEXT?" || t.includes('NEXT SET')) return 'images/fig13.png';
+    if (t.includes('DROP BLOCK')) return 'images/fig17.png';
     return 'images/tut1d.png';
   }
 
@@ -45389,8 +45486,8 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     directions:'images/tut3.png',
     up:'images/tut3A.png',
     down:'images/tut3D.png',
-    clockwise:'images/tut3.png',
-    extra:'images/tut3extra.png',
+    clockwise:'images/tut_clockwise.png',
+    extra:'images/tut_extra_space.png',
     barrier:'images/tut_partybarrier.png',
     barrierOpen:'images/tut_partybarrier_open.png',
     repair:'images/tut5b.png',
@@ -45616,7 +45713,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
   function v471ShowSideLeft(){
     if(!level3SideLaneTutorialActive||!fallingBlock)return;
     level3SideLaneStage='awaiting_left';gamePaused=true;
-    v408SetMovementButtonsEnabled(true);v471ShowHint('MOVE THE DANCE FLOOR ALL THE WAY LEFT','PAST THE SET OF BLOCKS',V471_ICONS.extra,0,null,true);styleMovementTutorialArrow(-1);
+    v408SetMovementButtonsEnabled(true);v471ShowHint('MOVE THE DANCE FLOOR ALL THE WAY LEFT','PAST THE SET OF BLOCKS','images/tut1b.png',0,null,true);styleMovementTutorialArrow(-1);
   }
   function v520KeepSideRightArrowAvailable(){
     if(!level3SideLaneTutorialActive||level3SideLaneStage!=='awaiting_right')return;
@@ -45883,7 +45980,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     v471ShowHint('READY FOR ANOTHER COLOR?','RED JOINS THE PARTY!',V471_ICONS.red,1800,()=>{
       if(level!==4||!level4TutorialActive)return;
       if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('PARTY GOAL',0,3);
-      v471ShowHint('YOUR FOURTH PARTY GOAL','CLEAR 3 GROUPS\nREWARD: +100 POINTS',V471_ICONS.group,2400,()=>{
+      v471ShowHint('YOUR FOURTH PARTY GOAL','CLEAR 3 GROUPS\nREWARD +100 POINTS',V471_ICONS.group,2400,()=>{
         if(level!==4||!level4TutorialActive)return;
         v471RestartLoop();
         v468ScheduleAutosave(0);
@@ -46083,6 +46180,7 @@ body.v472-block-c-card .v453-fast-forward {
   };
 
   let v472HintTimer=null;
+  let v472HintRenderToken=0;
   let v472Level5ResolvedSets=0;
   let v472Level5GreenAnnounced=false;
   let v472Level5IgnoreFirstResolved=true;
@@ -46095,11 +46193,12 @@ body.v472-block-c-card .v453-fast-forward {
   let v472SkipFirstPostTransformResolution=false;
 
   function v472ClearHint(){
+    v472HintRenderToken += 1;
     if(v472HintTimer){clearTimeout(v472HintTimer);v472HintTimer=null;}
     if(typeof window.v501EndTutorialRing==='function')window.v501EndTutorialRing();
     document.body.classList.remove('v472-block-c-card');
     const overlay=document.getElementById('movementTutorialOverlay');
-    if(overlay){overlay.style.display='none';overlay.onclick=null;overlay.classList.remove('tutorial-popup-clickable');}
+    if(overlay){overlay.style.display='none';overlay.style.removeProperty('visibility');overlay.onclick=null;overlay.classList.remove('tutorial-popup-clickable');}
   }
 
   function v472StopOldSmallTutorial(){
@@ -46115,6 +46214,7 @@ body.v472-block-c-card .v453-fast-forward {
     v472StopOldSmallTutorial();
     if(v472HintTimer){clearTimeout(v472HintTimer);v472HintTimer=null;}
     const actualDuration=typeof window.v501ScaledTutorialDuration==='function'?window.v501ScaledTutorialDuration(duration):Math.round(Math.max(650,Number(duration)||1750)*1.5);
+    const renderToken=++v472HintRenderToken;
     document.body.classList.remove('v471-block-b-card');
     document.body.classList.add('v472-block-c-card');
     const overlay=document.getElementById('movementTutorialOverlay');
@@ -46125,12 +46225,52 @@ body.v472-block-c-card .v453-fast-forward {
     if(card)card.classList.add('v464-has-image');
     if(titleEl)titleEl.textContent=String(title||'');
     if(textEl)textEl.innerHTML=String(text||'').replace(/\n/g,'<br>');
-    if(image){image.src=icon;image.alt='';image.style.display='block';image.style.visibility='visible';}
-    if(overlay){overlay.style.display='block';overlay.style.opacity='1';overlay.style.top='';overlay.onclick=null;overlay.classList.remove('tutorial-popup-clickable');}
+
+    // V582: never expose the previous tutorial artwork while a new image is
+    // being decoded. This was visible on Android especially when the first
+    // Diva explanation replaced the preceding GREEN/goal artwork.
+    if(overlay){
+      overlay.style.setProperty('visibility','hidden','important');
+      overlay.style.display='block';
+      overlay.style.opacity='1';
+      overlay.style.top='';
+      overlay.onclick=null;
+      overlay.classList.remove('tutorial-popup-clickable');
+    }
+    if(image){
+      image.style.visibility='hidden';
+      image.style.display='block';
+      image.alt='';
+    }
     ['v451TutorialCountdown'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-    const finishHint=()=>{v472ClearHint();if(typeof onClose==='function')onClose();};
-    v472HintTimer=setTimeout(finishHint,actualDuration);
-    if(typeof window.v501BeginTutorialRing==='function')window.v501BeginTutorialRing(actualDuration,finishHint,true);
+
+    let revealed=false;
+    let fallbackTimer=null;
+    const reveal=()=>{
+      if(revealed||renderToken!==v472HintRenderToken)return;
+      revealed=true;
+      if(fallbackTimer){clearTimeout(fallbackTimer);fallbackTimer=null;}
+      if(image){image.src=icon;image.style.visibility='visible';}
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        if(renderToken!==v472HintRenderToken)return;
+        if(overlay)overlay.style.removeProperty('visibility');
+        const finishHint=()=>{
+          if(renderToken!==v472HintRenderToken)return;
+          v472ClearHint();
+          if(typeof onClose==='function')onClose();
+        };
+        v472HintTimer=setTimeout(finishHint,actualDuration);
+        if(typeof window.v501BeginTutorialRing==='function')window.v501BeginTutorialRing(actualDuration,finishHint,true);
+      }));
+    };
+
+    if(!icon){reveal();return;}
+    const loader=new Image();
+    loader.onload=reveal;
+    loader.onerror=reveal;
+    loader.src=icon;
+    if(loader.complete&&loader.naturalWidth>0)reveal();
+    else fallbackTimer=setTimeout(reveal,800);
   }
 
   function v472RestartLoop(){
@@ -46187,7 +46327,7 @@ body.v472-block-c-card .v453-fast-forward {
     v472ShowHint('READY FOR ANOTHER COLOR?','GREEN JOINS THE PARTY!',V472_ICONS.green,1800,()=>{
       if(level!==5||!level5HeartTutorialActive)return;
       if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('PARTY GOAL',0,3);
-      v472ShowHint('YOUR FIFTH PARTY GOAL','CLEAR 3 GROUPS\nREWARD: +100 POINTS',V472_ICONS.green,2400,()=>{
+      v472ShowHint('YOUR FIFTH PARTY GOAL','CLEAR 3 GROUPS\nREWARD +100 POINTS',V472_ICONS.green,2400,()=>{
         if(level!==5||!level5HeartTutorialActive)return;
         v472RestartLoop();
         v468ScheduleAutosave(0);
@@ -48524,7 +48664,7 @@ body.v473-block-d-card #movementTutorialCard {
       v503PauseLoop();
       v503ToastSequence([
         { title:"THAT'S A GROUP!", text:'5 MATCHING BLOCKS', duration:2000 },
-        { title:'YOUR FIRST PARTY GOAL', text:'CLEAR 3 YELLOW GROUPS\nREWARD: +100 POINTS', duration:2200, onShow:() => v503SetGoalProgress(Math.min(3,Number(objectiveTutorialGroupsCleared)||1),3) }
+        { title:'YOUR FIRST PARTY GOAL', text:'CLEAR 3 YELLOW GROUPS\nREWARD +100 POINTS', duration:2200, onShow:() => v503SetGoalProgress(Math.min(3,Number(objectiveTutorialGroupsCleared)||1),3) }
       ], () => {
         v503Level1IntroActive = false;
         if(level !== 1) return;
@@ -48614,7 +48754,7 @@ body.v473-block-d-card #movementTutorialCard {
     v468ScheduleAutosave(0);
 
     v503ToastSequence([
-      { title:'YOUR SECOND PARTY GOAL', text:'CLEAR 3 YELLOW OR BLUE GROUPS\nREWARD: +100 POINTS', duration:2400, onShow:() => v503SetGoalProgress(0,3) }
+      { title:'YOUR SECOND PARTY GOAL', text:'CLEAR 3 YELLOW OR BLUE GROUPS\nREWARD +100 POINTS', duration:2400, onShow:() => v503SetGoalProgress(0,3) }
     ], () => {
       v503Level2IntroActive = false;
       if(level !== 2 || !level3TutorialActive) return;
@@ -48736,7 +48876,7 @@ body.v473-block-d-card #movementTutorialCard {
 
     v503PauseLoop();
     v503ToastSequence([
-      { title:'YOUR THIRD PARTY GOAL', text:'CLEAR 3 GROUPS\nREWARD: +100 POINTS', duration:2200 }
+      { title:'YOUR THIRD PARTY GOAL', text:'CLEAR 3 GROUPS\nREWARD +100 POINTS', duration:2200 }
     ], () => {
       if(level === 3 && v408Level3MasteryStage === 'final_practice') v503RestartLoopIfPossible(3);
     });
@@ -48925,12 +49065,12 @@ body.v473-block-d-card #movementTutorialCard {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(4px, 1.4vw, 8px);
+  gap: clamp(2px, 1vw, 5px);
   width: 100%;
 }
 #levelDisplay .v504-goal-step {
-  width: clamp(16px, 4.9vw, 24px);
-  height: clamp(16px, 4.9vw, 24px);
+  width: clamp(13px, 3.9vw, 18px);
+  height: clamp(13px, 3.9vw, 18px);
   border-radius: 50%;
   border: 2px solid rgba(244,198,68,.62);
   display: inline-flex;
@@ -48939,7 +49079,7 @@ body.v473-block-d-card #movementTutorialCard {
   box-sizing: border-box;
   color: rgba(244,198,68,.68);
   background: rgba(20,8,26,.58);
-  font-size: clamp(.53rem, 2.15vw, .72rem);
+  font-size: clamp(.42rem, 1.65vw, .58rem);
   line-height: 1;
   font-weight: 900;
 }
@@ -50623,7 +50763,7 @@ body.v473-block-d-card #movementTutorialCard {
   function v526ShowGoalIntro(){
     if(level !== 6 || !level6DivaTutorialActive || !v526GoalStarted || v526CompletionPending) return;
     if(typeof v468Toast === 'function'){
-      v468Toast('YOUR SIXTH PARTY GOAL','SURVIVE 5 DIVAS\nREWARD: +100 POINTS',2400);
+      v468Toast('YOUR SIXTH PARTY GOAL','SURVIVE 5 DIVAS\nREWARD +100 POINTS',2400);
     }
   }
 
@@ -51005,7 +51145,7 @@ body.v473-block-d-card #movementTutorialCard {
     v527GoalIntroTimer=setTimeout(()=>{
       v527GoalIntroTimer=null;
       if(!v527GoalActive || v527GoalCompleted) return;
-      if(typeof v468Toast === 'function') v468Toast('YOUR SEVENTH PARTY GOAL','EARN 7 MULTICOLORS\nREWARD: +100 POINTS',2500);
+      if(typeof v468Toast === 'function') v468Toast('YOUR SEVENTH PARTY GOAL','EARN 7 MULTICOLORS\nREWARD +100 POINTS',2500);
     },900);
   }
 
@@ -52656,7 +52796,7 @@ body.v546-onboarding-levels #levelProgressBar {
         if(typeof v408SpawnSpecificDirection==='function')v408SpawnSpecificDirection(d,actual);else{forcedNextBlock={...actual};setDirectionState(d);fallingBlock=useVertical?createBlock(d):createBlockH(d);if(typeof drawGrid==='function')drawGrid();if(typeof drawFallingBlock==='function')drawFallingBlock();}
         gamePaused=true;clearInterval(fallInterval);if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('PARTY GOAL',0,3);
         const play=()=>{if(level!==4||!level4TutorialActive)return;gamePaused=false;if(typeof window.v471RestartLoop==='function')window.v471RestartLoop();else if(typeof v408RestartFallLoop==='function')v408RestartFallLoop();if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);};
-        if(typeof window.v471ShowHint==='function')window.v471ShowHint('YOUR FOURTH PARTY GOAL','CLEAR 3 GROUPS\nREWARD: +100 POINTS',window.V471_ICONS?window.V471_ICONS.group:null,2400,play);else play();if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);
+        if(typeof window.v471ShowHint==='function')window.v471ShowHint('YOUR FOURTH PARTY GOAL','CLEAR 3 GROUPS\nREWARD +100 POINTS',window.V471_ICONS?window.V471_ICONS.group:null,2400,play);else play();if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);
       };
       if(typeof window.v471ShowHint==='function')window.v471ShowHint('READY FOR ANOTHER COLOR?','RED JOINS THE PARTY!',window.V471_ICONS?window.V471_ICONS.red:null,1800,spawn);else setTimeout(spawn,1800);
       if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);
@@ -52707,6 +52847,464 @@ body.v546-onboarding-levels #levelProgressBar {
 <style id="v563-persistence-test-style">
 #developerMenuPanel .developer-menu-buttons.persistence-tests{grid-template-columns:repeat(3,minmax(0,1fr))!important}#developerMenuPanel .persistence-tests .developer-menu-button{min-height:34px!important}.v563-persistence-status{margin-left:4px;color:#ffe8a8;font-size:.82em;white-space:nowrap;opacity:.85}.v563-persistence-status.is-active{color:#fff;text-shadow:0 0 7px rgba(255,216,57,.95)}@media(max-width:520px){#developerMenuPanel .developer-menu-buttons.persistence-tests{grid-template-columns:repeat(3,minmax(0,1fr))!important}#developerMenuPanel .persistence-tests .developer-menu-button{min-height:31px!important;font-size:clamp(.38rem,1.55vw,.58rem)!important}}
 </style>
+
+
+
+<script id="v568-full-side-zones-and-subtle-shading">
+(function(){
+  // V568
+  // Replace the old bottom "cup" impression with full side rectangles.
+  // The extra movement space on both sides becomes a real 10-high side zone,
+  // with a subtle dark tint and a dotted outline that clearly connects back to
+  // the 10x10 dance floor.
+
+  function v568Snap(v){ return Math.round(v * 2) / 2; }
+
+  function v568GetGuideAndArea(){
+    if (!movementAreaGuide || isMovementAreaTransitionActive()) return null;
+    const areaRect = calculateMovementAreaGuideRect(movementAreaGuide);
+    if (!areaRect || areaRect.width <= 0 || areaRect.height <= 0) return null;
+    return { guide: movementAreaGuide, areaRect };
+  }
+
+  function v568GetBarrierRect(){
+    const segmentSize = Number(blockSize) || 16;
+    const beamWidth = Math.max(4.2, segmentSize * 0.18);
+    const barrierOffset = Math.max(5.2, beamWidth * 1.15);
+
+    const floorRect = getCurrentDanceFloorRect();
+    return {
+      left: v568Snap(floorRect.x - barrierOffset),
+      top: v568Snap(floorRect.y - barrierOffset),
+      right: v568Snap(floorRect.x + floorRect.width + barrierOffset),
+      bottom: v568Snap(floorRect.y + floorRect.height + barrierOffset),
+      barrierOffset,
+      segmentSize
+    };
+  }
+
+  function v568FillRectSoft(x, y, w, h, horizontalToCenter){
+    if (w <= 0.5 || h <= 0.5) return;
+    ctx.save();
+    const g = horizontalToCenter
+      ? ctx.createLinearGradient(x, y, x + w, y)
+      : ctx.createLinearGradient(x, y, x, y + h);
+    g.addColorStop(0, 'rgba(20, 24, 30, 0.08)');
+    g.addColorStop(0.5, 'rgba(24, 29, 35, 0.11)');
+    g.addColorStop(1, 'rgba(30, 36, 42, 0.15)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+
+    // very subtle inner veil so the side zone reads as possible play space,
+    // but still remains clearly lighter than the main 10x10 floor.
+    ctx.fillStyle = 'rgba(10, 14, 18, 0.05)';
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  drawMovementAreaGuide = function() {
+    const payload = v568GetGuideAndArea();
+    if (!payload) return;
+    const { guide, areaRect } = payload;
+    const barrier = v568GetBarrierRect();
+
+    ctx.save();
+
+    if (guide.axis === 'horizontal') {
+      const leftZoneX = areaRect.x;
+      const leftZoneW = Math.max(0, barrier.left - leftZoneX);
+      const rightZoneX = barrier.right;
+      const rightZoneW = Math.max(0, areaRect.x + areaRect.width - rightZoneX);
+      const zoneY = barrier.top;
+      const zoneH = Math.max(0, barrier.bottom - barrier.top);
+
+      v568FillRectSoft(leftZoneX, zoneY, leftZoneW, zoneH, true);
+      v568FillRectSoft(rightZoneX, zoneY, rightZoneW, zoneH, false);
+    } else {
+      const topZoneY = areaRect.y;
+      const topZoneH = Math.max(0, barrier.top - topZoneY);
+      const bottomZoneY = barrier.bottom;
+      const bottomZoneH = Math.max(0, areaRect.y + areaRect.height - bottomZoneY);
+      const zoneX = barrier.left;
+      const zoneW = Math.max(0, barrier.right - barrier.left);
+
+      v568FillRectSoft(zoneX, topZoneY, zoneW, topZoneH, false);
+      v568FillRectSoft(zoneX, bottomZoneY, zoneW, bottomZoneH, true);
+    }
+
+    ctx.restore();
+  };
+
+  function v568DrawDot(x, y, rOuter, rInner){
+    ctx.save();
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(139,225,243,0.16)';
+    ctx.shadowColor = '#8BE1F3';
+    ctx.shadowBlur = rOuter * 1.15;
+    ctx.arc(x, y, rOuter, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(139,225,243,0.74)';
+    ctx.arc(x, y, rInner, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(246,252,255,0.90)';
+    ctx.arc(x, y, Math.max(0.4, rInner * 0.42), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function v568DrawDottedSegment(x1, y1, x2, y2, segmentSize){
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.01) return;
+
+    const ux = dx / len;
+    const uy = dy / len;
+    const dotsPerUnit = 5;
+    const spacing = segmentSize / dotsPerUnit;
+    const startInset = Math.min(spacing * 0.55, len * 0.18);
+    const endInset = startInset;
+    const usableLen = Math.max(0, len - startInset - endInset);
+    const count = Math.max(2, Math.round(usableLen / spacing) + 1);
+    const rOuter = Math.max(1.0, segmentSize * 0.068);
+    const rInner = Math.max(0.75, segmentSize * 0.048);
+
+    for (let i = 0; i < count; i++) {
+      const t = count === 1 ? 0.5 : i / (count - 1);
+      const dist = startInset + usableLen * t;
+      v568DrawDot(x1 + ux * dist, y1 + uy * dist, rOuter, rInner);
+    }
+  }
+
+  function v568DrawRectDotted(x, y, w, h, segmentSize){
+    if (w <= 0.5 || h <= 0.5) return;
+    v568DrawDottedSegment(x, y, x + w, y, segmentSize);
+    v568DrawDottedSegment(x + w, y, x + w, y + h, segmentSize);
+    v568DrawDottedSegment(x + w, y + h, x, y + h, segmentSize);
+    v568DrawDottedSegment(x, y + h, x, y, segmentSize);
+  }
+
+  drawMovementLaneForeground = function() {
+    const payload = v568GetGuideAndArea();
+    if (!payload) return;
+    const { guide, areaRect } = payload;
+    const barrier = v568GetBarrierRect();
+    const s = barrier.segmentSize;
+
+    if (guide.axis === 'horizontal') {
+      const zoneY = barrier.top;
+      const zoneH = Math.max(0, barrier.bottom - barrier.top);
+      const leftX = areaRect.x;
+      const leftW = Math.max(0, barrier.left - leftX);
+      const rightX = barrier.right;
+      const rightW = Math.max(0, areaRect.x + areaRect.width - rightX);
+      v568DrawRectDotted(leftX, zoneY, leftW, zoneH, s);
+      v568DrawRectDotted(rightX, zoneY, rightW, zoneH, s);
+    } else {
+      const zoneX = barrier.left;
+      const zoneW = Math.max(0, barrier.right - barrier.left);
+      const topY = areaRect.y;
+      const topH = Math.max(0, barrier.top - topY);
+      const bottomY = barrier.bottom;
+      const bottomH = Math.max(0, areaRect.y + areaRect.height - bottomY);
+      v568DrawRectDotted(zoneX, topY, zoneW, topH, s);
+      v568DrawRectDotted(zoneX, bottomY, zoneW, bottomH, s);
+    }
+  };
+})();
+</script>
+
+
+
+<script id="v569-party-goal-complete-image">
+(function(){
+  'use strict';
+  const V569_GOAL_COMPLETE_ICON = 'images/tut_goal_complete.png';
+
+  function isGoalCompleteTitle(title){
+    return String(title || '').trim().toUpperCase() === 'PARTY GOAL COMPLETE!';
+  }
+
+  function forceGoalCompleteIcon(){
+    const image = document.getElementById('movementTutorialDjImage');
+    const card = document.getElementById('movementTutorialCard');
+    if (card) card.classList.add('v464-has-image');
+    if (image) {
+      image.src = V569_GOAL_COMPLETE_ICON;
+      image.alt = '';
+      image.style.display = 'block';
+      image.style.visibility = 'visible';
+    }
+  }
+
+  if (typeof window.v471ShowHint === 'function') {
+    const v569BaseV471 = window.v471ShowHint;
+    window.v471ShowHint = function(title, text, icon, duration, onClose, sticky){
+      if (isGoalCompleteTitle(title)) {
+        return v569BaseV471.call(this, title, text || '', V569_GOAL_COMPLETE_ICON, duration, onClose, sticky);
+      }
+      return v569BaseV471.apply(this, arguments);
+    };
+  }
+
+  if (typeof window.v468Toast === 'function') {
+    const v569BaseToast = window.v468Toast;
+    window.v468Toast = function(title, text, durationMs){
+      const result = v569BaseToast.apply(this, arguments);
+      if (isGoalCompleteTitle(title)) {
+        forceGoalCompleteIcon();
+      }
+      return result;
+    };
+  }
+
+  const v569BasePopupSequence = window.v455ShowPopupSequence;
+  if (typeof v569BasePopupSequence === 'function') {
+    window.v455ShowPopupSequence = function(popups, onDone){
+      if (Array.isArray(popups)) {
+        popups = popups.map(p => {
+          if (p && isGoalCompleteTitle(p.title)) {
+            return Object.assign({}, p, { imageSrc: V569_GOAL_COMPLETE_ICON });
+          }
+          return p;
+        });
+      }
+      return v569BasePopupSequence.call(this, popups, onDone);
+    };
+  }
+})();
+</script>
+
+
+
+<script id="v570-thats-a-group-image">
+(function(){
+  'use strict';
+  const V570_GROUP_ICON = 'images/tut1group.png';
+
+  function normalizeTitle(title){
+    return String(title || '').trim().toUpperCase().replace(/’/g, "'");
+  }
+  function isGroupTitle(title){
+    const t = normalizeTitle(title);
+    return t === "THAT'S A GROUP!" || t === "NICE! THAT'S A GROUP";
+  }
+  function forceGroupIcon(){
+    const image = document.getElementById('movementTutorialDjImage');
+    const card = document.getElementById('movementTutorialCard');
+    if (card) card.classList.add('v464-has-image');
+    if (image) {
+      image.src = V570_GROUP_ICON;
+      image.alt = '';
+      image.style.display = 'block';
+      image.style.visibility = 'visible';
+    }
+  }
+
+  if (typeof window.v471ShowHint === 'function') {
+    const base = window.v471ShowHint;
+    window.v471ShowHint = function(title, text, icon, duration, onClose, sticky){
+      if (isGroupTitle(title)) {
+        return base.call(this, title, text || '', V570_GROUP_ICON, duration, onClose, sticky);
+      }
+      return base.apply(this, arguments);
+    };
+  }
+
+  if (typeof window.v468Toast === 'function') {
+    const base = window.v468Toast;
+    window.v468Toast = function(title, text, durationMs){
+      const result = base.apply(this, arguments);
+      if (isGroupTitle(title)) forceGroupIcon();
+      return result;
+    };
+  }
+
+  if (typeof window.v455ShowPopupSequence === 'function') {
+    const base = window.v455ShowPopupSequence;
+    window.v455ShowPopupSequence = function(popups, onDone){
+      if (Array.isArray(popups)) {
+        popups = popups.map(p => {
+          if (p && isGroupTitle(p.title)) {
+            return Object.assign({}, p, { imageSrc: V570_GROUP_ICON });
+          }
+          return p;
+        });
+      }
+      return base.call(this, popups, onDone);
+    };
+  }
+})();
+</script>
+
+
+
+<script id="v571-party-goal-start-image">
+(function(){
+  'use strict';
+  const V571_PARTY_GOAL_ICON = 'images/tut_goal1.png';
+
+  function normalizeTitle(title){
+    return String(title || '').trim().toUpperCase().replace(/’/g, "'");
+  }
+  function isPartyGoalStartTitle(title){
+    const t = normalizeTitle(title);
+    return /^YOUR\s+(FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH)\s+PARTY\s+GOAL$/.test(t);
+  }
+  function forcePartyGoalStartIcon(){
+    const image = document.getElementById('movementTutorialDjImage');
+    const card = document.getElementById('movementTutorialCard');
+    if (card) card.classList.add('v464-has-image');
+    if (image) {
+      image.src = V571_PARTY_GOAL_ICON;
+      image.alt = '';
+      image.style.display = 'block';
+      image.style.visibility = 'visible';
+    }
+  }
+
+  if (typeof window.v471ShowHint === 'function') {
+    const base = window.v471ShowHint;
+    window.v471ShowHint = function(title, text, icon, duration, onClose, sticky){
+      if (isPartyGoalStartTitle(title)) {
+        return base.call(this, title, text || '', V571_PARTY_GOAL_ICON, duration, onClose, sticky);
+      }
+      return base.apply(this, arguments);
+    };
+  }
+
+  if (typeof window.v468Toast === 'function') {
+    const base = window.v468Toast;
+    window.v468Toast = function(title, text, durationMs){
+      const result = base.apply(this, arguments);
+      if (isPartyGoalStartTitle(title)) forcePartyGoalStartIcon();
+      return result;
+    };
+  }
+
+  if (typeof window.v455ShowPopupSequence === 'function') {
+    const base = window.v455ShowPopupSequence;
+    window.v455ShowPopupSequence = function(popups, onDone){
+      if (Array.isArray(popups)) {
+        popups = popups.map(p => {
+          if (p && isPartyGoalStartTitle(p.title)) {
+            return Object.assign({}, p, { imageSrc: V571_PARTY_GOAL_ICON });
+          }
+          return p;
+        });
+      }
+      return base.call(this, popups, onDone);
+    };
+  }
+})();
+</script>
+
+
+
+<style id="v578-foreground-render-fallback">
+/* V578: when Android/WebView briefly drops a composited layer while the app is
+   in the background, never expose the browser's white default behind the game. */
+.canvas-wrapper {
+  background: #251810 !important;
+}
+.backgroundLayer {
+  background-color: #251810 !important;
+}
+</style>
+
+<script id="v578-foreground-visual-restore">
+(function(){
+  'use strict';
+
+  let restoreToken = 0;
+  let lastRestoreAt = 0;
+
+  function gameScreenIsOpen(){
+    const startOverlay = document.getElementById('startOverlay');
+    if(startOverlay && getComputedStyle(startOverlay).display !== 'none') return false;
+    return true;
+  }
+
+  function repaintOnce(token){
+    if(token !== restoreToken || !gameScreenIsOpen()) return;
+
+    const canvas = document.getElementById('gameCanvas');
+    const bg = document.querySelector('.backgroundLayer');
+
+    // Force the WebView to rebuild the background layer instead of keeping a
+    // discarded/blank compositor surface after returning from another app.
+    if(bg){
+      bg.style.backgroundImage = 'none';
+      void bg.offsetWidth;
+      if(typeof applyCurrentDjBackground === 'function'){
+        applyCurrentDjBackground();
+      }else{
+        bg.style.backgroundImage = 'url("./images/fig1.png")';
+      }
+    }
+
+    // Do not alter width/height or game state. A lightweight compositing toggle
+    // is enough to make Android recreate the canvas layer.
+    if(canvas){
+      canvas.style.visibility = 'hidden';
+      void canvas.offsetWidth;
+      canvas.style.visibility = 'visible';
+    }
+
+    // Redraw even while PAUSED/RESUME is active. Returning to the foreground
+    // must restore the picture, not resume the fall loop.
+    try{
+      if(typeof redrawPausedGame === 'function'){
+        redrawPausedGame();
+      }else{
+        if(typeof drawGrid === 'function') drawGrid();
+        if(typeof fallingBlock !== 'undefined' && fallingBlock && typeof drawFallingBlock === 'function'){
+          drawFallingBlock();
+        }
+      }
+    }catch(err){
+      console.warn('V578 foreground redraw retry:', err);
+    }
+
+    if(typeof updatePauseDisplay === 'function') updatePauseDisplay();
+  }
+
+  function restoreForegroundVisuals(){
+    if(!gameScreenIsOpen()) return;
+    const now = Date.now();
+    if(now - lastRestoreAt < 35) return;
+    lastRestoreAt = now;
+
+    const token = ++restoreToken;
+    // Multiple light redraws cover both ordinary focus return and Android WebView
+    // compositor restoration, which can complete a frame or two later.
+    requestAnimationFrame(() => {
+      repaintOnce(token);
+      requestAnimationFrame(() => repaintOnce(token));
+    });
+    setTimeout(() => repaintOnce(token), 90);
+    setTimeout(() => repaintOnce(token), 260);
+  }
+
+  window.v578RestoreForegroundVisuals = restoreForegroundVisuals;
+
+  window.addEventListener('focus', restoreForegroundVisuals, {capture:true});
+  window.addEventListener('pageshow', restoreForegroundVisuals, {capture:true});
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible') restoreForegroundVisuals();
+  }, {capture:true});
+
+  const canvas = document.getElementById('gameCanvas');
+  if(canvas){
+    canvas.addEventListener('contextrestored', restoreForegroundVisuals, {capture:true});
+  }
+})();
+</script>
 
 </body>
 </html>

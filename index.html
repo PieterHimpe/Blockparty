@@ -14711,7 +14711,7 @@ let objectiveTutorialQueue = [];
 let objectiveTutorialGroupsCleared = 0;
 let objectiveTutorialTransitioning = false;
 let objectiveTutorialMessageShown = false;
-const OBJECTIVE_TUTORIAL_COLOR = "#F8E71C";
+const OBJECTIVE_TUTORIAL_COLOR = "#E88A2D";
 
 // ===== TUTORIAL STAP 3: BLOK KOMT VAN RECHTS =====
 let rightDirectionTutorialActive = false;
@@ -15207,7 +15207,7 @@ const imgElement = pauseButton.querySelector('img');
 //let resetImages = {
 //  "#4A90E2": "https://i.ibb.co/MkLQKJZT/landscape-format-transparent-background-shadow-designify-10.png",
 //  "#7ED321": "https://i.ibb.co/nqxnLm8T/landscape-format-transparent-background-shadow-designify-9.png",
-//  "#F8E71C": "https://i.ibb.co/C5xKZ9xy/landscape-format-transparent-background-shadow-designify-8.png",
+//  "#E88A2D": "https://i.ibb.co/C5xKZ9xy/landscape-format-transparent-background-shadow-designify-8.png",
 //  "#DEDEDE": "https://i.ibb.co/sJHgkqQD/landscape-format-transparent-background-shadow-designify-7.png",
 //  "#9B51E0": "https://i.ibb.co/R4tR3sj8/landscape-format-transparent-background-shadow-designify-6.png",
 //  "#50E3C2": "https://i.ibb.co/KxJZRMDV/landscape-format-transparent-background-shadow-designify-5.png",
@@ -15218,7 +15218,7 @@ const imgElement = pauseButton.querySelector('img');
 let resetImages = {
   "#4A90E2": "images/fig34.png",
   "#7ED321": "images/fig34.png",
-  "#F8E71C": "images/fig34.png",
+  "#E88A2D": "images/fig34.png",
   "#DEDEDE": "images/fig34.png",
   "#9B51E0": "images/fig34.png",
   "#50E3C2": "images/fig34.png",
@@ -15228,7 +15228,7 @@ let resetImages = {
 
     // "#4A90E2": "https://i.ibb.co/v49v32Jj/landscape-format-transparent-background-shadow-designify-17.png",
  // "#7ED321": "https://i.ibb.co/S9Kf21m/landscape-format-transparent-background-shadow-designify-16.png",
- // "#F8E71C": "https://i.ibb.co/v4K2ZkKP/landscape-format-transparent-background-shadow-designify-15.png",
+ // "#E88A2D": "https://i.ibb.co/v4K2ZkKP/landscape-format-transparent-background-shadow-designify-15.png",
  // "#DEDEDE": "https://i.ibb.co/DgtbR89f/landscape-format-transparent-background-shadow-designify-14.png",
  // "#9B51E0": "https://i.ibb.co/60XQY94D/landscape-format-transparent-background-shadow-designify-13.png",
  // "#50E3C2": "https://i.ibb.co/60xSc47p/landscape-format-transparent-background-shadow-designify-12.png",
@@ -15241,7 +15241,7 @@ let resetButtonElements = document.querySelectorAll(".reset-btn img");
 
 // ===== V205: zeven tutorialkleuren met individuele sloten =====
 const TUTORIAL_COLOR_UNLOCKS = [
-  { color: "#F8E71C", unlockLevel: 1, name: "Yellow" },
+  { color: "#E88A2D", unlockLevel: 1, name: "Yellow" },
   { color: "#4A90E2", unlockLevel: 2, name: "Blue" },
   { color: "#E53935", unlockLevel: 4, name: "Red" },
   { color: "#7ED321", unlockLevel: 5, name: "Green" },
@@ -15402,7 +15402,7 @@ let field = Array.from({ length: gridRows }, () => Array(gridCols).fill(null));
 const colors = [
 "#4A90E2", // Blauw
   "#7ED321", // Groen
-  "#F8E71C", // Geel
+  "#E88A2D", // Geel
   "#DEDEDE", // Grijs
   "#9B51E0", // Paars
   "#50E3C2", // Turkoois
@@ -18281,7 +18281,7 @@ function updateNextBlockDisplay(color, length = 1, isDiva = false, isSpecial = f
   previewContainer.innerHTML = '';
 
   const previewBaseColors = [
-    "#4A90E2", "#7ED321", "#F8E71C", "#DEDEDE",
+    "#4A90E2", "#7ED321", "#E88A2D", "#DEDEDE",
     "#9B51E0", "#50E3C2", "#E53935"
   ];
   const normalizedPreviewColor = String(color || "").toUpperCase();
@@ -19168,7 +19168,7 @@ if (
 
 // Level 1: forceer altijd geel als startkleur (ook als startNormalGame niet eerst nextBlock reset)
 if (level === 1 && !movementTutorialFinishedNormalPlay && !level1FixedColor) {
-  level1FixedColor = "#F8E71C";
+  level1FixedColor = "#E88A2D";
 }
 
 // ⭐⭐⭐ Level 10 – eerste 5 blokken krijgen dezelfde kleur ⭐⭐⭐
@@ -22677,7 +22677,7 @@ const PROMO_RECORDING_MODE = true;
 const PROMO_GAME_COLORS = [
   "#4A90E2", // blauw
   "#7ED321", // groen
-  "#F8E71C", // geel
+  "#E88A2D", // geel
   "#DEDEDE", // grijs
   "#9B51E0", // paars
   "#50E3C2", // turkoois
@@ -23587,7 +23587,7 @@ if (block.isMulticolor) {
 // Deze versie verandert uitsluitend de tekenlaag; beweging en botsingen blijven V277.
 function getInnerBarrierAccentColor() {
   // V476: vaste ijsblauwe rand. Geen tutorialflikker/puls meer.
-  return '#C9F3FF';
+  return '#FFD86A';
 }
 
 function createClosedInnerBarrierOpeningMap() {
@@ -23940,11 +23940,11 @@ function drawInnerBarrierLayout(gridX, gridY, gridWidth, gridHeight, accentColor
   const rightX = gridX + gridWidth + barrierOffset;
   const emitterSize = Math.max(4.6, segmentSize * 0.155);
   const emitterRadius = emitterSize * 0.30;
-  const emitterShell = '#173B47';
-  const emitterRim = '#2F7C91';
-  const emitterFace = '#8BE1F3';
+  const emitterShell = '#5C4518';
+  const emitterRim = '#B88424';
+  const emitterFace = '#FFD86A';
   const emitterCore = '#F5FDFF';
-  const lightCore = 'rgba(248, 254, 255, 0.98)';
+  const lightCore = 'rgba(255, 245, 191, 0.98)';
 
   function roundedRectPath(x, y, width, height, radius) {
     const r = Math.min(radius, width / 2, height / 2);
@@ -24008,7 +24008,7 @@ function drawInnerBarrierLayout(gridX, gridY, gridWidth, gridHeight, accentColor
 
     // Donkere scheiding maakt duidelijk dat dit een informatielaag van de
     // ijsblauwe speelveldpoort is, zonder een extra blokkleur te introduceren.
-    ctx.shadowColor = 'rgba(145, 229, 248, 0.82)';
+    ctx.shadowColor = 'rgba(255, 216, 106, 0.82)';
     ctx.shadowBlur = segmentSize * 0.18;
     ctx.globalAlpha = 0.92;
     ctx.strokeStyle = 'rgba(20, 52, 62, 0.92)';
@@ -24018,10 +24018,10 @@ function drawInnerBarrierLayout(gridX, gridY, gridWidth, gridHeight, accentColor
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    ctx.shadowColor = 'rgba(201, 243, 255, 0.98)';
+    ctx.shadowColor = 'rgba(255, 216, 106, 0.98)';
     ctx.shadowBlur = segmentSize * 0.10;
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = '#C9F3FF';
+    ctx.strokeStyle = '#FFD86A';
     ctx.lineWidth = landingBeamWidth;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -24029,7 +24029,7 @@ function drawInnerBarrierLayout(gridX, gridY, gridWidth, gridHeight, accentColor
     ctx.stroke();
 
     ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = '#F3FDFF';
+    ctx.strokeStyle = '#FFF5BF';
     ctx.lineWidth = landingCoreWidth;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -24552,7 +24552,7 @@ function v337HoldOrReleaseLandingDelay(block) {
 // Alleen de weergave verandert. De bestaande blockData-flags en alle spelregels
 // blijven exact dezelfde bron van waarheid.
 const SPECIAL_BLOCK_RAINBOW = [
-  "#4A90E2", "#7ED321", "#F8E71C", "#DEDEDE",
+  "#4A90E2", "#7ED321", "#E88A2D", "#DEDEDE",
   "#9B51E0", "#50E3C2", "#E53935"
 ];
 
@@ -24984,7 +24984,7 @@ function drawFreePictureBlockIcon(x, y) {
 
   ctx.beginPath();
   ctx.arc(bodyX + bodyW * 0.82, bodyY + bodyH * 0.24, blockSize * 0.030, 0, Math.PI * 2);
-  ctx.fillStyle = "#F8E71C";
+  ctx.fillStyle = "#E88A2D";
   ctx.fill();
   ctx.restore();
 }
@@ -25145,7 +25145,7 @@ function v492GroupCellCode(block) {
   switch (block.color) {
     case "#4A90E2": return 2;
     case "#7ED321": return 3;
-    case "#F8E71C": return 4;
+    case "#E88A2D": return 4;
     case "#DEDEDE": return 5;
     case "#9B51E0": return 6;
     case "#50E3C2": return 7;
@@ -25253,7 +25253,7 @@ function drawGrid() {
   drawMovementAreaGuide();
   const totalRows = extraRowsAbove + gridRows + extraRowsBelow;
 
-  const validColors = ["#4A90E2", "#7ED321", "#F8E71C", "#DEDEDE", "#9B51E0", "#50E3C2", "#E53935", "#FFFFFF"];
+  const validColors = ["#4A90E2", "#7ED321", "#E88A2D", "#DEDEDE", "#9B51E0", "#50E3C2", "#E53935", "#FFFFFF"];
 
   // V492: hergebruik groepsgroottes zolang het veld inhoudelijk onveranderd is.
   const groupSizeCache = v492GetPersistentGroupSizeCache();
@@ -28801,7 +28801,7 @@ function showTutorialDivaChanged(row, col, color) {
 
   const colorNames = {
     "#FFD839": "yellow",
-    "#F8E71C": "yellow",
+    "#E88A2D": "yellow",
     "#4A90E2": "blue",
     "#E53935": "red",
     "#7ED321": "green",
@@ -29556,7 +29556,7 @@ function onLevel7ColorSelected(color) {
   gamePaused = true;
 
   const colorNames = {
-    "#F8E71C": "yellow",
+    "#E88A2D": "yellow",
     "#FFD839": "yellow",
     "#4A90E2": "blue",
     "#E53935": "red"
@@ -30832,7 +30832,7 @@ function startNormalGame() {
   level1SpawnCount = 0;
 
   // Level 1: forceer startkleur op geel
-  level1FixedColor = "#F8E71C";
+  level1FixedColor = "#E88A2D";
   // Level 1 tutorial counters reset
   level1LandedCount = 0;
   level1WatchActive = false;
@@ -46655,7 +46655,7 @@ body.v472-block-c-card .v453-fast-forward {
 
   function v472ColorName(color){
     return ({
-      '#FFD839':'YELLOW','#F8E71C':'YELLOW','#4A90E2':'BLUE','#E53935':'RED','#7ED321':'GREEN',
+      '#FFD839':'YELLOW','#E88A2D':'YELLOW','#4A90E2':'BLUE','#E53935':'RED','#7ED321':'GREEN',
       '#9B51E0':'PURPLE','#50E3C2':'TURQUOISE','#DEDEDE':'GRAY'
     })[String(color||'').toUpperCase()]||'NORMAL';
   }
@@ -47201,7 +47201,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
   // ------------------------------------------------------------------
   function v473EnsureFullPartyOverlay(){
     let overlay=document.getElementById('v473FullPartyOverlay');if(overlay)return overlay;
-    overlay=document.createElement('div');overlay.id='v473FullPartyOverlay';overlay.innerHTML=`<div id="v473FullPartyCard"><div id="v473FullPartyTitle"></div><div id="v473FullPartyDots"><span style="background:#F8E71C"></span><span style="background:#4A90E2"></span><span style="background:#E53935"></span><span style="background:#7ED321"></span><span style="background:#9B51E0"></span><span style="background:#50E3C2"></span><span style="background:#DEDEDE"></span></div></div>`;document.body.appendChild(overlay);return overlay;
+    overlay=document.createElement('div');overlay.id='v473FullPartyOverlay';overlay.innerHTML=`<div id="v473FullPartyCard"><div id="v473FullPartyTitle"></div><div id="v473FullPartyDots"><span style="background:#E88A2D"></span><span style="background:#4A90E2"></span><span style="background:#E53935"></span><span style="background:#7ED321"></span><span style="background:#9B51E0"></span><span style="background:#50E3C2"></span><span style="background:#DEDEDE"></span></div></div>`;document.body.appendChild(overlay);return overlay;
   }
   function v473ShowFullPartyPayoff(){
     if(v473FullPartyShown){v473RestartLoop();return;}
@@ -47773,9 +47773,9 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     const glowWidth=Math.max(7.0,segmentSize*0.30);
     const beamWidth=Math.max(4.2,segmentSize*0.18);
     const coreWidth=Math.max(1.55,segmentSize*0.060);
-    for(const s of segments) v493StrokeSegment(...s,'#8BE1F3',glowWidth,'#8BE1F3',segmentSize*0.14,0.14);
-    for(const s of segments) v493StrokeSegment(...s,'#8BE1F3',beamWidth,'#8BE1F3',segmentSize*0.06,0.95);
-    for(const s of segments) v493StrokeSegment(...s,'rgba(248, 254, 255, 0.98)',coreWidth,'transparent',0,0.95);
+    for(const s of segments) v493StrokeSegment(...s,'#FFD86A',glowWidth,'#FFD86A',segmentSize*0.14,0.14);
+    for(const s of segments) v493StrokeSegment(...s,'#FFD86A',beamWidth,'#FFD86A',segmentSize*0.06,0.95);
+    for(const s of segments) v493StrokeSegment(...s,'rgba(255, 245, 191, 0.98)',coreWidth,'transparent',0,0.95);
   }
 
   drawMovementLaneForeground=function(){
@@ -48100,10 +48100,10 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     const coreWidth = Math.max(1.15, segmentSize * 0.045);
 
     for (const [x1,y1,x2,y2] of segments) {
-      v495StrokeSegment(x1,y1,x2,y2,'#8BE1F3',glowWidth,'#8BE1F3',segmentSize*0.10,0.08);
+      v495StrokeSegment(x1,y1,x2,y2,'#FFD86A',glowWidth,'#FFD86A',segmentSize*0.10,0.08);
     }
     for (const [x1,y1,x2,y2] of segments) {
-      v495StrokeSegment(x1,y1,x2,y2,'rgba(139,225,243,0.88)',beamWidth,'#8BE1F3',segmentSize*0.035,0.72);
+      v495StrokeSegment(x1,y1,x2,y2,'rgba(139,225,243,0.88)',beamWidth,'#FFD86A',segmentSize*0.035,0.72);
     }
     for (const [x1,y1,x2,y2] of segments) {
       v495StrokeSegment(x1,y1,x2,y2,'rgba(245,252,255,0.82)',coreWidth,'transparent',0,0.72);
@@ -48206,7 +48206,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     ctx.save();
     ctx.beginPath();
     ctx.fillStyle = 'rgba(139,225,243,0.18)';
-    ctx.shadowColor = '#8BE1F3';
+    ctx.shadowColor = '#FFD86A';
     ctx.shadowBlur = rOuter * 1.25;
     ctx.arc(x, y, rOuter, 0, Math.PI * 2);
     ctx.fill();
@@ -53064,7 +53064,7 @@ body.v546-onboarding-levels #levelProgressBar {
     ctx.save();
     ctx.beginPath();
     ctx.fillStyle = 'rgba(139,225,243,0.16)';
-    ctx.shadowColor = '#8BE1F3';
+    ctx.shadowColor = '#FFD86A';
     ctx.shadowBlur = rOuter * 1.15;
     ctx.arc(x, y, rOuter, 0, Math.PI * 2);
     ctx.fill();
@@ -53985,6 +53985,296 @@ body.v546-onboarding-levels #levelProgressBar {
       drawOrangeRailLine(floorX, areaY, floorX + floorW, areaY);
       drawOrangeRailLine(floorX, areaY + areaH, floorX + floorW, areaY + areaH);
     }
+  };
+})();
+</script>
+
+
+<style id="v593-ui-refine">
+/* V593: bigger pause art, larger 3-part Drop Block text, orange first tracker block. */
+#pauseButton img {
+  width: 70% !important;
+  height: 98% !important;
+  max-width: 70% !important;
+  max-height: 98% !important;
+  object-fit: contain !important;
+}
+.button-wrapper .drop-block-button.v586-drop-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) 40px minmax(0,1fr) !important;
+  column-gap: 2px !important;
+  align-items: center !important;
+  padding: 2px 7px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.button-wrapper .drop-block-button.v586-drop-layout .v586-drop-word {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 1px !important;
+  margin: 0 !important;
+  font-size: clamp(.42rem, 1.72vw, .64rem) !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-align: center !important;
+}
+.button-wrapper .drop-block-button.v586-drop-layout img.v586-drop-square-icon {
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  object-fit: contain !important;
+  justify-self: center !important;
+  align-self: center !important;
+  transform: translateY(-1px) !important;
+}
+@media (max-width: 420px) {
+  .button-wrapper .drop-block-button.v586-drop-layout {
+    grid-template-columns: minmax(0,1fr) 36px minmax(0,1fr) !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+  .button-wrapper .drop-block-button.v586-drop-layout img.v586-drop-square-icon {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+  }
+  .button-wrapper .drop-block-button.v586-drop-layout .v586-drop-word {
+    font-size: clamp(.40rem, 1.62vw, .58rem) !important;
+  }
+}
+.tutorial-color-slot:nth-child(1).unlocked {
+  background: linear-gradient(180deg, #ffc98d 0%, #f39b2f 100%) !important;
+  border-color: rgba(232,138,45,.98) !important;
+}
+</style>
+<script id="v593-yellow-guide">
+(function(){
+  function snapStart(v){ return Math.round(v) + 0.5; }
+  function snapSize(start, length){ return Math.max(0, Math.round(start + length) - Math.round(start) - 1); }
+  function guidePayload(){
+    if (!movementAreaGuide || isMovementAreaTransitionActive()) return null;
+    const areaRect = calculateMovementAreaGuideRect(movementAreaGuide);
+    const floorRect = getCurrentDanceFloorRect();
+    if (!areaRect || !floorRect) return null;
+    const cell = Math.min(floorRect.width, floorRect.height) / 10;
+    const expand = Math.max(6, Math.round(cell * 0.22));
+    const tuned = { x: areaRect.x, y: areaRect.y, width: areaRect.width, height: areaRect.height };
+    if (movementAreaGuide.axis === 'horizontal') {
+      tuned.x -= expand;
+      tuned.width += expand * 2;
+    } else {
+      tuned.y -= expand;
+      tuned.height += expand * 2;
+    }
+    return { guide: movementAreaGuide, areaRect: tuned, floorRect, cell };
+  }
+  function fillSideZones(areaRect, floorRect, axis){
+    ctx.save();
+    if (axis === 'horizontal') {
+      const leftW = Math.max(0, floorRect.x - areaRect.x);
+      const rightX = floorRect.x + floorRect.width;
+      const rightW = Math.max(0, areaRect.x + areaRect.width - rightX);
+      if (leftW > 0.5) {
+        const g = ctx.createLinearGradient(areaRect.x, floorRect.y, floorRect.x, floorRect.y);
+        g.addColorStop(0, 'rgba(22, 14, 8, 0.24)');
+        g.addColorStop(1, 'rgba(22, 14, 8, 0.10)');
+        ctx.fillStyle = g;
+        ctx.fillRect(areaRect.x, floorRect.y, leftW, floorRect.height);
+      }
+      if (rightW > 0.5) {
+        const g = ctx.createLinearGradient(rightX, floorRect.y, areaRect.x + areaRect.width, floorRect.y);
+        g.addColorStop(0, 'rgba(22, 14, 8, 0.10)');
+        g.addColorStop(1, 'rgba(22, 14, 8, 0.24)');
+        ctx.fillStyle = g;
+        ctx.fillRect(rightX, floorRect.y, rightW, floorRect.height);
+      }
+    } else {
+      const topH = Math.max(0, floorRect.y - areaRect.y);
+      const bottomY = floorRect.y + floorRect.height;
+      const bottomH = Math.max(0, areaRect.y + areaRect.height - bottomY);
+      if (topH > 0.5) {
+        const g = ctx.createLinearGradient(floorRect.x, areaRect.y, floorRect.x, floorRect.y);
+        g.addColorStop(0, 'rgba(22, 14, 8, 0.24)');
+        g.addColorStop(1, 'rgba(22, 14, 8, 0.10)');
+        ctx.fillStyle = g;
+        ctx.fillRect(floorRect.x, areaRect.y, floorRect.width, topH);
+      }
+      if (bottomH > 0.5) {
+        const g = ctx.createLinearGradient(floorRect.x, bottomY, floorRect.x, areaRect.y + areaRect.height);
+        g.addColorStop(0, 'rgba(22, 14, 8, 0.10)');
+        g.addColorStop(1, 'rgba(22, 14, 8, 0.24)');
+        ctx.fillStyle = g;
+        ctx.fillRect(floorRect.x, bottomY, floorRect.width, bottomH);
+      }
+    }
+    ctx.restore();
+  }
+  function strokeRectGlow(x,y,w,h,strong){
+    ctx.save();
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.strokeStyle = strong ? 'rgba(255, 214, 106, 0.28)' : 'rgba(255, 214, 106, 0.18)';
+    ctx.lineWidth = strong ? 4.2 : 3.0;
+    ctx.shadowColor = strong ? 'rgba(255, 214, 106, 0.30)' : 'rgba(255, 214, 106, 0.18)';
+    ctx.shadowBlur = strong ? 8 : 5;
+    ctx.strokeRect(x,y,w,h);
+    ctx.strokeStyle = strong ? 'rgba(255, 216, 106, 0.95)' : 'rgba(255, 216, 106, 0.62)';
+    ctx.lineWidth = strong ? 1.65 : 1.2;
+    ctx.shadowBlur = 2;
+    ctx.strokeRect(x,y,w,h);
+    ctx.restore();
+  }
+  function drawDotsOnRect(x,y,w,h,cell,strong){
+    const spacing = Math.max(10, cell);
+    const r = strong ? Math.max(1.8, cell * 0.055) : Math.max(1.5, cell * 0.05);
+    ctx.save();
+    ctx.fillStyle = strong ? 'rgba(255, 226, 142, 0.96)' : 'rgba(255, 226, 142, 0.70)';
+    ctx.shadowColor = strong ? 'rgba(255, 214, 106, 0.34)' : 'rgba(255, 214, 106, 0.18)';
+    ctx.shadowBlur = strong ? 4 : 2;
+    function dot(px,py){ ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill(); }
+    for(let px=x; px<=x+w+0.01; px+=spacing) { dot(px,y); dot(px,y+h); }
+    for(let py=y+spacing; py<y+h-0.01; py+=spacing) { dot(x,py); dot(x+w,py); }
+    dot(x+w,y); dot(x+w,y+h);
+    ctx.restore();
+  }
+  drawMovementAreaGuide = function(){
+    const payload = guidePayload();
+    if (!payload) return;
+    fillSideZones(payload.areaRect, payload.floorRect, payload.guide.axis);
+  };
+  drawMovementLaneForeground = function(){
+    const payload = guidePayload();
+    if (!payload) return;
+    const areaX = snapStart(payload.areaRect.x);
+    const areaY = snapStart(payload.areaRect.y);
+    const areaW = snapSize(payload.areaRect.x, payload.areaRect.width);
+    const areaH = snapSize(payload.areaRect.y, payload.areaRect.height);
+    const floorX = snapStart(payload.floorRect.x);
+    const floorY = snapStart(payload.floorRect.y);
+    const floorW = snapSize(payload.floorRect.x, payload.floorRect.width);
+    const floorH = snapSize(payload.floorRect.y, payload.floorRect.height);
+    strokeRectGlow(areaX, areaY, areaW, areaH, false);
+    strokeRectGlow(floorX, floorY, floorW, floorH, true);
+    drawDotsOnRect(areaX, areaY, areaW, areaH, payload.cell, false);
+    drawDotsOnRect(floorX, floorY, floorW, floorH, payload.cell, true);
+  };
+})();
+</script>
+
+
+<style id="v594-final-fixes">
+/* V594: final requested visual corrections */
+.tutorial-color-slot.unlocked {
+  border-color: rgba(232,138,45,.95) !important;
+}
+</style>
+<script id="v594-movement-guide-final">
+(function(){
+  function getBarrierOffset(){
+    const segmentSize = blockSize;
+    const beamWidth = Math.max(4.2, segmentSize * 0.18);
+    return Math.max(5.2, beamWidth * 1.15);
+  }
+  function getGuideRects(){
+    if (!movementAreaGuide && !movementAreaTransition) return null;
+    if (movementAreaTransition) return null; // keep transition clean
+    if (!movementAreaGuide) return null;
+    const rawArea = calculateMovementAreaGuideRect(movementAreaGuide);
+    const floorRect = getCurrentDanceFloorRect();
+    if (!rawArea || !floorRect) return null;
+    const off = getBarrierOffset();
+    const floorOuter = {
+      x: floorRect.x - off,
+      y: floorRect.y - off,
+      width: floorRect.width + off * 2,
+      height: floorRect.height + off * 2
+    };
+    let areaOuter;
+    if (movementAreaGuide.axis === 'horizontal') {
+      areaOuter = {
+        x: rawArea.x - off,
+        y: floorOuter.y,
+        width: rawArea.width + off * 2,
+        height: floorOuter.height
+      };
+    } else {
+      areaOuter = {
+        x: floorOuter.x,
+        y: rawArea.y - off,
+        width: floorOuter.width,
+        height: rawArea.height + off * 2
+      };
+    }
+    return { rawArea, floorRect, floorOuter, areaOuter, axis: movementAreaGuide.axis };
+  }
+  function px(v){ return Math.round(v) + 0.5; }
+  function strokeRect(x,y,w,h, outerAlpha, innerAlpha, strong){
+    ctx.save();
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.shadowColor = strong ? 'rgba(255, 216, 106, 0.28)' : 'rgba(255, 216, 106, 0.16)';
+    ctx.shadowBlur = strong ? Math.max(5, blockSize * 0.16) : Math.max(3, blockSize * 0.10);
+    ctx.strokeStyle = `rgba(255, 216, 106, ${outerAlpha})`;
+    ctx.lineWidth = strong ? Math.max(2.1, blockSize * 0.09) : Math.max(1.2, blockSize * 0.055);
+    ctx.strokeRect(x,y,w,h);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = `rgba(255, 245, 191, ${innerAlpha})`;
+    ctx.lineWidth = strong ? Math.max(1.0, blockSize * 0.04) : Math.max(0.8, blockSize * 0.03);
+    ctx.strokeRect(x,y,w,h);
+    ctx.restore();
+  }
+  drawMovementAreaGuide = function(){
+    const rects = getGuideRects();
+    if (!rects) return;
+    const { floorOuter, areaOuter, axis } = rects;
+    ctx.save();
+    // Subtle dark side zones only outside the 10x10, not a bright panel.
+    if (axis === 'horizontal') {
+      const leftW = Math.max(0, floorOuter.x - areaOuter.x);
+      const rightX = floorOuter.x + floorOuter.width;
+      const rightW = Math.max(0, areaOuter.x + areaOuter.width - rightX);
+      if (leftW > 0.1) {
+        ctx.fillStyle = 'rgba(18, 14, 8, 0.16)';
+        ctx.fillRect(areaOuter.x, areaOuter.y, leftW, areaOuter.height);
+      }
+      if (rightW > 0.1) {
+        ctx.fillStyle = 'rgba(18, 14, 8, 0.16)';
+        ctx.fillRect(rightX, areaOuter.y, rightW, areaOuter.height);
+      }
+    } else {
+      const topH = Math.max(0, floorOuter.y - areaOuter.y);
+      const bottomY = floorOuter.y + floorOuter.height;
+      const bottomH = Math.max(0, areaOuter.y + areaOuter.height - bottomY);
+      if (topH > 0.1) {
+        ctx.fillStyle = 'rgba(18, 14, 8, 0.16)';
+        ctx.fillRect(areaOuter.x, areaOuter.y, areaOuter.width, topH);
+      }
+      if (bottomH > 0.1) {
+        ctx.fillStyle = 'rgba(18, 14, 8, 0.16)';
+        ctx.fillRect(areaOuter.x, bottomY, areaOuter.width, bottomH);
+      }
+    }
+    ctx.restore();
+  };
+  drawMovementLaneForeground = function(){
+    const rects = getGuideRects();
+    if (!rects) return;
+    const fr = rects.floorOuter;
+    const ar = rects.areaOuter;
+    const ax=px(ar.x), ay=px(ar.y), aw=Math.max(1, Math.round(ar.width)-1), ah=Math.max(1, Math.round(ar.height)-1);
+    const fx=px(fr.x), fy=px(fr.y), fw=Math.max(1, Math.round(fr.width)-1), fh=Math.max(1, Math.round(fr.height)-1);
+    // Movement frame: full outer rectangle, perfectly aligned with 10x10 outer frame on shared edges.
+    strokeRect(ax, ay, aw, ah, 0.42, 0.82, false);
+    // Re-stroke the 10x10 outer frame in the same yellow family so all related geometry matches.
+    strokeRect(fx, fy, fw, fh, 0.76, 0.98, true);
   };
 })();
 </script>

@@ -1,3 +1,7 @@
+<!-- v628: authoritative fallSpeed gate. The CURRENT fallSpeed is now the non-negotiable minimum between automatic visible x/y steps; requested/restarted timers may only be slower, never faster. New sets are timestamped at spawn, update/updateH and tutorial preview hooks are guarded at movement entry, Drop remains intentionally instant, and bpTimingV628 records actual gaps/blocked attempts for runtime verification. -->
+<!-- v627: authoritative hard minimum fall gate at the actual movement layer. Every automatic x/y step must respect the current fallSpeed; scheduler restarts cannot shorten it. Direct tutorial preview movements are guarded too, and the active level-3 preview no longer runs at 55% of fallSpeed. -->
+<!-- v626: automatic fall timing now uses a strict minimum interval after each rendered step; no partial catch-up. Capture-gate overlay consolidated to one lightweight animation to avoid entry spikes. -->
+<!-- v625: stable-timing/performance pass. Fall timing now uses a no-catch-up deadline scheduler; the 1s movement-area transition no longer pauses gameplay; canvas redraws are batched per fall tick; canvas is 1280x1280 (exact 40px cells) instead of 1540x1540; empty off-floor grid loops are skipped; HUD/high-score/localStorage updates are throttled/cached; onboarding autosave moves to idle time; celebration geometry reads are cached; existing gameplay rules and audio mix are preserved. -->
 <!-- v624: rebalance audio mix: background music softer, gameplay SFX louder with short music ducking; Repair keeps music playing throughout. -->
 <!-- v622: random group-clear success sounds replaced by six extra-festive ~2 second fanfares; no immediate repeats; same praise celebration trigger. -->
 <!-- v619: post-tutorial Party Goals now require a random five-slot color recipe; only matching 5+ groups fill a still-needed color slot. Duplicate target colors are allowed, extra clears of an already-completed color do not count, and +100 is awarded only when all five target slots are completed. -->
@@ -8795,7 +8799,7 @@ drop cell
 <div id="container">
 <div class="canvas-wrapper">
 <div class="backgroundLayer"></div> <!-- Achtergrond voor het spel -->
-<canvas class="gameCanvas" height="1540" id="gameCanvas" width="1540"></canvas> <!-- Het speelveld -->
+<canvas class="gameCanvas" height="1280" id="gameCanvas" width="1280"></canvas> <!-- Het speelveld -->
 <div class="grid"></div> <!-- Subtiele grid laag boven de achtergrond -->
 
 <!-- V275: vingervriendelijke herstelinterface met vier ruimtelijke richtingen -->
@@ -10617,7 +10621,7 @@ function finishOpenBarrierGameOver(block) {
 
   block._escapingThroughOpenBarrier = false;
   gamePaused = true;
-  clearInterval(fallInterval);
+  v625StopFallLoop();
 
   if (typeof gtag === 'function') {
     gtag('event', 'game_over', {
@@ -11641,7 +11645,7 @@ let movementAreaGuide = null;
 // Tweede 0,5 s: de nieuwe, loodrechte strook schuift vanuit de 10x10 uit.
 // Het nieuwe blok bestaat al voor de bestaande spelcode, maar wordt gedurende
 // deze visuele overgang niet bewogen of getekend.
-const MOVEMENT_AREA_TRANSITION_MS = 1000;
+const MOVEMENT_AREA_TRANSITION_MS = 360; // V625: visual axis morph stays below one normal 400ms fall interval
 let movementAreaTransition = null;
 let movementAreaTransitionAnimationId = null;
 let movementAreaTransitionPendingAfterLanding = false;
@@ -11753,10 +11757,18 @@ function startMovementAreaTransition(fromGuide, toGuide) {
   };
   movementAreaGuide = cloneMovementAreaGuide(toGuide);
 
+  let v625LastTransitionPaintAt = -Infinity;
   function redrawTransition(now) {
     if (!movementAreaTransition || movementAreaTransition.token !== token) return;
 
-    drawGrid();
+    // V625: de oude code deed een VOLLEDIGE canvas-redraw op ~60 fps gedurende
+    // 1 seconde. 12,5 visuele samples/s is ruim voldoende voor deze guide-morph
+    // en laat de main thread vrij voor de echte 400ms-spelklok.
+    if (now - v625LastTransitionPaintAt >= 80) {
+      v625LastTransitionPaintAt = now;
+      drawGrid();
+      if (fallingBlock) drawFallingBlock();
+    }
 
     if (now - movementAreaTransition.startedAt >= movementAreaTransition.duration) {
       finishMovementAreaTransition(token);
@@ -12323,6 +12335,79 @@ let practiceChallenge7Wins79 = 0;
 
 
 let fallInterval;
+
+
+// ===== V625: STABIELE VALKLOK ZONDER INHAAL-BURSTS =====
+// setInterval kan na een geblokkeerde main thread meerdere verlopen callbacks kort
+// na elkaar uitvoeren. Deze scheduler bewaart de gewenste cadence, maar SLAAT een
+// gemiste stap over in plaats van hem onmiddellijk in te halen.
+let v625FallLoopGeneration = 0;
+let v625FallLoopDelayMs = null;
+
+function v625StopFallLoop() {
+  v625FallLoopGeneration += 1;
+  if (fallInterval !== null && typeof fallInterval !== 'undefined') {
+    clearTimeout(fallInterval);
+    // timeout/interval IDs delen in browsers dezelfde ID-pool; dit is extra veilig
+    // voor een eventueel oud interval dat nog uit een vorige runtime komt.
+    clearInterval(fallInterval);
+  }
+  fallInterval = null;
+}
+
+function v625StartFallLoop(requestedDelay = fallSpeed) {
+  v625StopFallLoop();
+
+  const generation = ++v625FallLoopGeneration;
+  const delay = Math.max(16, Number(requestedDelay) || Number(fallSpeed) || 400);
+  v625FallLoopDelayMs = delay;
+  let nextDeadline = performance.now() + delay;
+
+  const scheduleNext = () => {
+    if (generation !== v625FallLoopGeneration) return null;
+    const wait = Math.max(0, nextDeadline - performance.now());
+    fallInterval = setTimeout(runTick, wait);
+    return fallInterval;
+  };
+
+  const runTick = () => {
+    if (generation !== v625FallLoopGeneration) return;
+
+    const tickStartedAt = performance.now();
+    const perf = window.bpPerformanceStats;
+    if (perf) {
+      if (Number.isFinite(perf._lastTickStartedAt)) {
+        const gap = tickStartedAt - perf._lastTickStartedAt;
+        perf.lastTickGapMs = gap;
+        perf.maxTickGapMs = Math.max(Number(perf.maxTickGapMs) || 0, gap);
+      }
+      perf._lastTickStartedAt = tickStartedAt;
+    }
+
+    // Voer exact één logische spelstap uit.
+    gameLoop();
+
+    if (generation !== v625FallLoopGeneration) return;
+
+    const now = performance.now();
+    nextDeadline += delay;
+
+    // Cruciaal: als rendering/GC/audio/een animatie ons meer dan één deadline
+    // heeft doen missen, NIET 2-3 ticks onmiddellijk achter elkaar uitvoeren.
+    // Start vanaf nu opnieuw met één volledige interval.
+    if (nextDeadline <= now + 4) {
+      if (window.bpPerformanceStats) {
+        window.bpPerformanceStats.skippedCatchups =
+          (Number(window.bpPerformanceStats.skippedCatchups) || 0) + 1;
+      }
+      nextDeadline = now + delay;
+    }
+
+    scheduleNext();
+  };
+
+  return scheduleNext();
+}
 
 let round = 1;
 
@@ -14030,8 +14115,8 @@ function applyBpmReward(amount) {
   fallSpeed = newSpeed;
   activeRewards.totalBpmReduction += amount;
 
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 
   updateLevelAndBpmDisplay();
   updateFallSpeedDisplay();
@@ -17083,12 +17168,12 @@ function startAtLevel10chal(settings = {}) {
   drawGrid();
   drawFallingBlock();
 
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 }
 
 function pauseGameAndShowMessage(message) {
-  clearInterval(fallInterval);
+  v625StopFallLoop();
   gamePaused = true;
 
   const overlay = document.createElement("div");
@@ -17625,8 +17710,8 @@ function endChallenge7(success) {
 
   // Altijd terug naar bewaarde snelheid
   fallSpeed = fallSpeedBeforeChallenge7;
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 
   if (success) {
     if (!challenge7RewardGiven) {
@@ -17964,7 +18049,7 @@ function showSimpleMainMenu() {
   isPaused = true;
 
   if (fallInterval) {
-    clearInterval(fallInterval);
+    v625StopFallLoop();
   }
 
   closeDismissibleTutorialPopup();
@@ -19589,8 +19674,8 @@ if (challenge3Active) {
 if (challenge7Active && !challenge7Success) {
   challenge7BlockCount++;
   fallSpeed -= challenge7SpeedStep;
-  clearInterval(fallInterval);
-fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+fallInterval = v625StartFallLoop(fallSpeed);
   updateChallenge7StatusCell();
 
   if (challenge7BlockCount >= challenge7BlockLimit && challenge7GroupCount < challenge7TargetGroups) {
@@ -19946,8 +20031,8 @@ if (challenge6Active && !challenge6Success) {
 if (challenge7Active && !challenge7Success) {
   challenge7BlockCount++;
   fallSpeed -= challenge7SpeedStep;
-  clearInterval(fallInterval);
-fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+fallInterval = v625StartFallLoop(fallSpeed);
   updateChallenge7StatusCell();
 
   if (challenge7BlockCount >= challenge7BlockLimit && challenge7GroupCount < challenge7TargetGroups) {
@@ -20785,8 +20870,8 @@ if (practiceModech39) {
               // Constante valsnelheid tijdens de volledige nieuwe tutorial.
               // De oude versnelling voor de eerste vier blokken is uitgeschakeld.
               if (level === 1) {
-                clearInterval(fallInterval);
-                fallInterval = setInterval(gameLoop, fallSpeed);
+                v625StopFallLoop();
+                fallInterval = v625StartFallLoop(fallSpeed);
               }
 
 
@@ -20874,8 +20959,8 @@ if (practiceModech39) {
 
                 if (level1LandedCount === 4) {
                   // Level 1: after 4 landed blocks, restore normal fall speed
-                  clearInterval(fallInterval);
-                  fallInterval = setInterval(gameLoop, fallSpeed);
+                  v625StopFallLoop();
+                  fallInterval = v625StartFallLoop(fallSpeed);
 
   if (level1BannerTimeoutHide) clearTimeout(level1BannerTimeoutHide);
                   level1BannerTimeoutHide = setTimeout(() => {
@@ -22805,7 +22890,10 @@ function createPromoParticle(shape, color, size, x, y) {
 
 function launchPromoGroupConfetti(group, groupColor) {
   const { x, y } = getPromoGroupScreenCenter(group);
-  const particleCount = 34;
+  // V625: 34 nieuwe DOM-nodes in één synchronische burst was op sommige gsm's
+  // genoeg om een fall deadline te missen. 26/30 oogt nog steeds feestelijk,
+  // terwijl de setup-piek merkbaar kleiner wordt.
+  const particleCount = (navigator.hardwareConcurrency || 4) >= 8 ? 30 : 26;
 
   for (let index = 0; index < particleCount; index++) {
     // V254: alle confetti blijft binnen dezelfde groepskleur.
@@ -22996,8 +23084,21 @@ function queueGroupFlightToScore(group, color) {
   });
 }
 
+let v625CachedCanvasClientRect = null;
+let v625CachedCanvasClientRectAt = -Infinity;
+function v625GetCanvasClientRect() {
+  const now = performance.now();
+  if (!v625CachedCanvasClientRect || now - v625CachedCanvasClientRectAt > 16) {
+    v625CachedCanvasClientRect = canvas.getBoundingClientRect();
+    v625CachedCanvasClientRectAt = now;
+  }
+  return v625CachedCanvasClientRect;
+}
+window.addEventListener('resize', () => { v625CachedCanvasClientRect = null; }, { passive: true });
+window.addEventListener('scroll', () => { v625CachedCanvasClientRect = null; }, { passive: true });
+
 function getV230BlockScreenRect(r, c) {
-  const rect = canvas.getBoundingClientRect();
+  const rect = v625GetCanvasClientRect();
   const scaleX = rect.width / canvas.width;
   const scaleY = rect.height / canvas.height;
   const internalX = playAreaOrigin + (c + extraColsLeft + gridOffsetX) * blockSize;
@@ -25376,6 +25477,11 @@ ctx.fillRect(
   drawMovementLaneForeground();
 
   for (let r = 0; r < totalRows; r++) {
+    // V625: buiten de echte 10x10 bevat field geen tegels. De oude else-tak
+    // tekende daar 200 transparante fillRects per redraw, direct na clearRect.
+    // Dat veranderde geen enkele pixel en is op mobiel pure overhead.
+    if (r < extraRowsAbove || r >= extraRowsAbove + gridRows) continue;
+
     for (let c = 0; c < gridCols; c++) {
       const x = playAreaOrigin + (c + extraColsLeft + gridOffsetX) * blockSize;
       const y = playAreaOrigin + (r - gridOffsetY) * blockSize;
@@ -25640,7 +25746,8 @@ function drawOuterFallingTileInFront(drawX, drawY, block, text) {
 }
 
 function drawFallingBlockOutsideWorldInFront() {
-  if (isMovementAreaTransitionActive()) return;
+  // V625: de visuele richtingswissel mag de echte blokval niet meer bevriezen.
+  // Het blok blijft tijdens de overgang zichtbaar en volgt de normale valklok.
   if (!fallingBlock) return;
 
   const text = getFallingBlockCenterText(fallingBlock);
@@ -25682,7 +25789,7 @@ function drawFallingBlockOutsideWorldInFront() {
 function drawFallingBlock() {
   updateSkipAvailabilityVisual();
 
-  if (isMovementAreaTransitionActive()) return;
+  // V625: movement-area morph is visual only; keep the active set visible.
   if (!fallingBlock) return;
   if (movementTutorialHideFallingBlock) return;
   if (fallingBlock._v330SpawnBlinkHidden) return;
@@ -25816,9 +25923,8 @@ drawV337ActiveBorder(drawX, drawY);
         if (gamePaused || tutorialLevelBannerActive) {
         return; // Doe niks als het spel of de centrale levelintro gepauzeerd is
         }
-        if (isMovementAreaTransitionActive()) {
-        return; // V344: nieuw blok wacht tot de visuele richtingswissel klaar is
-        }
+        // V625: de 1s movement-area animatie is uitsluitend visueel.
+        // De logische fall tick blijft dus doorlopen op fallSpeed.
 
     const v298ApproachBlockBeforeStep = fallingBlock;
     const v298ApproachBeforeX = fallingBlock ? fallingBlock.x : null;
@@ -25984,8 +26090,8 @@ challenge7RewardGiven = false;
 
   // Snelheid 10% verhogen (dus fallSpeed verlagen met 10%) - aanpassen
   fallSpeed = Math.max(50, Math.floor(fallSpeed * 0.95));
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
   round++;
   syncDjProgressFromRound();
   applyCurrentDjBackground();
@@ -26885,8 +26991,8 @@ if (level === challenge7Level && !challenge7Done && !challenge7RewardGiven) {
     fallSpeedBeforeChallenge7 = fallSpeed;
     //fallSpeed = challenge7StartSpeed;
     
-    clearInterval(fallInterval);
-    fallInterval = setInterval(gameLoop, fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
     updateLevelAndBpmDisplay()
     updateLevelDisplay();
     updateChallenge7StatusCell();
@@ -28016,7 +28122,9 @@ function startMovementTutorial() {
           return;
         }
 
+        if (window.v627CanAutomaticMovementNow && !window.v627CanAutomaticMovementNow(fallingBlock, "legacy-level1-preview")) return;
         fallingBlock.y += 1;
+        if (window.v627RecordAutomaticMovement) window.v627RecordAutomaticMovement(fallingBlock, "legacy-level1-preview");
         previewDrops += 1;
         drawGrid();
         drawFallingBlock();
@@ -28269,8 +28377,8 @@ function prepareObjectiveTutorialStage(stage) {
   drawGrid();
   drawFallingBlock();
 
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 }
 
 function startObjectiveTutorial() {
@@ -29783,8 +29891,8 @@ function startLevel3TwoColorTutorial() {
   autoSaveTutorialLevel();
   gamePaused = false;
 
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 }
 
 function hideLevel3SideLaneInstruction() {
@@ -30318,7 +30426,9 @@ function startRightDirectionTutorial() {
       return;
     }
 
+    if (window.v627CanAutomaticMovementNow && !window.v627CanAutomaticMovementNow(fallingBlock, "legacy-direction-preview")) return;
     fallingBlock.x -= 1;
+    if (window.v627RecordAutomaticMovement) window.v627RecordAutomaticMovement(fallingBlock, "legacy-direction-preview");
     previewMoves += 1;
 
     drawGrid();
@@ -30519,8 +30629,8 @@ function finishRightDirectionTutorial() {
     tutorialLevelBannerActive = false;
     gamePaused = false;
 
-    clearInterval(fallInterval);
-    fallInterval = setInterval(gameLoop, fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
 
     // Teken meteen opnieuw; daarna neemt gameLoop het bewegen over.
     drawGrid();
@@ -30579,8 +30689,8 @@ function finishObjectiveTutorialAndStartNormalGame() {
   drawGrid();
   drawFallingBlock();
 
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 }
 
 function finishMovementTutorial() {
@@ -30646,11 +30756,8 @@ function beginExistingLevel1Tutorial() {
   fallSpeed = 400;
 
   const level1FastSpeed = Math.max(1, Math.floor(fallSpeed / 1.5));
-  clearInterval(fallInterval);
-  fallInterval = setInterval(
-    gameLoop,
-    (level === 1 && level1LandedCount < 4) ? level1FastSpeed : fallSpeed
-  );
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop((level === 1 && level1LandedCount < 4) ? level1FastSpeed : fallSpeed);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -31018,8 +31125,8 @@ function startNormalGame() {
       drawGrid();
       drawFallingBlock();
 
-      clearInterval(fallInterval);
-      fallInterval = setInterval(gameLoop, fallSpeed);
+      v625StopFallLoop();
+      fallInterval = v625StartFallLoop(fallSpeed);
     };
 
     if (savedTutorialLevel === 2) {
@@ -31071,8 +31178,8 @@ function startNormalGame() {
       drawGrid();
       drawFallingBlock();
 
-      clearInterval(fallInterval);
-      fallInterval = setInterval(gameLoop, fallSpeed);
+      v625StopFallLoop();
+      fallInterval = v625StartFallLoop(fallSpeed);
       return;
     }
 
@@ -31182,7 +31289,7 @@ function startNormalGame() {
   drawGrid();
   drawFallingBlock();
 
-  clearInterval(fallInterval);
+  v625StopFallLoop();
 
   setLevel1ArrowControlsLocked(false);
   setLevel1DropLocked(false);
@@ -32496,8 +32603,8 @@ function restartChallenge7() {
   passedChallenge7c = false;
 
   fallSpeed = fallSpeedBeforeChallenge7;
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 
   updateChallenge7StatusCell();
   showPartyMissionStart(7);
@@ -32990,7 +33097,7 @@ function restoreSpecialUnlocksForTutorialCheckpoint(checkpointLevel) {
 }
 
 function resetRuntimeBeforeTutorialCheckpointResume() {
-  if (fallInterval) clearInterval(fallInterval);
+  if (fallInterval) v625StopFallLoop();
 
   tutorialLevelBannerEnabled = false;
   lastTutorialLevelBannerShown = null;
@@ -33291,8 +33398,8 @@ function resumeTutorialCheckpoint(checkpointLevel) {
   updateLevelDisplay();
   updateLevelAndBpmDisplay();
 
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 }
 
 function continueWithScore() {
@@ -33661,8 +33768,8 @@ drawGrid();
   fallSpeed = Number.isFinite(restoredSpeed) && restoredSpeed > 0
     ? restoredSpeed
     : defaultFallSpeed;
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 
   // Een traditioneel bewaarde Party gebruikt deze loader nog steeds.
   // Mocht hij ooit voor een tutoriallevel worden aangeroepen, toon dan het
@@ -35645,8 +35752,8 @@ function v408SetDropButtonsEnabled(enabled) {
 }
 
 function v408RestartFallLoop() {
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 }
 
 function v408SpawnSpecificDirection(direction, template = null) {
@@ -35838,7 +35945,7 @@ function v408StartDropUnlockAndTrial() {
       v408Level2DropAwaitingUse = true;
       v408SetMovementButtonsEnabled(false);
       v408SetDropButtonsEnabled(true);
-      clearInterval(fallInterval);
+      v625StopFallLoop();
       gamePaused = false;
 
       const dropButtonElement = getVisibleDropBlockButton();
@@ -36315,11 +36422,8 @@ function v408StartLevel3BarrierDemo() {
   v408AutoMoveFloorFullyLeft(() => {
     if (level !== 3 || v408Level3MasteryStage !== "barrier_demo") return;
     gamePaused = false;
-    clearInterval(fallInterval);
-    fallInterval = setInterval(
-      gameLoop,
-      Math.max(140, Math.floor(fallSpeed * 0.55))
-    );
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(Math.max(140, Math.floor(fallSpeed * 0.55)));
   });
 }
 
@@ -36336,7 +36440,7 @@ function v408HandleControlledBarrierImpact(block, side, indices) {
   v408BarrierDemoSide = side;
   v408BarrierDemoIndices = indices.slice();
   gamePaused = true;
-  clearInterval(fallInterval);
+  v625StopFallLoop();
 
   // Eerste impact: echte visuele beschadigde toestand, zonder blijvende straf.
   for (const index of v408BarrierDemoIndices) {
@@ -36917,7 +37021,7 @@ function v410ShowPartyBarrierAtFirstRealImpact(block, side, indices) {
 
   v410BarrierLessonShown = true;
   gamePaused = true;
-  clearInterval(fallInterval);
+  v625StopFallLoop();
 
   // Toon één echte beschadigde toestand, maar level 3 blijft oefenmodus zonder permanente straf.
   for (const index of indices) {
@@ -37294,7 +37398,7 @@ function v421ShowClockwiseArrivalIntroIfNeeded() {
   // dit is het natuurlijke moment om de klokwijzerzin zichtbaar te maken.
   v421ClockwiseIntroShown = true;
   gamePaused = true;
-  clearInterval(fallInterval);
+  v625StopFallLoop();
 
   setMovementTutorialMessage(
     "BLOCKS ARRIVE CLOCKWISE",
@@ -37422,7 +37526,7 @@ v408StartLevel4AfterBasics = function() {
 
   v422FinalPracticeCongratsShown = true;
   gamePaused = true;
-  clearInterval(fallInterval);
+  v625StopFallLoop();
 
   if (typeof launchTutorialGlitters === "function") {
     launchTutorialGlitters();
@@ -37906,7 +38010,7 @@ startLevel3TwoColorTutorial = function() {
   const result = v426BaseStartLevel3TwoColorTutorial.apply(this, arguments);
   if (level === 2 && tutorialLevelBannerActive) {
     gamePaused = true;
-    clearInterval(fallInterval);
+    v625StopFallLoop();
   }
   return result;
 };
@@ -37922,7 +38026,7 @@ startLevel4ThreeColorTutorial = function() {
 
   if (tutorialLevelBannerActive) {
     gamePaused = true;
-    clearInterval(fallInterval);
+    v625StopFallLoop();
   }
 
   if (!v426RedIntroShown) {
@@ -39900,7 +40004,7 @@ document.addEventListener("touchstart", v448BlockLockedUserInput, {
 
 // Lichte DOM-only synchronisatie; geen canvaswerk.
 // Nodig omdat gamePaused een gewone JS-variable is en dus geen DOM-event uitzendt.
-v448InputSyncTimer = setInterval(v448SyncControlLocks, 120);
+v448InputSyncTimer = setInterval(v448SyncControlLocks, 250); // V625: visual-only polling; input is still checked synchronously
 
 window.addEventListener("load", v448SyncControlLocks);
 window.addEventListener("orientationchange", () => {
@@ -41095,7 +41199,9 @@ function v454Level1StartPreview() {
       return;
     }
 
+    if (window.v627CanAutomaticMovementNow && !window.v627CanAutomaticMovementNow(fallingBlock, "level1-preview")) return;
     fallingBlock.y += 1;
+    if (window.v627RecordAutomaticMovement) window.v627RecordAutomaticMovement(fallingBlock, "level1-preview");
     v454Level1PreviewDrops += 1;
 
     drawGrid();
@@ -41123,6 +41229,7 @@ function v454FinishLevel1Preview(fastForward = false) {
   // de speler de 12 previewstappen had afgewacht.
   if (fastForward && v454Level1PreviewDrops < 12) {
     fallingBlock.y += (12 - v454Level1PreviewDrops);
+    if (window.v627RecordAutomaticMovement) window.v627RecordAutomaticMovement(fallingBlock, "level1-preview-fast-forward");
     v454Level1PreviewDrops = 12;
   }
 
@@ -41271,7 +41378,7 @@ v421ShowClockwiseArrivalIntroIfNeeded = function() {
 
   v421ClockwiseIntroShown = true;
   gamePaused = true;
-  clearInterval(fallInterval);
+  v625StopFallLoop();
 
   const finishClockwiseIntro = () => {
     if (v421ClockwiseIntroTimer) {
@@ -42244,7 +42351,9 @@ startRightDirectionTutorial = function() {
         return;
       }
 
+      if (window.v627CanAutomaticMovementNow && !window.v627CanAutomaticMovementNow(fallingBlock, "direction-preview")) return;
       fallingBlock.x -= 1;
+      if (window.v627RecordAutomaticMovement) window.v627RecordAutomaticMovement(fallingBlock, "direction-preview");
       previewMoves += 1;
       drawGrid();
       drawFallingBlock();
@@ -42267,6 +42376,7 @@ startRightDirectionTutorial = function() {
         // Bij snel lezen/>>: spring exact naar dezelfde demonstratiepositie.
         if (previewMoves < 4) {
           fallingBlock.x -= (4 - previewMoves);
+          if (window.v627RecordAutomaticMovement) window.v627RecordAutomaticMovement(fallingBlock, "direction-preview-fast-forward");
           previewMoves = 4;
           drawGrid();
           drawFallingBlock();
@@ -44205,12 +44315,49 @@ function v468AutosaveNow() {
   }
 }
 
+let v625AutosaveIdleHandle = null;
+let v625AutosaveUsesIdleCallback = false;
 function v468ScheduleAutosave(delayMs = 0) {
-  if (v468AutosaveTimer) clearTimeout(v468AutosaveTimer);
-  v468AutosaveTimer = setTimeout(() => {
+  // V625: snapshot cloning + JSON.stringify + localStorage.setItem zijn synchroon.
+  // Ze mogen daarom niet met setTimeout(..., 0) midden tussen fall ticks terechtkomen.
+  if (v468AutosaveTimer) {
+    clearTimeout(v468AutosaveTimer);
     v468AutosaveTimer = null;
-    v468AutosaveNow();
-  }, Math.max(0, Number(delayMs) || 0));
+  }
+  if (v625AutosaveIdleHandle !== null) {
+    if (v625AutosaveUsesIdleCallback && typeof cancelIdleCallback === 'function') {
+      cancelIdleCallback(v625AutosaveIdleHandle);
+    } else {
+      clearTimeout(v625AutosaveIdleHandle);
+    }
+    v625AutosaveIdleHandle = null;
+  }
+
+  const requestedDelay = Math.max(0, Number(delayMs) || 0);
+  const queueIdleSave = () => {
+    if (typeof requestIdleCallback === 'function') {
+      v625AutosaveUsesIdleCallback = true;
+      v625AutosaveIdleHandle = requestIdleCallback(() => {
+        v625AutosaveIdleHandle = null;
+        v468AutosaveNow();
+      }, { timeout: 900 });
+    } else {
+      v625AutosaveUsesIdleCallback = false;
+      v625AutosaveIdleHandle = setTimeout(() => {
+        v625AutosaveIdleHandle = null;
+        v468AutosaveNow();
+      }, 90);
+    }
+  };
+
+  if (requestedDelay > 0) {
+    v468AutosaveTimer = setTimeout(() => {
+      v468AutosaveTimer = null;
+      queueIdleSave();
+    }, requestedDelay);
+  } else {
+    queueIdleSave();
+  }
 }
 
 function v468ReadAutosave() {
@@ -44379,8 +44526,8 @@ function v468ResumeLevel1Guidance() {
     gamePaused = false;
     setLevel1ArrowControlsLocked(false);
     setLevel1DropLocked(true);
-    clearInterval(fallInterval);
-    fallInterval = setInterval(gameLoop, fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
     return;
   }
 
@@ -44388,8 +44535,8 @@ function v468ResumeLevel1Guidance() {
   objectiveTutorialActive = false;
   setLevel1DropLocked(true);
   gamePaused = true;
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 
   if (v468Level1MovementPhase === "right" || movementTutorialStep >= 1) {
     movementTutorialStep = 1;
@@ -44479,8 +44626,8 @@ function v468ResumeAutosave(snapshot) {
 
     gamePaused = false;
     isPaused = false;
-    clearInterval(fallInterval);
-    fallInterval = setInterval(gameLoop, fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
 
     if (level === 1) {
       tutorialLevelBannerEnabled = false;
@@ -44817,8 +44964,8 @@ startMovementTutorial = function() {
 
   // De set beweegt eerst zichtbaar een fractie van de aanloop.
   gamePaused = false;
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
 
   setTimeout(() => {
     if (level !== 1 || !movementTutorialActive || objectiveTutorialActive) return;
@@ -44935,8 +45082,8 @@ startObjectiveTutorial = function() {
   gamePaused = false;
   drawGrid();
   if (fallingBlock) drawFallingBlock();
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
   v468ScheduleAutosave(0);
 };
 
@@ -45105,8 +45252,8 @@ startLevel3TwoColorTutorial = function() {
   drawFallingBlock();
 
   gamePaused = false;
-  clearInterval(fallInterval);
-  fallInterval = setInterval(gameLoop, fallSpeed);
+  v625StopFallLoop();
+  fallInterval = v625StartFallLoop(fallSpeed);
   v468Toast("BLUE JOINS!", "", 1800);
   v468ScheduleAutosave(0);
 };
@@ -45726,8 +45873,8 @@ body.v471-block-b-card .tutorial-tap-to-continue {
   }
   function v471RestartLoop(){
     gamePaused=false;
-    clearInterval(fallInterval);
-    fallInterval=setInterval(gameLoop,fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
     drawGrid(); if(fallingBlock)drawFallingBlock();
   }
   function v471ClearArrowStyles(){
@@ -45765,7 +45912,12 @@ body.v471-block-b-card .tutorial-tap-to-continue {
       let steps=0;
       v471PreviewTimer=setInterval(()=>{
         if(!rightDirectionTutorialActive||!fallingBlock){clearInterval(v471PreviewTimer);v471PreviewTimer=null;return;}
-        if(steps<3){ fallingBlock.x-=1; steps++; drawGrid();drawFallingBlock(); }
+        if(steps<3){
+          if (window.v627CanAutomaticMovementNow && !window.v627CanAutomaticMovementNow(fallingBlock, "v471-direction-preview")) return;
+          fallingBlock.x-=1;
+          if (window.v627RecordAutomaticMovement) window.v627RecordAutomaticMovement(fallingBlock, "v471-direction-preview");
+          steps++; drawGrid();drawFallingBlock();
+        }
         if(steps>=3){
           clearInterval(v471PreviewTimer);v471PreviewTimer=null;
           setTimeout(()=>{
@@ -45776,7 +45928,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
             v468ScheduleAutosave(0);
           },220);
         }
-      },Math.max(180,Math.floor((Number(fallSpeed)||500)*0.55)));
+      }, Math.max(16, Number(fallSpeed) || 400));
     });
     v468ScheduleAutosave(0);
   };
@@ -45979,7 +46131,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
 
     if(!firstRelevantDamage)return v471BaseResolveOuterBarrierImpact.apply(this,arguments);
 
-    gamePaused=true;clearInterval(fallInterval);failChallenge3OnBarrierDamage();
+    gamePaused=true;v625StopFallLoop();failChallenge3OnBarrierDamage();
     for(const i of indices){barrierWallStates[side][i]=Math.max(BARRIER_STATE_OPEN,barrierWallStates[side][i]-1);}
     pulseBarrierWallImpact(side,indices);
     const repairStarted=prepareFirstBarrierRepairTutorial(side,indices);
@@ -45989,7 +46141,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     v471ShowHint(becameOpen?'PARTY BARRIER OPEN':'PARTY BARRIER DAMAGED','1 HIT DAMAGES THE BARRIER.\nA SECOND HIT OPENS A GAP.\nA BLOCK THROUGH AN OPEN GAP ENDS THE PARTY.',becameOpen?V471_ICONS.barrierOpen:V471_ICONS.barrier,4800,()=>{
       if(!repairStarted||!firstBarrierRepairTutorialActive)return;
       firstBarrierRepairTutorialStage='repair_intro';
-      gamePaused=true;clearInterval(fallInterval);
+      gamePaused=true;v625StopFallLoop();
       // V552: do not make the R Block appear unexplained. First tell the player
       // exactly what it earns and what action frees it.
       v471ShowHint('EARN YOUR FIRST REPAIR','CLEAR THE R BLOCK IN A GROUP OF 5+\nTO EARN A REPAIR',V471_ICONS.repair,4300,()=>{
@@ -46010,7 +46162,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
 
   openFirstBarrierRepairTutorialAfterCounterArrival=function(){
     if(!firstBarrierRepairTutorialActive||firstBarrierRepairTutorialStage!=='repair_flying')return;
-    firstBarrierRepairTutorialStage='repair_ready';gamePaused=true;clearInterval(fallInterval);updateLivesDisplay();pulseTutorialInfoCell('livesDisplay');
+    firstBarrierRepairTutorialStage='repair_ready';gamePaused=true;v625StopFallLoop();updateLivesDisplay();pulseTutorialInfoCell('livesDisplay');
     v471ShowHint('REPAIR +1','',V471_ICONS.repair,950,()=>{
       if(!firstBarrierRepairTutorialActive)return;
       firstBarrierRepairTutorialStage='awaiting_lives_click';gamePaused=true;pulseTutorialInfoCell('livesDisplay');
@@ -46073,7 +46225,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
       v468ScheduleAutosave(0);
       const celebrateAndGo=()=>{
         if(level!==3||v408Level3MasteryStage!=='final_practice')return;
-        gamePaused=true;clearInterval(fallInterval);
+        gamePaused=true;v625StopFallLoop();
         v471ShowHint('4-SIDE CHALLENGE COMPLETE!','',V471_ICONS.directions,1700,()=>{
           if(typeof window.v501ClearMiniChallenge==='function')window.v501ClearMiniChallenge();
           if(level===3&&v408Level3MasteryStage==='final_practice')v408StartLevel4AfterBasics();
@@ -46110,7 +46262,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     fallingBlock=null;forcedNextBlock=v471PlainBlock('#E53935',2);fallingBlock=createBlock('down');
     v408SetMovementButtonsEnabled(true);v408SetDropButtonsEnabled(true);updateFeatureAvailability({animate:false});
     // V524: same rhythm as BLUE: first introduce the new colour, then the next small goal.
-    gamePaused=true;clearInterval(fallInterval);
+    gamePaused=true;v625StopFallLoop();
     v471ShowHint('READY FOR ANOTHER COLOR?','RED JOINS THE PARTY!',V471_ICONS.red,1800,()=>{
       if(level!==4||!level4TutorialActive)return;
       if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('PARTY GOAL',0,3);
@@ -46161,7 +46313,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     // Do not require an extra clean set after the scoring group. Freeze play during
     // the Goal-4 completion card, then enter level 5 immediately when it closes.
     // Use the public wrapped hint so Goal 4 also receives the promised +100 points.
-    v471Level4ExitPending=true;level4TransitionStarted=true;gamePaused=true;clearInterval(fallInterval);
+    v471Level4ExitPending=true;level4TransitionStarted=true;gamePaused=true;v625StopFallLoop();
     const go=()=>{
       if(level!==4||!level4TutorialActive)return;
       if(typeof window.v501ClearMiniChallenge==='function')window.v501ClearMiniChallenge();
@@ -46204,7 +46356,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     if(firstBarrierRepairTutorialActive){
       const st=firstBarrierRepairTutorialStage;
       if(st==='repair_flying'||st==='repair_ready'||st==='awaiting_lives_click'||st==='repairing'){
-        firstBarrierRepairTutorialStage='awaiting_lives_click';gamePaused=true;clearInterval(fallInterval);pulseTutorialInfoCell('livesDisplay');v471ShowHint('USE YOUR REPAIR','',V471_ICONS.repair,0,null,true);
+        firstBarrierRepairTutorialStage='awaiting_lives_click';gamePaused=true;v625StopFallLoop();pulseTutorialInfoCell('livesDisplay');v471ShowHint('USE YOUR REPAIR','',V471_ICONS.repair,0,null,true);
       }else{
         v471EnsureRepairSetAfterResume(snapshot);
       }
@@ -46223,7 +46375,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
         if(v408Level3MasteryStage==='final_practice'){
           if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('4 SIDES',Math.min(4,Number(level2DirectionBlocksResolved)||0),4);
           if(Number(level2DirectionBlocksResolved)>=4){
-            gamePaused=true;clearInterval(fallInterval);
+            gamePaused=true;v625StopFallLoop();
             setTimeout(()=>v471ShowHint('4-SIDE CHALLENGE COMPLETE!','',V471_ICONS.directions,1700,()=>{if(typeof window.v501ClearMiniChallenge==='function')window.v501ClearMiniChallenge();if(level===3)v408StartLevel4AfterBasics();}),0);
           }else v471RestartLoop();
         }else v471RestartLoop();
@@ -46409,8 +46561,8 @@ body.v472-block-c-card .v453-fast-forward {
 
   function v472RestartLoop(){
     gamePaused=false;
-    clearInterval(fallInterval);
-    fallInterval=setInterval(gameLoop,fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
     drawGrid();
     if(fallingBlock)drawFallingBlock();
   }
@@ -46457,7 +46609,7 @@ body.v472-block-c-card .v453-fast-forward {
     );
 
     // V524: mirror RED/BLUE: colour reveal first, then a three-step Party Goal.
-    gamePaused=true;clearInterval(fallInterval);
+    gamePaused=true;v625StopFallLoop();
     v472ShowHint('READY FOR ANOTHER COLOR?','GREEN JOINS THE PARTY!',V472_ICONS.green,1800,()=>{
       if(level!==5||!level5HeartTutorialActive)return;
       if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('PARTY GOAL',0,3);
@@ -46522,7 +46674,7 @@ body.v472-block-c-card .v453-fast-forward {
     // cycle during the RED completion animation. v472IntroduceGreen() will install
     // the guaranteed GREEN formation as forcedNextBlock.
     gamePaused=true;
-    clearInterval(fallInterval);
+    v625StopFallLoop();
     fallingBlock=null;
     forcedNextBlock=null;
     drawGrid();
@@ -46960,7 +47112,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
 
   function v473RestartLoop(){
     gamePaused=false;isPaused=false;updatePauseDisplay();
-    clearInterval(fallInterval);fallInterval=setInterval(gameLoop,fallSpeed);
+    v625StopFallLoop();fallInterval = v625StartFallLoop(fallSpeed);
     drawGrid();if(fallingBlock)drawFallingBlock();
   }
 
@@ -47015,7 +47167,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     // Geef de score/resource-flight kort visuele ruimte, daarna is de nieuwe actie verplicht.
     v473ReadyTimer=setTimeout(()=>{
       v473ReadyTimer=null;if(level!==7||!level7MulticolorTutorialActive||level7MulticolorStage!=='reward_flying')return;
-      level7MulticolorStage='awaiting_joker_click';gamePaused=true;clearInterval(fallInterval);
+      level7MulticolorStage='awaiting_joker_click';gamePaused=true;v625StopFallLoop();
       v473ShowHint('MULTICOLOR UNLOCKED!','+1',V473_ICONS.multi,1300,{onClose:()=>{
         if(level===7&&level7MulticolorStage==='awaiting_joker_click')v473ShowHint('TAP TO USE','',V473_ICONS.multi,0,{sticky:true});
       }});
@@ -47089,7 +47241,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     freePictureUnlocked=true;freePictureCount=Math.max(1,Number(freePictureCount)||0);
     localStorage.setItem('freePictureUnlocked','true');localStorage.setItem('testFreePictureUnlocked','true');
     updateFreePictureDisplay();updateFeatureAvailability({animate:false});updateLevelDisplay();updateLevelAndBpmDisplay();updateTutorialColorTracker({animate:false});
-    v473Pulse('freePictureDisplay');gamePaused=true;clearInterval(fallInterval);
+    v473Pulse('freePictureDisplay');gamePaused=true;v625StopFallLoop();
     const v543FreeCell=document.getElementById('freePictureDisplay');
     if(v543FreeCell)v543FreeCell.classList.add('v543-free-picture-sticky-focus','tutorial-required-action');
     v473ShowHint('FREE PICTURE UNLOCKED!','+1',V473_ICONS.picture,1400,{onClose:()=>{
@@ -47163,7 +47315,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     level9SkipStage='awaiting_skip_click';
     localStorage.setItem(FEATURE_DISCOVERY_KEYS.skip,'true');renewTokenCount=Math.max(1,Number(renewTokenCount)||0);
     updateRenewDisplay();updateFeatureAvailability({animate:false});
-    v473Pulse('renewCell');gamePaused=true;clearInterval(fallInterval);
+    v473Pulse('renewCell');gamePaused=true;v625StopFallLoop();
     if(typeof updateSkipAvailability==='function')updateSkipAvailability();
     v473ShowHint("DON'T WANT IT? SKIP IT",'',V473_ICONS.skip,0,{sticky:true});v468ScheduleAutosave(0);
   }
@@ -47219,7 +47371,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
   function v473ShowFullPartyPayoff(){
     if(v473FullPartyShown){v473RestartLoop();return;}
     v473FullPartyShown=true;v473ClearHint();const overlay=v473EnsureFullPartyOverlay();const card=document.getElementById('v473FullPartyCard');const title=document.getElementById('v473FullPartyTitle');
-    gamePaused=true;clearInterval(fallInterval);overlay.style.display='flex';title.textContent='ALL 7 COLORS UNLOCKED';requestAnimationFrame(()=>card&&card.classList.add('show'));
+    gamePaused=true;v625StopFallLoop();overlay.style.display='flex';title.textContent='ALL 7 COLORS UNLOCKED';requestAnimationFrame(()=>card&&card.classList.add('show'));
     if(typeof launchTutorialGlitters==='function')launchTutorialGlitters();
     setTimeout(()=>{if(title)title.textContent='FULL PARTY MODE';if(typeof launchTutorialGlitters==='function')launchTutorialGlitters();},2250);
     setTimeout(()=>{if(card)card.classList.remove('show');setTimeout(()=>{overlay.style.display='none';v473RestartLoop();},220);},4500);
@@ -47287,14 +47439,14 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
       }
       if(level7MulticolorStage==='reward_flying'||level7MulticolorStage==='awaiting_joker_click'){
         multicolorUnlocked=true;localStorage.setItem('multicolorUnlocked','true');multicolorCount=Math.max(1,Number(multicolorCount)||0);updateMulticolorDisplay();updateFeatureAvailability({animate:false});
-        level7MulticolorStage='awaiting_joker_click';gamePaused=true;clearInterval(fallInterval);v473Pulse('multicolorDisplay');v473ShowHint('TAP MULTICOLOR','',V473_ICONS.multi,0,{sticky:true});
+        level7MulticolorStage='awaiting_joker_click';gamePaused=true;v625StopFallLoop();v473Pulse('multicolorDisplay');v473ShowHint('TAP MULTICOLOR','',V473_ICONS.multi,0,{sticky:true});
       }else{v473EnsureRequiredMultiAfterResume();v473RestartLoop();}
     }else if(level===8){
       level8FreePictureTutorialActive=true;oneColorDirectionCycleActive=true;
       if(level8FreePictureStage==='showing_free_picture_intro')level8FreePictureStage='awaiting_free_picture_click';
       if(level8FreePictureStage==='awaiting_free_picture_click'){
         freePictureUnlocked=true;freePictureCount=Math.max(1,Number(freePictureCount)||0);localStorage.setItem('freePictureUnlocked','true');updateFreePictureDisplay();updateFeatureAvailability({animate:false});
-        gamePaused=true;clearInterval(fallInterval);v473Pulse('freePictureDisplay');
+        gamePaused=true;v625StopFallLoop();v473Pulse('freePictureDisplay');
         const v543FreeCell=document.getElementById('freePictureDisplay');if(v543FreeCell)v543FreeCell.classList.add('v543-free-picture-sticky-focus','tutorial-required-action');
         v473ShowHint('TAP FREE PICTURE','',V473_ICONS.picture,0,{sticky:true});
       }else{v473EnsureFreePictureQueuedAfterResume();v473RestartLoop();}
@@ -47302,7 +47454,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
       level9SkipTutorialActive=true;oneColorDirectionCycleActive=true;
       if(level9SkipStage==='unlocking_skip'||level9SkipStage==='showing_skip_popup'||level9SkipStage==='arming_skip_click'||(level9SkipStage==='playing_before_skip'&&level9BlocksBeforeSkip>=3))level9SkipStage='awaiting_skip_click';
       if(level9SkipStage==='awaiting_skip_click'){
-        localStorage.setItem(FEATURE_DISCOVERY_KEYS.skip,'true');renewTokenCount=Math.max(1,Number(renewTokenCount)||0);updateRenewDisplay();updateFeatureAvailability({animate:false});gamePaused=true;clearInterval(fallInterval);v473Pulse('renewCell');v473ShowHint("DON'T WANT IT? SKIP IT",'',V473_ICONS.skip,0,{sticky:true});
+        localStorage.setItem(FEATURE_DISCOVERY_KEYS.skip,'true');renewTokenCount=Math.max(1,Number(renewTokenCount)||0);updateRenewDisplay();updateFeatureAvailability({animate:false});gamePaused=true;v625StopFallLoop();v473Pulse('renewCell');v473ShowHint("DON'T WANT IT? SKIP IT",'',V473_ICONS.skip,0,{sticky:true});
       }else{v473RestartLoop();}
     }else if(level===10){
       level10TransitionStarted=true;oneColorDirectionCycleActive=false;
@@ -47503,8 +47655,8 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     gamePaused=false;
     isPaused=false;
     if(typeof updatePauseDisplay==='function')updatePauseDisplay();
-    clearInterval(fallInterval);
-    fallInterval=setInterval(gameLoop,fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
     drawGrid();
     if(fallingBlock)drawFallingBlock();
   }
@@ -47547,7 +47699,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
       firstBarrierRepairTutorialStage='awaiting_lives_click';
       repairCount=Math.max(1,Number(repairCount)||0);
       updateLivesDisplay();
-      gamePaused=true;isPaused=false;clearInterval(fallInterval);
+      gamePaused=true;isPaused=false;v625StopFallLoop();
       if(typeof pulseTutorialInfoCell==='function')pulseTutorialInfoCell('livesDisplay');
       if(typeof v468Toast==='function')v468Toast('USE YOUR REPAIR','',2600);
       return true;
@@ -47595,7 +47747,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     // missiekaart; als hij al gestart was, spelen we gewoon verder met de counters.
     if(!d.missionIntroShown){
       gamePaused=true;
-      clearInterval(fallInterval);
+      v625StopFallLoop();
       setTimeout(()=>{
         if(level===10&&challengeActive&&typeof showPartyMissionStart==='function'){
           showPartyMissionStart(currentPartyMissionId||1,true);
@@ -48422,7 +48574,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     if (!firstBarrierRepairTutorialActive || firstBarrierRepairTutorialStage !== 'repair_flying') return;
     firstBarrierRepairTutorialStage = 'repair_ready';
     gamePaused = true;
-    clearInterval(fallInterval);
+    v625StopFallLoop();
     updateLivesDisplay();
     if (typeof v471ClearHint === 'function') v471ClearHint();
     v471ShowHint('REPAIR +1','',V471_ICONS.repair,1500,() => {
@@ -48430,7 +48582,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
       if (typeof v471ClearHint === 'function') v471ClearHint();
       firstBarrierRepairTutorialStage = 'repairing';
       gamePaused = true;
-      clearInterval(fallInterval);
+      v625StopFallLoop();
       if (typeof window.startBarrierRepairTutorial === 'function') {
         window.startBarrierRepairTutorial(firstBarrierRepairTutorialRequiredTargets || []);
       } else if (typeof window.openBarrierRepairMode === 'function') {
@@ -48461,7 +48613,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
           if (typeof v471ClearHint === 'function') v471ClearHint();
           firstBarrierRepairTutorialStage = 'repairing';
           gamePaused = true;
-          clearInterval(fallInterval);
+          v625StopFallLoop();
           if (typeof window.startBarrierRepairTutorial === 'function') {
             window.startBarrierRepairTutorial(firstBarrierRepairTutorialRequiredTargets || []);
           } else if (typeof window.openBarrierRepairMode === 'function') {
@@ -48678,15 +48830,15 @@ body.v473-block-d-card #movementTutorialCard {
 
   function v503PauseLoop(){
     gamePaused = true;
-    clearInterval(fallInterval);
+    v625StopFallLoop();
   }
 
   function v503RestartLoopIfPossible(expectedLevel){
     if(typeof expectedLevel === 'number' && level !== expectedLevel) return;
     if(typeof isPaused !== 'undefined' && isPaused) return;
     gamePaused = false;
-    clearInterval(fallInterval);
-    fallInterval = setInterval(gameLoop, fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
     drawGrid();
     if(fallingBlock) drawFallingBlock();
   }
@@ -49457,8 +49609,8 @@ body.v473-block-d-card #movementTutorialCard {
 
     // No instruction yet: let the real falling set demonstrate itself first.
     gamePaused=false;
-    clearInterval(fallInterval);
-    fallInterval=setInterval(gameLoop,fallSpeed);
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(fallSpeed);
 
     let finished=false;
     const revealMoveLeft=()=>{
@@ -50590,7 +50742,7 @@ body.v473-block-d-card #movementTutorialCard {
 
     firstBarrierRepairTutorialStage = 'repair_ready';
     gamePaused = true;
-    clearInterval(fallInterval);
+    v625StopFallLoop();
     if (typeof updateLivesDisplay === 'function') updateLivesDisplay();
     if (typeof window.v471ClearHint === 'function') window.v471ClearHint();
     if (typeof pulseTutorialInfoCell === 'function') pulseTutorialInfoCell('livesDisplay');
@@ -50605,7 +50757,7 @@ body.v473-block-d-card #movementTutorialCard {
         if (typeof window.v471ClearHint === 'function') window.v471ClearHint();
         firstBarrierRepairTutorialStage = 'repairing';
         gamePaused = true;
-        clearInterval(fallInterval);
+        v625StopFallLoop();
         v518OpenForcedRepair(0);
         if (typeof v468ScheduleAutosave === 'function') v468ScheduleAutosave(0);
       }
@@ -51314,7 +51466,7 @@ body.v473-block-d-card #movementTutorialCard {
     if(step===3){
       if(Number(level)!==7) return false;
       gamePaused=true;
-      clearInterval(fallInterval);
+      v625StopFallLoop();
       startLevel8FreePictureTutorial();
       return Number(level)===8 && !!level8FreePictureTutorialActive;
     }
@@ -51334,7 +51486,7 @@ body.v473-block-d-card #movementTutorialCard {
     if(step===5){
       if(Number(level)!==8 || !level8TurquoiseUnlocked) return false;
       gamePaused=true;
-      clearInterval(fallInterval);
+      v625StopFallLoop();
       startLevel9SkipTutorial();
       if(Number(level)!==9 || !level9SkipTutorialActive) return false;
       v527ArmSkipImmediately();
@@ -52552,17 +52704,23 @@ body.v473-block-d-card #movementTutorialCard {
   setInterval(function(){
     if(window.v545MainMenuOpen || !window.v545GameplayActive || document.visibilityState === 'hidden' || !v545IsOnboarding()) return;
     if(typeof v468CreateAutosaveSnapshot !== 'function' || typeof v468AutosaveNow !== 'function') return;
-    try{
-      const s=v468CreateAutosaveSnapshot();
-      if(!s) return;
-      const copy={...s}; delete copy.savedAt;
-      const signature=JSON.stringify(copy);
-      if(signature!==lastSignature){
-        lastSignature=signature;
-        v468AutosaveNow();
-      }
-    }catch(_){ }
-  },1500);
+    const audit = function(){
+      try{
+        const s=v468CreateAutosaveSnapshot();
+        if(!s) return;
+        const copy={...s}; delete copy.savedAt;
+        const signature=JSON.stringify(copy);
+        if(signature!==lastSignature){
+          lastSignature=signature;
+          // v468AutosaveNow itself remains the source of truth; this safety net
+          // now runs only when the browser has breathing room.
+          v468AutosaveNow();
+        }
+      }catch(_){ }
+    };
+    if(typeof requestIdleCallback === 'function') requestIdleCallback(audit,{timeout:1000});
+    else setTimeout(audit,100);
+  },3000);
 })();
 </script>
 
@@ -52675,8 +52833,8 @@ body.v546-onboarding-levels #levelProgressBar {
         gamePaused = false;
         if(typeof v408RestartFallLoop === 'function') v408RestartFallLoop();
         else {
-          clearInterval(fallInterval);
-          fallInterval=setInterval(gameLoop,fallSpeed);
+          v625StopFallLoop();
+          fallInterval = v625StartFallLoop(fallSpeed);
         }
 
         if(v547StillCatchableTimer) clearTimeout(v547StillCatchableTimer);
@@ -52904,7 +53062,7 @@ body.v546-onboarding-levels #levelProgressBar {
       const bridge=level===3&&v408Level3MasteryStage==='direction_cycle'&&Number(level2DirectionBlocksResolved)>=4&&!fourSidesBridgeShown&&!fourSidesBridgeRunning&&!(typeof firstBarrierRepairTutorialActive!=='undefined'&&firstBarrierRepairTutorialActive);
       if(!bridge)return base.apply(this,arguments);
       if(typeof v459TutorialBlockedByScore==='function'&&v459TutorialBlockedByScore())return base.apply(this,arguments);
-      fourSidesBridgeRunning=true;gamePaused=true;clearInterval(fallInterval);
+      fourSidesBridgeRunning=true;gamePaused=true;v625StopFallLoop();
       const next=()=>{fourSidesBridgeShown=true;fourSidesBridgeRunning=false;setTimeout(()=>{if(level!==3||v408Level3MasteryStage!=='direction_cycle'||level3SideLaneTutorialActive||level3SideLaneTutorialCompleted||firstBarrierRepairTutorialActive)return;base();},260);};
       if(typeof window.v471ShowHint==='function')window.v471ShowHint('GREAT! ALL 4 SIDES!','YOU CAN CATCH SETS FROM EVERY DIRECTION',window.V471_ICONS?window.V471_ICONS.directions:null,1850,next);else setTimeout(next,1850);
       if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);return true;
@@ -52929,10 +53087,10 @@ body.v546-onboarding-levels #levelProgressBar {
       if(typeof updateLevelDisplay==='function')updateLevelDisplay();if(typeof updateLevelAndBpmDisplay==='function')updateLevelAndBpmDisplay();if(typeof updateTutorialColorTracker==='function')updateTutorialColorTracker({animate:true});
       fallingBlock=null;const red=makeRedTemplate(pendingRedDirection);showRedAsNext(red);redQueuedInPreview=true;
       if(typeof v408SetMovementButtonsEnabled==='function')v408SetMovementButtonsEnabled(true);if(typeof v408SetDropButtonsEnabled==='function')v408SetDropButtonsEnabled(true);if(typeof updateFeatureAvailability==='function')updateFeatureAvailability({animate:false});
-      gamePaused=true;clearInterval(fallInterval);if(typeof drawGrid==='function')drawGrid();
+      gamePaused=true;v625StopFallLoop();if(typeof drawGrid==='function')drawGrid();
       const spawn=()=>{if(level!==4||!level4TutorialActive)return;const d=safeDirection(pendingRedDirection)||'down',actual=makeRedTemplate(d);redQueuedInPreview=false;
         if(typeof v408SpawnSpecificDirection==='function')v408SpawnSpecificDirection(d,actual);else{forcedNextBlock={...actual};setDirectionState(d);fallingBlock=useVertical?createBlock(d):createBlockH(d);if(typeof drawGrid==='function')drawGrid();if(typeof drawFallingBlock==='function')drawFallingBlock();}
-        gamePaused=true;clearInterval(fallInterval);if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('PARTY GOAL',0,3);
+        gamePaused=true;v625StopFallLoop();if(typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('PARTY GOAL',0,3);
         const play=()=>{if(level!==4||!level4TutorialActive)return;gamePaused=false;if(typeof window.v471RestartLoop==='function')window.v471RestartLoop();else if(typeof v408RestartFallLoop==='function')v408RestartFallLoop();if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);};
         if(typeof window.v471ShowHint==='function')window.v471ShowHint('YOUR FOURTH PARTY GOAL','CLEAR 3 GROUPS\nREWARD +100 POINTS',window.V471_ICONS?window.V471_ICONS.group:null,2400,play);else play();if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);
       };
@@ -52961,12 +53119,12 @@ body.v546-onboarding-levels #levelProgressBar {
   if(typeof showTutorialLevelBanner==='function'){const base=showTutorialLevelBanner;showTutorialLevelBanner=function(n){const x=safeLevel(n);if(obsolete(x)){blockedLegacyBannerRequests.push({level:x,at:Date.now()});hideObsoleteBanner();return false;}return base.apply(this,arguments);};}
   if(typeof updateLevelDisplay==='function'){const base=updateLevelDisplay;updateLevelDisplay=function(){const r=base.apply(this,arguments);if(obsolete(level))hideObsoleteBanner();return r;};}
 
-  if(typeof developerStartAtLevel==='function')developerStartAtLevel=function(n){n=Math.max(1,Math.min(50,Math.floor(Number(n)||1)));resetRecentTransitionState();if(obsolete(n)){try{if(typeof hideTutorialLevelBanner==='function')hideTutorialLevelBanner({restorePause:false});}catch(_){}tutorialLevelBannerActive=false;try{if(typeof v239PendingTutorialLevel!=='undefined')v239PendingTutorialLevel=null;}catch(_){}}requestedNewGameStartLevel=n;if(typeof closeDeveloperMenu==='function')closeDeveloperMenu();try{clearInterval(fallInterval);}catch(_){}try{if(typeof closeDismissibleTutorialPopup==='function')closeDismissibleTutorialPopup();if(typeof stopTutorialTextTrack==='function')stopTutorialTextTrack({hide:true});if(typeof window.v471ClearHint==='function')window.v471ClearHint();}catch(_){}firstUseGameStarted=false;leaveStartScreenAndRun(()=>startNormalGame());};
+  if(typeof developerStartAtLevel==='function')developerStartAtLevel=function(n){n=Math.max(1,Math.min(50,Math.floor(Number(n)||1)));resetRecentTransitionState();if(obsolete(n)){try{if(typeof hideTutorialLevelBanner==='function')hideTutorialLevelBanner({restorePause:false});}catch(_){}tutorialLevelBannerActive=false;try{if(typeof v239PendingTutorialLevel!=='undefined')v239PendingTutorialLevel=null;}catch(_){}}requestedNewGameStartLevel=n;if(typeof closeDeveloperMenu==='function')closeDeveloperMenu();try{v625StopFallLoop();}catch(_){}try{if(typeof closeDismissibleTutorialPopup==='function')closeDismissibleTutorialPopup();if(typeof stopTutorialTextTrack==='function')stopTutorialTextTrack({hide:true});if(typeof window.v471ClearHint==='function')window.v471ClearHint();}catch(_){}firstUseGameStarted=false;leaveStartScreenAndRun(()=>startNormalGame());};
   if(typeof startTutorialFromBeginning==='function'){const base=startTutorialFromBeginning;startTutorialFromBeginning=function(){resetRecentTransitionState();return base.apply(this,arguments);};}
 
   if(typeof v468CreateAutosaveSnapshot==='function'){const base=v468CreateAutosaveSnapshot;v468CreateAutosaveSnapshot=function(){const x=base.apply(this,arguments);if(x)x.uiV563={lastLevel3Direction:lastResolvedLevel3Direction,pendingRedDirection,redQueuedInPreview:!!redQueuedInPreview};return x;};}
   if(typeof v468ResumeAutosave==='function'){const base=v468ResumeAutosave;v468ResumeAutosave=function(snapshot){const ok=base.apply(this,arguments);if(!ok)return ok;const u=(snapshot&&(snapshot.uiV563||snapshot.uiV555))||{};lastResolvedLevel3Direction=safeDirection(u.lastLevel3Direction)||lastResolvedLevel3Direction;pendingRedDirection=safeDirection(u.pendingRedDirection)||pendingRedDirection;redQueuedInPreview=!!u.redQueuedInPreview;
-      if(Number(snapshot&&snapshot.level)===4&&redQueuedInPreview&&pendingRedDirection){clearInterval(fallInterval);fallingBlock=null;const red=makeRedTemplate(pendingRedDirection);if(typeof v408SpawnSpecificDirection==='function')v408SpawnSpecificDirection(pendingRedDirection,red);redQueuedInPreview=false;gamePaused=false;if(typeof window.v471RestartLoop==='function')window.v471RestartLoop();else if(typeof v408RestartFallLoop==='function')v408RestartFallLoop();if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);}
+      if(Number(snapshot&&snapshot.level)===4&&redQueuedInPreview&&pendingRedDirection){v625StopFallLoop();fallingBlock=null;const red=makeRedTemplate(pendingRedDirection);if(typeof v408SpawnSpecificDirection==='function')v408SpawnSpecificDirection(pendingRedDirection,red);redQueuedInPreview=false;gamePaused=false;if(typeof window.v471RestartLoop==='function')window.v471RestartLoop();else if(typeof v408RestartFallLoop==='function')v408RestartFallLoop();if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);}
       if(level6DivaPhaseActive()){if(!firstDivaReachedZero())normalizePreGoalDivas();else{if(nextBlock&&nextBlock.isDiva)makeOrdinary(nextBlock);if(forcedNextBlock&&forcedNextBlock.isDiva){forcedNextBlock.length=1;forcedNextBlock.divaCountdown=Number(forcedNextBlock.divaCountdown)>0?Number(forcedNextBlock.divaCountdown):9;}}if(typeof updateNextBlockDisplay==='function'&&nextBlock)updateNextBlockDisplay(nextBlock.color,nextBlock.length,nextBlock.isDiva,nextBlock.isSpecial,nextBlock.isMulticolor);if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);}return ok;};}
 
   const BACKUP_KEY='blockPartyV563DeveloperStorageBackup',LEGACY_BACKUP_KEY='blockPartyV561DeveloperStorageBackup',ACTIVE_KEY='blockPartyV563FreshPlayerTestActive';
@@ -56415,6 +56573,267 @@ body.v546-onboarding-levels #levelProgressBar {
 </style>
 
 
+
+<!-- v625: runtime performance consolidation; no gameplay-rule changes. -->
+<script id="v625-stable-runtime-performance">
+(() => {
+  'use strict';
+
+  // ---- A. Cache the two control containers and write display only on real changes. ----
+  let v625VerticalControls = null;
+  let v625HorizontalControls = null;
+  updateControls = function() {
+    if (!v625VerticalControls || !v625VerticalControls.isConnected) {
+      v625VerticalControls = document.querySelector('.vertical-controls');
+    }
+    if (!v625HorizontalControls || !v625HorizontalControls.isConnected) {
+      v625HorizontalControls = document.querySelector('.horizontal-controls');
+    }
+    if (!v625VerticalControls || !v625HorizontalControls) return;
+
+    const verticalDisplay = useVertical ? 'none' : 'flex';
+    const horizontalDisplay = useVertical ? 'flex' : 'none';
+    if (v625VerticalControls.style.display !== verticalDisplay) {
+      v625VerticalControls.style.display = verticalDisplay;
+    }
+    if (v625HorizontalControls.style.display !== horizontalDisplay) {
+      v625HorizontalControls.style.display = horizontalDisplay;
+    }
+  };
+
+  // ---- B. HUD BPM/DJ overview only changes when DJ/BPM/mission-completion changes. ----
+  const v625BaseUpdateFallSpeedDisplay = updateFallSpeedDisplay;
+  let v625LastFallHudSignature = '';
+  updateFallSpeedDisplay = function(force = false) {
+    const signature = [
+      Number(fallSpeedBeforeChallenge7) || 0,
+      Number(currentDJ) || 0,
+      Number(currentRound) || 0,
+      challenge1Success ? 1 : 0,
+      challenge2Success ? 1 : 0,
+      challenge3Success ? 1 : 0,
+      challenge4Success ? 1 : 0,
+      challenge5Success ? 1 : 0,
+      challenge6Success ? 1 : 0,
+      challenge7Success ? 1 : 0
+    ].join('|');
+    if (!force && signature === v625LastFallHudSignature) return;
+    v625LastFallHudSignature = signature;
+    return v625BaseUpdateFallSpeedDisplay.apply(this, arguments);
+  };
+
+  // ---- C. High-score state in RAM; synchronous storage only in idle time. ----
+  let v625HighScore = Number(localStorage.getItem('allTimeHighScore') || 0) || 0;
+  let v625HighRound = Number(localStorage.getItem('allTimeHighRound') || 0) || 0;
+  let v625HighestLevel = Number(localStorage.getItem('allTimeHighestLevel') || 0) || 0;
+  let v625HighStatsDirty = false;
+  let v625HighStatsPersistHandle = null;
+  let v625HighStatsPersistUsesIdle = false;
+  let v625RecordDisplays = null;
+
+  function v625ResolveRecordDisplays() {
+    if (v625RecordDisplays && v625RecordDisplays.every(entry => !entry.root || entry.root.isConnected)) return v625RecordDisplays;
+    v625RecordDisplays = ['allTimeDisplay','allTimeDisplay1'].map(id => {
+      const root = document.getElementById(id);
+      return {
+        root,
+        party: root ? root.querySelector('[data-record="party"]') : null,
+        level: root ? root.querySelector('[data-record="level"]') : null
+      };
+    });
+    return v625RecordDisplays;
+  }
+
+  function v625RenderHighStats() {
+    for (const entry of v625ResolveRecordDisplays()) {
+      if (!entry.root) continue;
+      if (entry.party && entry.party.textContent !== String(v625HighScore)) entry.party.textContent = String(v625HighScore);
+      if (entry.level && entry.level.textContent !== String(v625HighestLevel)) entry.level.textContent = String(v625HighestLevel);
+    }
+  }
+
+  function v625FlushHighStats() {
+    if (!v625HighStatsDirty) return;
+    v625HighStatsDirty = false;
+    try {
+      localStorage.setItem('allTimeHighScore', String(v625HighScore));
+      localStorage.setItem('allTimeHighRound', String(v625HighRound));
+      localStorage.setItem('allTimeHighestLevel', String(v625HighestLevel));
+    } catch (_) {}
+  }
+
+  function v625ScheduleHighStatsPersist() {
+    v625HighStatsDirty = true;
+    if (v625HighStatsPersistHandle !== null) return;
+    if (typeof requestIdleCallback === 'function') {
+      v625HighStatsPersistUsesIdle = true;
+      v625HighStatsPersistHandle = requestIdleCallback(() => {
+        v625HighStatsPersistHandle = null;
+        v625FlushHighStats();
+      }, { timeout: 1200 });
+    } else {
+      v625HighStatsPersistUsesIdle = false;
+      v625HighStatsPersistHandle = setTimeout(() => {
+        v625HighStatsPersistHandle = null;
+        v625FlushHighStats();
+      }, 500);
+    }
+  }
+
+  updateAllTimeDisplay = function() {
+    const currentLevel = Number(level) || 1;
+    if (currentLevel > v625HighestLevel) {
+      v625HighestLevel = currentLevel;
+      v625ScheduleHighStatsPersist();
+    }
+    v625RenderHighStats();
+  };
+
+  updateHighStats = function() {
+    let changed = false;
+    const currentScore = Number(score) || 0;
+    const currentRoundValue = Number(round) || 0;
+    const currentLevelValue = Number(level) || 1;
+    if (currentScore > v625HighScore) { v625HighScore = currentScore; changed = true; }
+    if (currentRoundValue > v625HighRound) { v625HighRound = currentRoundValue; changed = true; }
+    if (currentLevelValue > v625HighestLevel) { v625HighestLevel = currentLevelValue; changed = true; }
+    if (changed) {
+      v625RenderHighStats();
+      v625ScheduleHighStatsPersist();
+    }
+  };
+
+  window.addEventListener('pagehide', v625FlushHighStats);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) v625FlushHighStats();
+  });
+
+  // ---- D. One canvas render transaction per fall tick. ----
+  // update()/landing code contains historical drawGrid() calls. In one synchronous
+  // JS turn those intermediate canvases are never painted by the browser anyway.
+  // Defer them and paint the final state once.
+  const v625RawDrawGrid = drawGrid;
+  const v625RawDrawFallingBlock = drawFallingBlock;
+  const v625RawDrawInnerBarrierLayout = drawInnerBarrierLayout;
+  const v625RawDrawBarrierWallLayout = drawBarrierWallLayout;
+  let v625BatchingFallRender = false;
+  let v625GridRequested = false;
+  let v625FallingRequested = false;
+  let v625SuppressGridOverlayLayer = false;
+
+  drawInnerBarrierLayout = function() {
+    if (v625SuppressGridOverlayLayer) return;
+    return v625RawDrawInnerBarrierLayout.apply(this, arguments);
+  };
+  drawBarrierWallLayout = function() {
+    if (v625SuppressGridOverlayLayer) return;
+    return v625RawDrawBarrierWallLayout.apply(this, arguments);
+  };
+
+  drawGrid = function() {
+    if (v625BatchingFallRender) {
+      v625GridRequested = true;
+      return;
+    }
+    return v625RawDrawGrid.apply(this, arguments);
+  };
+  drawFallingBlock = function() {
+    if (v625BatchingFallRender) {
+      v625FallingRequested = true;
+      return;
+    }
+    return v625RawDrawFallingBlock.apply(this, arguments);
+  };
+
+  function v625PaintFinalFallFrame() {
+    const canOverlayWithFalling = !!(
+      fallingBlock &&
+      !movementTutorialHideFallingBlock &&
+      !fallingBlock._v330SpawnBlinkHidden
+    );
+
+    // drawGrid and drawFallingBlock both historically painted the complete inner
+    // + outer Barrier. When falling is visible, only the second/front layer is needed.
+    if (canOverlayWithFalling) v625SuppressGridOverlayLayer = true;
+    try {
+      v625RawDrawGrid();
+    } finally {
+      v625SuppressGridOverlayLayer = false;
+    }
+    if (canOverlayWithFalling) v625RawDrawFallingBlock();
+  }
+
+  const v625BaseGameLoop = gameLoop;
+  gameLoop = function() {
+    v625BatchingFallRender = true;
+    v625GridRequested = false;
+    v625FallingRequested = false;
+    let result;
+    try {
+      result = v625BaseGameLoop.apply(this, arguments);
+    } finally {
+      v625BatchingFallRender = false;
+      if (v625GridRequested || v625FallingRequested) {
+        v625PaintFinalFallFrame();
+      }
+    }
+    return result;
+  };
+
+  // ---- E. Lightweight diagnostics for any remaining irregular tick. ----
+  // No console spam: stats are exposed for developer inspection only.
+  const perf = window.bpPerformanceStats = {
+    ticks: 0,
+    lateTicks: 0,
+    maxGameLoopMs: 0,
+    lastGameLoopMs: 0,
+    longTasks: 0,
+    maxLongTaskMs: 0,
+    lastTickGapMs: 0,
+    maxTickGapMs: 0,
+    skippedCatchups: 0
+  };
+
+  const v625MeasuredGameLoop = gameLoop;
+  gameLoop = function() {
+    const started = performance.now();
+    try {
+      return v625MeasuredGameLoop.apply(this, arguments);
+    } finally {
+      const duration = performance.now() - started;
+      perf.ticks += 1;
+      perf.lastGameLoopMs = duration;
+      perf.maxGameLoopMs = Math.max(perf.maxGameLoopMs, duration);
+      if (duration > Math.max(80, (Number(v625FallLoopDelayMs) || 400) * 0.5)) perf.lateTicks += 1;
+    }
+  };
+
+  if (typeof PerformanceObserver === 'function') {
+    try {
+      const observer = new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) {
+          perf.longTasks += 1;
+          perf.maxLongTaskMs = Math.max(perf.maxLongTaskMs, entry.duration || 0);
+        }
+      });
+      observer.observe({ entryTypes: ['longtask'] });
+    } catch (_) {}
+  }
+
+  // If a fall loop was already armed before this final wrapper installed,
+  // restart it once so the current gameLoop binding and no-catch-up scheduler are used.
+  if (fallInterval) {
+    const activeDelay = Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400;
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(activeDelay);
+  }
+
+  updateControls();
+  updateFallSpeedDisplay(true);
+  updateHighStats();
+})();
+</script>
+
 <!-- v622: six new extra-festive ~2 second success fanfares for every 5+ group celebration. Random selection, no immediate repeats. -->
 <script id="v622-random-group-clear-sounds">
 const V622_GROUP_CLEAR_SOUNDS = [
@@ -56483,6 +56902,22 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     repair:.06, resource:.09, multicolor:.07, freePicture:.065, divaNormal:.075, partyDown:.05
   };
   const BP_BACKGROUND_VOLUME = 0.13;
+
+  // V625: reuse HTMLAudioElements so frequent SFX do not repeatedly allocate,
+  // decode and later garbage-collect large base64 WAV objects on the main thread.
+  const BP_SFX_AUDIO_POOLS = new Map();
+  function bpAcquireSfxAudio(name, src) {
+    let pool = BP_SFX_AUDIO_POOLS.get(name);
+    if (!pool) { pool = []; BP_SFX_AUDIO_POOLS.set(name, pool); }
+    let audio = pool.find(item => item.paused || item.ended);
+    if (!audio && pool.length < 3) {
+      audio = new Audio(src);
+      audio.preload = 'auto';
+      pool.push(audio);
+    }
+    return audio || pool[0] || null;
+  }
+
   const bpLastPlayedAt = Object.create(null);
   let bpDuckReleaseTimer = null;
 
@@ -56508,10 +56943,11 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     bpLastPlayedAt[name] = now;
     try {
       bpDuckBackgroundForSfx(name, options.duckMs ?? (name === 'partyDown' ? 1100 : name === 'start' ? 800 : 520));
-      const audio = new Audio(src);
-      audio.preload = 'auto';
+      const audio = bpAcquireSfxAudio(name, src);
+      if (!audio) return;
       audio.volume = Math.max(0, Math.min(1, Number(options.volume ?? BP_SFX_VOLUME[name] ?? .60)));
       if (Number.isFinite(options.playbackRate)) audio.playbackRate = options.playbackRate;
+      try { audio.currentTime = 0; } catch (_) {}
       const p = audio.play();
       if (p && typeof p.catch === 'function') p.catch(() => {});
     } catch (_) {}
@@ -56521,9 +56957,13 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     try {
       if (typeof V622_GROUP_CLEAR_SOUNDS !== 'undefined' && V622_GROUP_CLEAR_SOUNDS.length) {
         const index = Math.floor(Math.random() * V622_GROUP_CLEAR_SOUNDS.length);
-        const a = new Audio(V622_GROUP_CLEAR_SOUNDS[index]);
+        const a = (typeof v625AcquireGroupClearAudio === 'function')
+          ? v625AcquireGroupClearAudio(index)
+          : new Audio(V622_GROUP_CLEAR_SOUNDS[index]);
+        if (!a) return;
         bpDuckBackgroundForSfx('start', 1500);
         a.volume = .55;
+        try { a.currentTime = 0; } catch (_) {}
         const p = a.play();
         if (p && typeof p.catch === 'function') p.catch(() => {});
       }
@@ -56711,6 +57151,1358 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     document.addEventListener('touchstart', unlock, {capture:true, passive:true});
     document.addEventListener('keydown', unlock, true);
   }
+})();
+</script>
+
+
+
+<!-- v626: strict visible fall cadence; no partial catch-up after a late frame. -->
+<script id="v626-strict-visible-fall-cadence">
+(() => {
+  'use strict';
+
+  // V625 still preserved a fixed-rate phase: a tick that arrived 150-250 ms late
+  // could make the following wait 150-250 ms shorter. V626 deliberately changes
+  // the contract: fallSpeed is the MINIMUM time between two automatic game steps.
+  // A late frame can make the next step later, never earlier.
+  let v626FallRafId = null;
+  let v626LastAutomaticTickStartedAt = null;
+  let v626LastAutomaticTickFinishedAt = null;
+
+  v625StopFallLoop = function() {
+    v625FallLoopGeneration += 1;
+    if (v626FallRafId !== null) {
+      cancelAnimationFrame(v626FallRafId);
+      v626FallRafId = null;
+    }
+    if (fallInterval !== null && typeof fallInterval !== 'undefined') {
+      clearTimeout(fallInterval);
+      clearInterval(fallInterval);
+    }
+    fallInterval = null;
+  };
+
+  v625StartFallLoop = function(requestedDelay = fallSpeed) {
+    v625StopFallLoop();
+
+    const generation = ++v625FallLoopGeneration;
+    const delay = Math.max(16, Number(requestedDelay) || Number(fallSpeed) || 400);
+    v625FallLoopDelayMs = delay;
+
+    const armNextAfterPaint = () => {
+      if (generation !== v625FallLoopGeneration) return null;
+
+      // Give the canvas state from the just-finished tick one browser paint
+      // opportunity before the full fall interval starts counting.
+      v626FallRafId = requestAnimationFrame(() => {
+        v626FallRafId = null;
+        if (generation !== v625FallLoopGeneration) return;
+        fallInterval = setTimeout(runTick, delay);
+      });
+      return v626FallRafId;
+    };
+
+    const runTick = () => {
+      if (generation !== v625FallLoopGeneration) return;
+
+      const tickStartedAt = performance.now();
+      const perf = window.bpPerformanceStats;
+      if (perf) {
+        if (Number.isFinite(v626LastAutomaticTickStartedAt)) {
+          const gap = tickStartedAt - v626LastAutomaticTickStartedAt;
+          perf.lastTickGapMs = gap;
+          perf.maxTickGapMs = Math.max(Number(perf.maxTickGapMs) || 0, gap);
+          perf.minTickGapMs = Number.isFinite(perf.minTickGapMs)
+            ? Math.min(perf.minTickGapMs, gap)
+            : gap;
+          if (gap + 2 < delay) {
+            perf.tooFastAutomaticTicks = (Number(perf.tooFastAutomaticTicks) || 0) + 1;
+          }
+        }
+        perf.requestedFallDelayMs = delay;
+      }
+      v626LastAutomaticTickStartedAt = tickStartedAt;
+
+      gameLoop();
+
+      if (generation !== v625FallLoopGeneration) return;
+      v626LastAutomaticTickFinishedAt = performance.now();
+
+      // No deadlines, no phase recovery, no catch-up. Always one complete delay
+      // after this step (and after a paint opportunity) before the next step.
+      armNextAfterPaint();
+    };
+
+    // The first automatic move also gets one full interval after loop start.
+    fallInterval = setTimeout(runTick, delay);
+    return fallInterval;
+  };
+
+  // ---- Lightweight capture-gate feedback ----
+  // Entering the 10x10 previously created many separate SVG line animations in
+  // a single frame. That decorative spike could delay a fall tick. Keep the same
+  // captured state/gameplay, but render the temporary gate as one SVG group and
+  // one compositor animation.
+  function v626AppendGateLine(group, x1, y1, x2, y2, stroke, width, opacity) {
+    const line = document.createElementNS(V348_SVG_NS, 'line');
+    line.setAttribute('x1', String(x1));
+    line.setAttribute('y1', String(y1));
+    line.setAttribute('x2', String(x2));
+    line.setAttribute('y2', String(y2));
+    line.setAttribute('stroke', stroke);
+    line.setAttribute('stroke-width', String(width));
+    line.setAttribute('stroke-linecap', 'round');
+    line.setAttribute('opacity', String(opacity));
+    group.appendChild(line);
+  }
+
+  startV348CaptureGateAnimation = function(block) {
+    if (!block || block._v348GateAnimating) return;
+
+    const landingGuide = getInnerLandingGuideState(block);
+    const side = landingGuide ? landingGuide.side : null;
+    if (!side) return;
+
+    clearV348CaptureGateOverlay();
+    block._v348GateAnimating = true;
+    block._v348CaptureGateSide = side;
+    const animationToken = ++v351CaptureGateAnimationToken;
+
+    requestAnimationFrame(() => {
+      if (
+        animationToken !== v351CaptureGateAnimationToken ||
+        !block._v348GateAnimating ||
+        fallingBlock !== block
+      ) return;
+
+      const gridX = playAreaOrigin + (extraColsLeft + gridOffsetX) * blockSize;
+      const gridY = playAreaOrigin + (extraRowsAbove - gridOffsetY) * blockSize;
+      const gridWidth = gridCols * blockSize;
+      const gridHeight = gridRows * blockSize;
+      const beamWidth = Math.max(4.2, blockSize * 0.18);
+      const barrierOffset = Math.max(5.2, beamWidth * 1.15);
+      const topY = gridY - barrierOffset;
+      const bottomY = gridY + gridHeight + barrierOffset;
+      const leftX = gridX - barrierOffset;
+      const rightX = gridX + gridWidth + barrierOffset;
+      const accent = getInnerBarrierAccentColor();
+      const [firstStages, secondStages] = buildV351CaptureGateStages(
+        side, gridX, gridY, gridWidth, gridHeight, topY, bottomY, leftX, rightX
+      );
+
+      const group = document.createElementNS(V348_SVG_NS, 'g');
+      group.style.transformOrigin = `${gridX + gridWidth / 2}px ${gridY + gridHeight / 2}px`;
+      const seen = new Set();
+      const allStages = firstStages.concat(secondStages);
+      for (const geometry of allStages) {
+        for (const segment of geometry) {
+          const [x1, y1, x2, y2] = segment;
+          const key = `${x1}|${y1}|${x2}|${y2}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          v626AppendGateLine(group, x1, y1, x2, y2, accent, Math.max(8, beamWidth * 1.72), 0.18);
+          v626AppendGateLine(group, x1, y1, x2, y2, accent, Math.max(5.2, beamWidth * 1.16), 0.92);
+        }
+      }
+      v348CaptureGateOverlay.appendChild(group);
+
+      const animation = group.animate(
+        [
+          { opacity: 0.18, transform: 'scale(1.018)' },
+          { opacity: 1, transform: 'scale(1)' }
+        ],
+        { duration: 230, easing: 'ease-out', fill: 'forwards' }
+      );
+
+      const finish = () => {
+        if (animationToken !== v351CaptureGateAnimationToken) return;
+        if (block._v348GateAnimating) {
+          block._v348GateAnimating = false;
+          delete block._v348CaptureGateSide;
+        }
+        clearV348CaptureGateOverlay();
+        if (fallingBlock === block) {
+          drawGrid();
+          drawFallingBlock();
+        }
+      };
+
+      animation.finished.then(finish).catch(finish);
+    });
+  };
+
+  // Expose a tiny diagnostic snapshot. A normal 400 ms game should never report
+  // tooFastAutomaticTicks > 0 after this patch.
+  window.bpTimingV626 = {
+    get lastTickStartedAt() { return v626LastAutomaticTickStartedAt; },
+    get lastTickFinishedAt() { return v626LastAutomaticTickFinishedAt; },
+    get requestedDelayMs() { return Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400; }
+  };
+
+  // Replace any loop armed by the previous runtime with the strict V626 cadence.
+  if (fallInterval) {
+    const activeDelay = Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400;
+    v625StopFallLoop();
+    fallInterval = v625StartFallLoop(activeDelay);
+  }
+})();
+</script>
+
+
+<!-- v627: hard invariant: no automatic visible movement faster than fallSpeed. -->
+<script id="v627-authoritative-fall-gate">
+(() => {
+  'use strict';
+
+  const v627PreviousStopFallLoop = v625StopFallLoop;
+  const v627LoopWasActive = fallInterval !== null && typeof fallInterval !== 'undefined';
+  const v627ActiveDelayAtInstall = Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400;
+
+  // First cancel every timer/rAF owned by V626 before replacing the scheduler.
+  try { v627PreviousStopFallLoop(); } catch (_) {}
+
+  const v627RawUpdate = update;
+  const v627RawUpdateH = updateH;
+
+  let v627LastAutomaticMoveAt = -Infinity;
+  let v627LastAutomaticBlock = null;
+  let v627LastAutomaticPosition = null;
+  let v627FallRafId = null;
+
+  const timing = window.bpTimingV627 = {
+    preventedTooFastMoves: 0,
+    automaticMoves: 0,
+    minAutomaticMoveGapMs: null,
+    lastAutomaticMoveGapMs: null,
+    lastAutomaticMoveSource: null,
+    lastPreventedRemainingMs: null,
+    recentMoves: []
+  };
+
+  function v627DelayMs() {
+    // Preserve intended later-game BPM changes: the invariant is the CURRENT
+    // fall interval, not a permanently hard-coded 400 ms.
+    return Math.max(16, Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400);
+  }
+
+  function v627SameBlock(block) {
+    return !!block && block === v627LastAutomaticBlock;
+  }
+
+  function v627RemainingMs(block, now = performance.now()) {
+    if (!v627SameBlock(block) || !Number.isFinite(v627LastAutomaticMoveAt)) return 0;
+    return Math.max(0, v627DelayMs() - (now - v627LastAutomaticMoveAt));
+  }
+
+  function v627CanAutomaticMovementNow(block, source = 'unknown') {
+    // DROP BLOCK is explicitly an instant player power: its many internal steps
+    // are intentionally exempt. The normal cadence is re-armed afterwards.
+    if (typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress) return true;
+    if (!block) return true;
+
+    const remaining = v627RemainingMs(block);
+    if (remaining > 0) {
+      timing.preventedTooFastMoves += 1;
+      timing.lastPreventedRemainingMs = remaining;
+      timing.lastAutomaticMoveSource = `prevented:${source}`;
+      return false;
+    }
+    return true;
+  }
+
+  function v627RecordAutomaticMovement(block, source = 'unknown') {
+    const now = performance.now();
+    if (block && v627SameBlock(block) && Number.isFinite(v627LastAutomaticMoveAt)) {
+      const gap = now - v627LastAutomaticMoveAt;
+      timing.lastAutomaticMoveGapMs = gap;
+      timing.minAutomaticMoveGapMs = Number.isFinite(timing.minAutomaticMoveGapMs)
+        ? Math.min(timing.minAutomaticMoveGapMs, gap)
+        : gap;
+    } else {
+      timing.lastAutomaticMoveGapMs = null;
+    }
+
+    v627LastAutomaticMoveAt = now;
+    v627LastAutomaticBlock = block || null;
+    v627LastAutomaticPosition = block ? { x: block.x, y: block.y } : null;
+    timing.automaticMoves += 1;
+    timing.lastAutomaticMoveSource = source;
+    timing.recentMoves.push({
+      at: now,
+      source,
+      x: block ? block.x : null,
+      y: block ? block.y : null,
+      delay: v627DelayMs(),
+      gap: timing.lastAutomaticMoveGapMs
+    });
+    if (timing.recentMoves.length > 30) timing.recentMoves.shift();
+  }
+
+  window.v627CanAutomaticMovementNow = v627CanAutomaticMovementNow;
+  window.v627RecordAutomaticMovement = v627RecordAutomaticMovement;
+
+  function v627GuardMovementFunction(baseFunction, source) {
+    return function() {
+      const blockBefore = fallingBlock;
+      const beforeX = blockBefore ? blockBefore.x : null;
+      const beforeY = blockBefore ? blockBefore.y : null;
+
+      if (
+        blockBefore &&
+        !(typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress) &&
+        !v627CanAutomaticMovementNow(blockBefore, source)
+      ) {
+        return false;
+      }
+
+      const result = baseFunction.apply(this, arguments);
+      const blockAfter = fallingBlock;
+
+      if (typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress) {
+        return result;
+      }
+
+      if (
+        blockBefore &&
+        blockAfter === blockBefore &&
+        (blockAfter.x !== beforeX || blockAfter.y !== beforeY)
+      ) {
+        v627RecordAutomaticMovement(blockAfter, source);
+      } else if (blockAfter && blockAfter !== blockBefore) {
+        // A freshly spawned set gets a fresh cadence origin. This prevents a
+        // callback left over from the previous set moving it immediately.
+        v627RecordAutomaticMovement(blockAfter, `${source}:new-set`);
+      }
+
+      return result;
+    };
+  }
+
+  // Crucial difference from V626: the invariant now lives at the functions that
+  // actually mutate the falling set. A stray caller cannot bypass the scheduler.
+  update = v627GuardMovementFunction(v627RawUpdate, 'update');
+  updateH = v627GuardMovementFunction(v627RawUpdateH, 'updateH');
+
+  // Re-arm cadence after an instant Drop. Drop itself stays instant, but the same
+  // block/new block may not then receive an automatic movement immediately.
+  if (typeof dropButton === 'function') {
+    const v627RawDropButton = dropButton;
+    dropButton = function() {
+      const result = v627RawDropButton.apply(this, arguments);
+      if (fallingBlock) v627RecordAutomaticMovement(fallingBlock, 'drop-finished');
+      return result;
+    };
+  }
+
+  // Authoritative scheduler. It checks BOTH its own delay and the timestamp of
+  // the last actual automatic x/y movement. Restarts, late frames and stale
+  // callbacks therefore cannot shorten the next step.
+  v625StopFallLoop = function() {
+    v625FallLoopGeneration += 1;
+    if (v627FallRafId !== null) {
+      cancelAnimationFrame(v627FallRafId);
+      v627FallRafId = null;
+    }
+    if (fallInterval !== null && typeof fallInterval !== 'undefined') {
+      clearTimeout(fallInterval);
+      clearInterval(fallInterval);
+    }
+    fallInterval = null;
+  };
+
+  v625StartFallLoop = function(requestedDelay = fallSpeed) {
+    v625StopFallLoop();
+
+    const generation = ++v625FallLoopGeneration;
+    const delay = Math.max(16, Number(requestedDelay) || Number(fallSpeed) || 400);
+    v625FallLoopDelayMs = delay;
+
+    const schedule = (waitMs) => {
+      if (generation !== v625FallLoopGeneration) return null;
+      const safeWait = Math.max(0, Number(waitMs) || 0);
+      fallInterval = setTimeout(runTick, safeWait);
+      return fallInterval;
+    };
+
+    const scheduleFullDelayAfterPaint = () => {
+      if (generation !== v625FallLoopGeneration) return;
+      v627FallRafId = requestAnimationFrame(() => {
+        v627FallRafId = null;
+        if (generation !== v625FallLoopGeneration) return;
+        schedule(delay);
+      });
+    };
+
+    const runTick = () => {
+      if (generation !== v625FallLoopGeneration) return;
+
+      // Even if this timeout came from a restart or an unexpected stale path,
+      // do not call gameLoop until the active set has earned a complete interval.
+      const block = fallingBlock;
+      if (block && !(typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress)) {
+        const remaining = v627RemainingMs(block);
+        if (remaining > 0) {
+          timing.preventedTooFastMoves += 1;
+          timing.lastPreventedRemainingMs = remaining;
+          schedule(remaining);
+          return;
+        }
+      }
+
+      gameLoop();
+      if (generation !== v625FallLoopGeneration) return;
+
+      // No phase recovery and no deadline catch-up. A complete interval begins
+      // only after the browser gets a paint opportunity for the resulting state.
+      scheduleFullDelayAfterPaint();
+    };
+
+    // A start/restart never grants an immediate tick.
+    return schedule(delay);
+  };
+
+  // Keep compatibility with the existing V626 developer snapshot while exposing
+  // the stronger V627 invariant separately.
+  timing.getRequestedDelayMs = () => v627DelayMs();
+  timing.getLastAutomaticMoveAt = () => v627LastAutomaticMoveAt;
+  timing.getLastAutomaticPosition = () => v627LastAutomaticPosition && { ...v627LastAutomaticPosition };
+
+  if (v627LoopWasActive) {
+    fallInterval = v625StartFallLoop(v627ActiveDelayAtInstall);
+  }
+})();
+</script>
+
+
+<!-- v628: CURRENT fallSpeed is the absolute minimum between automatic visible movements. -->
+<script id="v628-authoritative-current-fallspeed-gate">
+(() => {
+  'use strict';
+
+  const v628PreviousStopFallLoop = v625StopFallLoop;
+  const v628LoopWasActive = fallInterval !== null && typeof fallInterval !== 'undefined';
+  const v628RequestedDelayAtInstall = Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400;
+
+  // Kill every scheduler callback owned by the previous timing layer first.
+  try { v628PreviousStopFallLoop(); } catch (_) {}
+
+  const v628BlockTiming = new WeakMap();
+  let v628FallRafId = null;
+
+  const timing = window.bpTimingV628 = {
+    preventedTooFastMoves: 0,
+    automaticMoves: 0,
+    violations: 0,
+    minAutomaticMoveGapMs: null,
+    lastAutomaticMoveGapMs: null,
+    lastRequiredGapMs: null,
+    lastAutomaticMoveSource: null,
+    lastPreventedRemainingMs: null,
+    recentMoves: [],
+    recentPrevented: []
+  };
+
+  function v628CurrentFallSpeedMs() {
+    // This is the contract requested by the game design: CURRENT fallSpeed is
+    // the hard floor. No stale requestedDelay or scheduler restart may lower it.
+    const speed = Number(fallSpeed);
+    return Math.max(16, Number.isFinite(speed) && speed > 0 ? speed : 400);
+  }
+
+  function v628DropIsInstant() {
+    return typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress;
+  }
+
+  function v628EnsureBlock(block, source = 'seen') {
+    if (!block || (typeof block !== 'object' && typeof block !== 'function')) return null;
+    let state = v628BlockTiming.get(block);
+    if (!state) {
+      state = {
+        bornAt: performance.now(),
+        lastAutomaticMoveAt: null,
+        source
+      };
+      v628BlockTiming.set(block, state);
+    }
+    return state;
+  }
+
+  function v628ArmNewBlock(block, source = 'spawn') {
+    if (!block || (typeof block !== 'object' && typeof block !== 'function')) return block;
+    v628BlockTiming.set(block, {
+      bornAt: performance.now(),
+      lastAutomaticMoveAt: null,
+      source
+    });
+    return block;
+  }
+
+  function v628ReferenceAt(block) {
+    const state = v628EnsureBlock(block);
+    if (!state) return -Infinity;
+    return Number.isFinite(state.lastAutomaticMoveAt)
+      ? state.lastAutomaticMoveAt
+      : state.bornAt;
+  }
+
+  function v628RemainingMs(block, now = performance.now()) {
+    if (!block) return 0;
+    const elapsed = now - v628ReferenceAt(block);
+    return Math.max(0, v628CurrentFallSpeedMs() - elapsed);
+  }
+
+  function v628CanAutomaticMovementNow(block, source = 'unknown') {
+    if (v628DropIsInstant()) return true;
+    if (!block) return true;
+
+    const remaining = v628RemainingMs(block);
+    if (remaining > 0.5) {
+      timing.preventedTooFastMoves += 1;
+      timing.lastPreventedRemainingMs = remaining;
+      timing.lastAutomaticMoveSource = `prevented:${source}`;
+      timing.recentPrevented.push({
+        at: performance.now(),
+        source,
+        remaining,
+        required: v628CurrentFallSpeedMs(),
+        x: block.x,
+        y: block.y
+      });
+      if (timing.recentPrevented.length > 40) timing.recentPrevented.shift();
+      return false;
+    }
+    return true;
+  }
+
+  function v628RecordAutomaticMovement(block, source = 'unknown') {
+    if (!block) return;
+    const now = performance.now();
+    const state = v628EnsureBlock(block, source);
+    const previousAt = Number.isFinite(state.lastAutomaticMoveAt)
+      ? state.lastAutomaticMoveAt
+      : state.bornAt;
+    const gap = now - previousAt;
+    const required = v628CurrentFallSpeedMs();
+
+    timing.lastAutomaticMoveGapMs = gap;
+    timing.lastRequiredGapMs = required;
+    timing.minAutomaticMoveGapMs = Number.isFinite(timing.minAutomaticMoveGapMs)
+      ? Math.min(timing.minAutomaticMoveGapMs, gap)
+      : gap;
+    timing.automaticMoves += 1;
+    timing.lastAutomaticMoveSource = source;
+
+    // 1 ms tolerance only absorbs performance.now()/callback boundary noise.
+    // A real early movement is counted so it can never hide behind a claim.
+    const violation = gap + 1 < required;
+    if (violation) timing.violations += 1;
+
+    state.lastAutomaticMoveAt = now;
+    state.source = source;
+
+    timing.recentMoves.push({
+      at: now,
+      source,
+      x: block.x,
+      y: block.y,
+      gap,
+      required,
+      violation
+    });
+    if (timing.recentMoves.length > 60) timing.recentMoves.shift();
+  }
+
+  // Timestamp every normal new formation at the moment it is created. This means
+  // even a stale callback cannot move a brand-new set immediately after spawn.
+  if (typeof createBlock === 'function') {
+    const v628RawCreateBlock = createBlock;
+    createBlock = function() {
+      return v628ArmNewBlock(v628RawCreateBlock.apply(this, arguments), 'createBlock');
+    };
+  }
+  if (typeof createBlockH === 'function') {
+    const v628RawCreateBlockH = createBlockH;
+    createBlockH = function() {
+      return v628ArmNewBlock(v628RawCreateBlockH.apply(this, arguments), 'createBlockH');
+    };
+  }
+
+  // The block that existed while this final patch was installed also receives a
+  // cadence origin. On a page load this is harmless; on a hot install it is safe.
+  if (fallingBlock) v628ArmNewBlock(fallingBlock, 'install-existing-block');
+
+  function v628GuardMovementFunction(baseFunction, source) {
+    return function() {
+      const blockBefore = fallingBlock;
+      const beforeX = blockBefore ? blockBefore.x : null;
+      const beforeY = blockBefore ? blockBefore.y : null;
+
+      if (blockBefore && !v628DropIsInstant() && !v628CanAutomaticMovementNow(blockBefore, source)) {
+        return false;
+      }
+
+      const result = baseFunction.apply(this, arguments);
+      const blockAfter = fallingBlock;
+
+      if (v628DropIsInstant()) return result;
+
+      if (blockBefore && blockAfter === blockBefore) {
+        if (blockAfter.x !== beforeX || blockAfter.y !== beforeY) {
+          v628RecordAutomaticMovement(blockAfter, source);
+        }
+      } else if (blockAfter && blockAfter !== blockBefore) {
+        // New-set creation is not a fall step, but it starts the clock for the
+        // first real automatic step of that set.
+        v628ArmNewBlock(blockAfter, `${source}:new-set`);
+      }
+
+      return result;
+    };
+  }
+
+  // Guard the actual normal movement entry points (vertical + horizontal).
+  const v628RawUpdate = update;
+  const v628RawUpdateH = updateH;
+  update = v628GuardMovementFunction(v628RawUpdate, 'update');
+  updateH = v628GuardMovementFunction(v628RawUpdateH, 'updateH');
+
+  // Existing tutorial preview timers already call these public hooks. Redirect
+  // those hooks to the stricter CURRENT-fallSpeed rule too.
+  window.v627CanAutomaticMovementNow = v628CanAutomaticMovementNow;
+  window.v627RecordAutomaticMovement = v628RecordAutomaticMovement;
+  window.v628CanAutomaticMovementNow = v628CanAutomaticMovementNow;
+  window.v628RecordAutomaticMovement = v628RecordAutomaticMovement;
+
+  // Drop Block is deliberately instant. Once it finishes, however, the normal
+  // cadence starts again from that exact moment for the currently active/new set.
+  if (typeof dropButton === 'function') {
+    const v628RawDropButton = dropButton;
+    dropButton = function() {
+      const result = v628RawDropButton.apply(this, arguments);
+      if (fallingBlock) {
+        const state = v628EnsureBlock(fallingBlock, 'drop-finished');
+        const now = performance.now();
+        state.bornAt = now;
+        state.lastAutomaticMoveAt = now;
+        state.source = 'drop-finished';
+      }
+      return result;
+    };
+  }
+
+  // Final scheduler. requestedDelay is allowed to make the game SLOWER, but a
+  // caller can never make it faster than the CURRENT fallSpeed. The current
+  // fallSpeed is checked again on every callback, not just when the loop starts.
+  v625StopFallLoop = function() {
+    v625FallLoopGeneration += 1;
+    if (v628FallRafId !== null) {
+      cancelAnimationFrame(v628FallRafId);
+      v628FallRafId = null;
+    }
+    if (fallInterval !== null && typeof fallInterval !== 'undefined') {
+      clearTimeout(fallInterval);
+      clearInterval(fallInterval);
+    }
+    fallInterval = null;
+  };
+
+  v625StartFallLoop = function(requestedDelay = fallSpeed) {
+    v625StopFallLoop();
+
+    const generation = ++v625FallLoopGeneration;
+    const requested = Number(requestedDelay);
+    const requestedFloor = Number.isFinite(requested) && requested > 0 ? requested : 0;
+
+    const effectiveDelay = () => Math.max(
+      16,
+      v628CurrentFallSpeedMs(),
+      requestedFloor
+    );
+
+    // Keep this legacy variable truthful: it can only be >= current fallSpeed.
+    v625FallLoopDelayMs = effectiveDelay();
+
+    const schedule = (waitMs) => {
+      if (generation !== v625FallLoopGeneration) return null;
+      const safeWait = Math.max(0, Number(waitMs) || 0);
+      fallInterval = setTimeout(runTick, safeWait);
+      return fallInterval;
+    };
+
+    const scheduleFullDelayAfterPaint = () => {
+      if (generation !== v625FallLoopGeneration) return;
+      v628FallRafId = requestAnimationFrame(() => {
+        v628FallRafId = null;
+        if (generation !== v625FallLoopGeneration) return;
+        const delay = effectiveDelay();
+        v625FallLoopDelayMs = delay;
+        schedule(delay);
+      });
+    };
+
+    const runTick = () => {
+      if (generation !== v625FallLoopGeneration) return;
+
+      const delay = effectiveDelay();
+      v625FallLoopDelayMs = delay;
+
+      const block = fallingBlock;
+      if (block && !v628DropIsInstant()) {
+        const remaining = v628RemainingMs(block);
+        if (remaining > 0.5) {
+          timing.preventedTooFastMoves += 1;
+          timing.lastPreventedRemainingMs = remaining;
+          timing.lastAutomaticMoveSource = 'prevented:scheduler';
+          timing.recentPrevented.push({
+            at: performance.now(),
+            source: 'scheduler',
+            remaining,
+            required: v628CurrentFallSpeedMs(),
+            x: block.x,
+            y: block.y
+          });
+          if (timing.recentPrevented.length > 40) timing.recentPrevented.shift();
+          schedule(remaining);
+          return;
+        }
+      }
+
+      gameLoop();
+      if (generation !== v625FallLoopGeneration) return;
+
+      // Never catch up. One complete effective interval starts only after the
+      // just-produced state had a browser paint opportunity.
+      scheduleFullDelayAfterPaint();
+    };
+
+    return schedule(effectiveDelay());
+  };
+
+  timing.getCurrentFallSpeedMs = () => v628CurrentFallSpeedMs();
+  timing.getRemainingMs = () => fallingBlock ? v628RemainingMs(fallingBlock) : 0;
+  timing.snapshot = () => ({
+    currentFallSpeedMs: v628CurrentFallSpeedMs(),
+    scheduledDelayMs: Number(v625FallLoopDelayMs) || null,
+    preventedTooFastMoves: timing.preventedTooFastMoves,
+    automaticMoves: timing.automaticMoves,
+    violations: timing.violations,
+    minAutomaticMoveGapMs: timing.minAutomaticMoveGapMs,
+    lastAutomaticMoveGapMs: timing.lastAutomaticMoveGapMs,
+    lastRequiredGapMs: timing.lastRequiredGapMs,
+    lastAutomaticMoveSource: timing.lastAutomaticMoveSource,
+    lastPreventedRemainingMs: timing.lastPreventedRemainingMs,
+    remainingForCurrentBlockMs: fallingBlock ? v628RemainingMs(fallingBlock) : 0,
+    recentMoves: timing.recentMoves.slice(-12),
+    recentPrevented: timing.recentPrevented.slice(-12)
+  });
+
+  if (v628LoopWasActive) {
+    fallInterval = v625StartFallLoop(v628RequestedDelayAtInstall);
+  }
+})();
+</script>
+
+
+<!-- v630: property-level hard movement lock. Every active falling block gets guarded x/y
+     setters, so even code that bypasses update()/updateH() cannot change its visible position
+     before the required interval. For this verification build the absolute floor is 400 ms;
+     slower fallSpeed values remain respected. Player floor movement and Drop are exempt. -->
+<style id="v630-timing-lock-style">
+  #v630TimingPanel {
+    position: fixed;
+    top: 6px;
+    left: 6px;
+    z-index: 2147483647;
+    width: 186px;
+    box-sizing: border-box;
+    padding: 7px 8px;
+    border: 1px solid rgba(255,255,255,.55);
+    border-radius: 8px;
+    background: rgba(0,0,0,.86);
+    color: #fff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    line-height: 1.25;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #v630TimingPanel .v630-title { font-weight: 800; margin-bottom: 4px; }
+  #v630TimingPanel .v630-row { display:flex; justify-content:space-between; gap:6px; white-space:nowrap; }
+  #v630TimingPanel .v630-muted { color: rgba(255,255,255,.72); }
+  #v630TimingPanel .v630-ok { color: #8dff9b; }
+  #v630TimingPanel .v630-bad { color: #ff7a7a; font-weight: 800; }
+  #v630TimingPanel .v630-warn { color: #ffd76a; font-weight: 700; }
+  #v630TimingPanel .v630-divider { height:1px; background:rgba(255,255,255,.22); margin:5px 0; }
+</style>
+<script id="v630-property-level-hard-400ms-lock">
+(() => {
+  'use strict';
+
+  const V630_ABSOLUTE_MIN_MS = 400;
+  const v630PreviousStopFallLoop = v625StopFallLoop;
+  const v630LoopWasActive = fallInterval !== null && typeof fallInterval !== 'undefined';
+  const v630DelayAtInstall = Number(v625FallLoopDelayMs) || Number(fallSpeed) || V630_ABSOLUTE_MIN_MS;
+
+  try { v630PreviousStopFallLoop(); } catch (_) {}
+
+  const v630Coords = new WeakMap();
+  const v630BlockTiming = new WeakMap();
+  const v630Instrumented = new WeakSet();
+
+  let v630AutomaticTransactionDepth = 0;
+  let v630ManualTransactionDepth = 0;
+  let v630DropTransactionDepth = 0;
+  let v630SetupTransactionDepth = 0;
+  let v630FallRafId = null;
+  let v630ObserverRafId = null;
+  let v630LastRecorded = null;
+
+  const timing = window.bpTimingV630 = {
+    absoluteMinimumMs: V630_ABSOLUTE_MIN_MS,
+    acceptedAutomaticMoves: 0,
+    blockedDirectWrites: 0,
+    blockedSchedulerTicks: 0,
+    blockedGuardCalls: 0,
+    unguardedObservedMoves: 0,
+    instrumentationFailures: 0,
+    minAcceptedGapMs: null,
+    lastAcceptedGapMs: null,
+    recentMoves: [],
+    recentBlocked: [],
+    lastBlockedStack: null,
+    scheduledDelayMs: null
+  };
+
+  function v630RawFallSpeedMs() {
+    const n = Number(fallSpeed);
+    return Number.isFinite(n) && n > 0 ? n : V630_ABSOLUTE_MIN_MS;
+  }
+
+  function v630RequiredMs() {
+    // Verification build: under no circumstances may an automatic visible step
+    // happen faster than 400 ms. A deliberately slower fallSpeed still wins.
+    return Math.max(V630_ABSOLUTE_MIN_MS, v630RawFallSpeedMs());
+  }
+
+  function v630DropIsInstant() {
+    return v630DropTransactionDepth > 0 ||
+      (typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress);
+  }
+
+  function v630State(block, reset = false, source = 'seen') {
+    if (!block || (typeof block !== 'object' && typeof block !== 'function')) return null;
+    let state = v630BlockTiming.get(block);
+    if (!state || reset) {
+      state = {
+        bornAt: performance.now(),
+        lastAutomaticMoveAt: null,
+        source
+      };
+      v630BlockTiming.set(block, state);
+    }
+    return state;
+  }
+
+  function v630ReferenceAt(block) {
+    const state = v630State(block);
+    if (!state) return -Infinity;
+    return Number.isFinite(state.lastAutomaticMoveAt) ? state.lastAutomaticMoveAt : state.bornAt;
+  }
+
+  function v630RemainingMs(block, now = performance.now()) {
+    if (!block) return 0;
+    return Math.max(0, v630RequiredMs() - (now - v630ReferenceAt(block)));
+  }
+
+  function v630PushBlocked(kind, block, axis, attemptedValue, remaining, source = 'unknown') {
+    const now = performance.now();
+    const item = {
+      at: now,
+      kind,
+      source,
+      axis: axis || null,
+      attemptedValue: Number.isFinite(Number(attemptedValue)) ? Number(attemptedValue) : attemptedValue,
+      remaining,
+      required: v630RequiredMs(),
+      x: block ? block.x : null,
+      y: block ? block.y : null
+    };
+    timing.recentBlocked.push(item);
+    if (timing.recentBlocked.length > 30) timing.recentBlocked.shift();
+  }
+
+  function v630RecordAutomaticMove(block, source, beforeX, beforeY, now = performance.now()) {
+    if (!block) return null;
+    const state = v630State(block);
+    const previousAt = Number.isFinite(state.lastAutomaticMoveAt) ? state.lastAutomaticMoveAt : state.bornAt;
+    const gap = now - previousAt;
+    state.lastAutomaticMoveAt = now;
+    state.source = source;
+
+    timing.acceptedAutomaticMoves += 1;
+    timing.lastAcceptedGapMs = gap;
+    timing.minAcceptedGapMs = Number.isFinite(timing.minAcceptedGapMs)
+      ? Math.min(timing.minAcceptedGapMs, gap)
+      : gap;
+
+    const entry = {
+      at: now,
+      gap,
+      required: v630RequiredMs(),
+      source,
+      x: block.x,
+      y: block.y,
+      beforeX,
+      beforeY
+    };
+    timing.recentMoves.push(entry);
+    if (timing.recentMoves.length > 50) timing.recentMoves.shift();
+
+    v630LastRecorded = {
+      block,
+      x: block.x,
+      y: block.y,
+      at: now,
+      source
+    };
+    return entry;
+  }
+
+  function v630ShouldFreelyAllowWrite(block) {
+    if (!block || block !== fallingBlock) return true;
+    if (v630ManualTransactionDepth > 0) return true;
+    if (v630DropIsInstant()) return true;
+    if (v630SetupTransactionDepth > 0) return true;
+    if (v630AutomaticTransactionDepth > 0) return true;
+    return false;
+  }
+
+  function v630HandleCoordinateWrite(block, axis, value) {
+    const coords = v630Coords.get(block);
+    if (!coords) return;
+    const oldValue = coords[axis];
+    const newValue = Number(value);
+
+    if (Object.is(oldValue, value) || Object.is(oldValue, newValue)) {
+      coords[axis] = value;
+      return;
+    }
+
+    if (v630ShouldFreelyAllowWrite(block)) {
+      coords[axis] = value;
+      return;
+    }
+
+    // Any active-block coordinate write that reaches this setter outside an
+    // authorised movement transaction is exactly the old BYPASS class.
+    const now = performance.now();
+    const remaining = v630RemainingMs(block, now);
+
+    if (remaining > 0.75) {
+      timing.blockedDirectWrites += 1;
+      timing.lastBlockedStack = (() => {
+        try { return String(new Error('v630 blocked direct x/y write').stack || ''); }
+        catch (_) { return ''; }
+      })();
+      v630PushBlocked('direct-property-write', block, axis, value, remaining, 'property-lock');
+      return; // HARD REJECT: the visible x/y value does not change.
+    }
+
+    const beforeX = coords.x;
+    const beforeY = coords.y;
+    coords[axis] = value;
+    v630RecordAutomaticMove(block, `direct-${axis}`, beforeX, beforeY, now);
+  }
+
+  function v630InstrumentBlock(block, resetClock = false, source = 'instrument') {
+    if (!block || (typeof block !== 'object' && typeof block !== 'function')) return block;
+
+    if (!v630Instrumented.has(block)) {
+      try {
+        const initialX = block.x;
+        const initialY = block.y;
+        const dx = Object.getOwnPropertyDescriptor(block, 'x');
+        const dy = Object.getOwnPropertyDescriptor(block, 'y');
+        if ((dx && dx.configurable === false) || (dy && dy.configurable === false)) {
+          timing.instrumentationFailures += 1;
+          return block;
+        }
+
+        v630Coords.set(block, { x: initialX, y: initialY });
+
+        Object.defineProperty(block, 'x', {
+          configurable: true,
+          enumerable: true,
+          get() {
+            const c = v630Coords.get(block);
+            return c ? c.x : initialX;
+          },
+          set(value) {
+            v630HandleCoordinateWrite(block, 'x', value);
+          }
+        });
+
+        Object.defineProperty(block, 'y', {
+          configurable: true,
+          enumerable: true,
+          get() {
+            const c = v630Coords.get(block);
+            return c ? c.y : initialY;
+          },
+          set(value) {
+            v630HandleCoordinateWrite(block, 'y', value);
+          }
+        });
+
+        v630Instrumented.add(block);
+      } catch (_) {
+        timing.instrumentationFailures += 1;
+        return block;
+      }
+    }
+
+    v630State(block, resetClock, source);
+    return block;
+  }
+
+  function v630ArmSpawn(block, source = 'spawn') {
+    return v630InstrumentBlock(block, true, source);
+  }
+
+  // Instrument every normal block before callers receive it.
+  if (typeof createBlock === 'function') {
+    const v630RawCreateBlock = createBlock;
+    createBlock = function() {
+      v630SetupTransactionDepth += 1;
+      try {
+        return v630ArmSpawn(v630RawCreateBlock.apply(this, arguments), 'createBlock');
+      } finally {
+        v630SetupTransactionDepth -= 1;
+      }
+    };
+  }
+
+  if (typeof createBlockH === 'function') {
+    const v630RawCreateBlockH = createBlockH;
+    createBlockH = function() {
+      v630SetupTransactionDepth += 1;
+      try {
+        return v630ArmSpawn(v630RawCreateBlockH.apply(this, arguments), 'createBlockH');
+      } finally {
+        v630SetupTransactionDepth -= 1;
+      }
+    };
+  }
+
+  if (fallingBlock) v630ArmSpawn(fallingBlock, 'install-existing-block');
+
+  // Player movement deliberately changes both floor offset and block coordinates.
+  // It is gameplay input, not falling cadence, so keep it exempt from this clock.
+  if (typeof moveGrid === 'function') {
+    const v630RawMoveGrid = moveGrid;
+    moveGrid = function() {
+      v630ManualTransactionDepth += 1;
+      try { return v630RawMoveGrid.apply(this, arguments); }
+      finally { v630ManualTransactionDepth -= 1; }
+    };
+  }
+
+  if (typeof moveGridH === 'function') {
+    const v630RawMoveGridH = moveGridH;
+    moveGridH = function() {
+      v630ManualTransactionDepth += 1;
+      try { return v630RawMoveGridH.apply(this, arguments); }
+      finally { v630ManualTransactionDepth -= 1; }
+    };
+  }
+
+  function v630CanAutomaticMovementNow(block, source = 'unknown') {
+    if (!block || v630DropIsInstant()) return true;
+    v630InstrumentBlock(block, false, source);
+    const remaining = v630RemainingMs(block);
+    if (remaining > 0.75) {
+      timing.blockedGuardCalls += 1;
+      v630PushBlocked('guard-call', block, null, null, remaining, source);
+      return false;
+    }
+    return true;
+  }
+
+  function v630GuardMovementFunction(baseFunction, source) {
+    return function() {
+      const blockBefore = fallingBlock;
+      if (blockBefore) v630InstrumentBlock(blockBefore, false, source);
+      const beforeX = blockBefore ? blockBefore.x : null;
+      const beforeY = blockBefore ? blockBefore.y : null;
+
+      if (blockBefore && !v630DropIsInstant() && !v630CanAutomaticMovementNow(blockBefore, source)) {
+        return false;
+      }
+
+      v630AutomaticTransactionDepth += 1;
+      let result;
+      try {
+        result = baseFunction.apply(this, arguments);
+      } finally {
+        v630AutomaticTransactionDepth -= 1;
+      }
+
+      const blockAfter = fallingBlock;
+      if (v630DropIsInstant()) return result;
+
+      if (blockBefore && blockAfter === blockBefore) {
+        if (blockAfter.x !== beforeX || blockAfter.y !== beforeY) {
+          v630RecordAutomaticMove(blockAfter, source, beforeX, beforeY);
+        }
+      } else if (blockAfter && blockAfter !== blockBefore) {
+        v630ArmSpawn(blockAfter, `${source}:new-set`);
+      }
+      return result;
+    };
+  }
+
+  // Wrap the already existing V628 movement functions. This transaction lets the
+  // original landing rollback logic perform its synchronous +1/-1 bookkeeping as
+  // one logical tick, while any asynchronous direct write remains blocked below.
+  const v630RawUpdate = update;
+  const v630RawUpdateH = updateH;
+  update = v630GuardMovementFunction(v630RawUpdate, 'update');
+  updateH = v630GuardMovementFunction(v630RawUpdateH, 'updateH');
+
+  // Existing tutorial/direct-preview code asks these hooks before directly writing
+  // x/y. Keep those paths on exactly the same 400 ms clock.
+  window.v627CanAutomaticMovementNow = v630CanAutomaticMovementNow;
+  window.v628CanAutomaticMovementNow = v630CanAutomaticMovementNow;
+  window.v630CanAutomaticMovementNow = v630CanAutomaticMovementNow;
+
+  function v630ExternalRecord(block, source = 'external') {
+    if (!block || v630DropIsInstant()) return;
+    v630InstrumentBlock(block, false, source);
+    const now = performance.now();
+    if (
+      v630LastRecorded &&
+      v630LastRecorded.block === block &&
+      v630LastRecorded.x === block.x &&
+      v630LastRecorded.y === block.y &&
+      now - v630LastRecorded.at < 40
+    ) {
+      return; // setter already recorded this direct move
+    }
+    const state = v630State(block);
+    const beforeX = block.x;
+    const beforeY = block.y;
+    const previousAt = Number.isFinite(state.lastAutomaticMoveAt) ? state.lastAutomaticMoveAt : state.bornAt;
+    const gap = now - previousAt;
+    if (gap + 1 < v630RequiredMs()) {
+      // Do not advance the clock on an impossible duplicate/too-fast record.
+      return;
+    }
+    v630RecordAutomaticMove(block, source, beforeX, beforeY, now);
+  }
+
+  window.v627RecordAutomaticMovement = v630ExternalRecord;
+  window.v628RecordAutomaticMovement = v630ExternalRecord;
+  window.v630RecordAutomaticMovement = v630ExternalRecord;
+
+  if (typeof dropButton === 'function') {
+    const v630RawDropButton = dropButton;
+    dropButton = function() {
+      v630DropTransactionDepth += 1;
+      try {
+        return v630RawDropButton.apply(this, arguments);
+      } finally {
+        v630DropTransactionDepth -= 1;
+        if (fallingBlock) {
+          v630InstrumentBlock(fallingBlock, false, 'drop-finished');
+          const state = v630State(fallingBlock);
+          const now = performance.now();
+          state.bornAt = now;
+          state.lastAutomaticMoveAt = now;
+          state.source = 'drop-finished';
+        }
+      }
+    };
+  }
+
+  // Final scheduler: no catch-up and no restart can shorten the current required
+  // interval. The property setters are still the final line of defence if some
+  // unrelated timer ignores this scheduler entirely.
+  v625StopFallLoop = function() {
+    v625FallLoopGeneration += 1;
+    if (v630FallRafId !== null) {
+      cancelAnimationFrame(v630FallRafId);
+      v630FallRafId = null;
+    }
+    if (fallInterval !== null && typeof fallInterval !== 'undefined') {
+      clearTimeout(fallInterval);
+      clearInterval(fallInterval);
+    }
+    fallInterval = null;
+  };
+
+  v625StartFallLoop = function(requestedDelay = fallSpeed) {
+    v625StopFallLoop();
+    const generation = ++v625FallLoopGeneration;
+    const requested = Number(requestedDelay);
+    const requestedFloor = Number.isFinite(requested) && requested > 0 ? requested : 0;
+
+    const effectiveDelay = () => Math.max(v630RequiredMs(), requestedFloor);
+
+    const schedule = (waitMs) => {
+      if (generation !== v625FallLoopGeneration) return null;
+      fallInterval = setTimeout(runTick, Math.max(0, Number(waitMs) || 0));
+      return fallInterval;
+    };
+
+    const scheduleAfterPaint = () => {
+      if (generation !== v625FallLoopGeneration) return;
+      v630FallRafId = requestAnimationFrame(() => {
+        v630FallRafId = null;
+        if (generation !== v625FallLoopGeneration) return;
+        const delay = effectiveDelay();
+        v625FallLoopDelayMs = delay;
+        timing.scheduledDelayMs = delay;
+        schedule(delay);
+      });
+    };
+
+    const runTick = () => {
+      if (generation !== v625FallLoopGeneration) return;
+      const delay = effectiveDelay();
+      v625FallLoopDelayMs = delay;
+      timing.scheduledDelayMs = delay;
+
+      const block = fallingBlock;
+      if (block && !v630DropIsInstant()) {
+        v630InstrumentBlock(block, false, 'scheduler');
+        const remaining = v630RemainingMs(block);
+        if (remaining > 0.75) {
+          timing.blockedSchedulerTicks += 1;
+          v630PushBlocked('scheduler', block, null, null, remaining, 'scheduler');
+          schedule(remaining);
+          return;
+        }
+      }
+
+      gameLoop();
+      if (generation !== v625FallLoopGeneration) return;
+      scheduleAfterPaint();
+    };
+
+    const firstDelay = effectiveDelay();
+    v625FallLoopDelayMs = firstDelay;
+    timing.scheduledDelayMs = firstDelay;
+    return schedule(firstDelay);
+  };
+
+  // Safety observer: it mainly makes sure a newly assigned active object that did
+  // not come through createBlock/createBlockH is instrumented before another frame.
+  let observedBlock = null;
+  let observedX = null;
+  let observedY = null;
+  function v630Observe() {
+    const block = fallingBlock;
+    if (block && !v630Instrumented.has(block)) {
+      v630ArmSpawn(block, 'observer-late-instrument');
+    }
+
+    if (block !== observedBlock) {
+      observedBlock = block || null;
+      observedX = block ? block.x : null;
+      observedY = block ? block.y : null;
+    } else if (block) {
+      const changed = block.x !== observedX || block.y !== observedY;
+      if (changed && !v630Instrumented.has(block)) {
+        timing.unguardedObservedMoves += 1;
+      }
+      observedX = block.x;
+      observedY = block.y;
+    } else {
+      observedX = observedY = null;
+    }
+
+    v630ObserverRafId = requestAnimationFrame(v630Observe);
+  }
+
+  const oldPanel = document.getElementById('v629TimingPanel');
+  if (oldPanel) oldPanel.remove();
+  const panel = document.createElement('div');
+  panel.id = 'v630TimingPanel';
+  document.body.appendChild(panel);
+
+  function v630RenderPanel() {
+    const required = v630RequiredMs();
+    const last10 = timing.recentMoves.slice(-10);
+    const rows = last10.length
+      ? last10.map((entry, i) => {
+          const ms = Math.round(entry.gap);
+          const ok = entry.gap + 1 >= entry.required;
+          return `<div class="v630-row ${ok ? 'v630-ok' : 'v630-bad'}"><span>${i + 1}.</span><span>${ms} ms ${ok ? 'OK' : 'FAST'}</span></div>`;
+        }).join('')
+      : '<div class="v630-muted">waiting for movement…</div>';
+
+    panel.innerHTML = `
+      <div class="v630-title">FALL LOCK TEST v630</div>
+      <div class="v630-row"><span class="v630-muted">raw fallSpeed</span><span>${Math.round(v630RawFallSpeedMs())} ms</span></div>
+      <div class="v630-row"><span class="v630-muted">hard floor</span><span>${V630_ABSOLUTE_MIN_MS} ms</span></div>
+      <div class="v630-row"><span class="v630-muted">effective min</span><span>${Math.round(required)} ms</span></div>
+      <div class="v630-row"><span class="v630-muted">blocked direct</span><span class="${timing.blockedDirectWrites ? 'v630-warn' : 'v630-ok'}">${timing.blockedDirectWrites}</span></div>
+      <div class="v630-row"><span class="v630-muted">unguarded</span><span class="${timing.unguardedObservedMoves ? 'v630-bad' : 'v630-ok'}">${timing.unguardedObservedMoves}</span></div>
+      <div class="v630-row"><span class="v630-muted">instrument fail</span><span class="${timing.instrumentationFailures ? 'v630-bad' : 'v630-ok'}">${timing.instrumentationFailures}</span></div>
+      <div class="v630-divider"></div>
+      <div class="v630-muted" style="margin-bottom:3px">LAST 10 ACCEPTED FALL STEPS</div>
+      ${rows}
+    `;
+  }
+
+  timing.snapshot = () => ({
+    rawFallSpeedMs: v630RawFallSpeedMs(),
+    requiredMs: v630RequiredMs(),
+    acceptedAutomaticMoves: timing.acceptedAutomaticMoves,
+    blockedDirectWrites: timing.blockedDirectWrites,
+    blockedSchedulerTicks: timing.blockedSchedulerTicks,
+    blockedGuardCalls: timing.blockedGuardCalls,
+    unguardedObservedMoves: timing.unguardedObservedMoves,
+    instrumentationFailures: timing.instrumentationFailures,
+    minAcceptedGapMs: timing.minAcceptedGapMs,
+    lastAcceptedGapMs: timing.lastAcceptedGapMs,
+    recentMoves: timing.recentMoves.slice(-10),
+    recentBlocked: timing.recentBlocked.slice(-10),
+    lastBlockedStack: timing.lastBlockedStack
+  });
+
+  v630ObserverRafId = requestAnimationFrame(v630Observe);
+  v630RenderPanel();
+  setInterval(v630RenderPanel, 100);
+
+  if (v630LoopWasActive) {
+    fallInterval = v625StartFallLoop(v630DelayAtInstall);
+  }
+})();
+</script>
+
+
+<!-- v631: production cleanup. Keep the proven property-level 400 ms fall lock from v630,
+     remove all visible timing/diagnostic overlays. Internal timestamps remain because
+     they are the mechanism that enforces the minimum fall interval. -->
+<style id="v631-hide-timing-diagnostics">
+  #v629TimingPanel,
+  #v630TimingPanel {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+</style>
+<script id="v631-remove-visible-timing-diagnostics">
+(() => {
+  'use strict';
+  const removePanels = () => {
+    document.getElementById('v629TimingPanel')?.remove();
+    document.getElementById('v630TimingPanel')?.remove();
+  };
+  removePanels();
+  requestAnimationFrame(removePanels);
 })();
 </script>
 

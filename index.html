@@ -64047,7 +64047,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   function v675ApplyRepairTitle() {
     const label = document.querySelector('#livesDisplay > div > div:nth-child(2) > div');
     if (!label) return;
-    label.textContent = 'REPAIR';
+    label.textContent = 'REPAIRS';
   }
 
   requestAnimationFrame(v675ApplyRepairTitle);
@@ -64186,7 +64186,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     }
 
     const label = document.querySelector('#livesDisplay > div > div:nth-child(2) > div');
-    if (label) label.textContent = 'REPAIR';
+    if (label) label.textContent = 'REPAIRS';
 
     const value = document.getElementById('livesText');
     if (value) {
@@ -64381,6 +64381,84 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       -1.5px  1.5px 0 rgba(48, 34, 22, .90),
        1.5px  1.5px 0 rgba(48, 34, 22, .90),
        0 2px 3px rgba(0,0,0,.58) !important;
+  }
+</style>
+
+
+<!-- v680: extreme double-size test for REPAIR / SCORE / LEVEL only.
+     Purpose: make the numeric cells and their figures roughly twice as large,
+     so the difference is unmistakable. -->
+<style id="v680-double-size-test-style">
+  /* Only target the three numeric center cells, not NEXT SET. */
+  #livesDisplay > div,
+  #scoreDisplay > div,
+  #extraCell1 > div {
+    grid-template-columns: 44% 56% !important;
+    grid-template-rows: 24% 76% !important;
+  }
+
+  /* Bigger titles in these 3 cells */
+  #livesDisplay > div > div:nth-child(2),
+  #scoreDisplay > div > div:nth-child(2),
+  #levelStatusLabels {
+    padding: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div,
+  #scoreDisplay > div > div:nth-child(2),
+  #levelLabel {
+    font-size: clamp(1.18rem, 4.3vw, 1.42rem) !important;
+    line-height: .88 !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Almost 200% width/height for the figures in the 3 numeric cells. */
+  #livesDisplay > div > img,
+  #scoreDisplay > div > img,
+  #extraCell1 > div > img {
+    width: 192% !important;
+    height: 196% !important;
+    transform: none !important;
+    transform-origin: center center !important;
+    object-fit: contain !important;
+  }
+
+  /* Very large numeric values. */
+  #livesText,
+  #scoreValue {
+    font-size: clamp(4.70rem, 16.8vw, 5.70rem) !important;
+    line-height: .84 !important;
+    letter-spacing: -.035em !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* LEVEL number even slightly bigger. */
+  #levelDisplayExtra {
+    font-size: clamp(4.90rem, 17.3vw, 5.95rem) !important;
+    line-height: .80 !important;
+    letter-spacing: -.045em !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Keep the tiny fan as a tiny accent behind the large number. */
+  #v664LevelRing {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+  }
+
+  /* Make the right-side content use all space. */
+  #livesText,
+  #scoreValue,
+  #levelStatusValues {
+    padding: 0 !important;
   }
 </style>
 

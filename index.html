@@ -64056,6 +64056,183 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v676: LEVEL progress becomes a compact 8-segment disc BEHIND the level number.
+     The progress logic remains unchanged; only the visual treatment changes. -->
+<style id="v676-level-progress-behind-number-style">
+  /* Keep the level progress compact enough to stay fully inside the same
+     functional area as the values in REPAIR / SCORE / NEXT SET. */
+  #v664LevelRing {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    max-width: 52px !important;
+    max-height: 52px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1 !important;
+  }
+
+  /* Remove the old dark centre hole: the eight progress slices now run
+     underneath the number instead of forming a large donut around it. */
+  #v664LevelRing::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Put the level number clearly on top of the segmented disc. */
+  #levelDisplayExtra {
+    position: relative !important;
+    z-index: 3 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: clamp(1.72rem, 5.9vw, 2.08rem) !important;
+    line-height: 1 !important;
+    color: #f4c644 !important;
+    text-shadow:
+      -2px -2px 0 rgba(54, 38, 24, .92),
+       2px -2px 0 rgba(54, 38, 24, .92),
+      -2px  2px 0 rgba(54, 38, 24, .92),
+       2px  2px 0 rgba(54, 38, 24, .92),
+       0  2px 4px rgba(0, 0, 0, .70) !important;
+  }
+
+  /* The holder itself should not crop the compact disc. */
+  #levelStatusValues > div:first-child {
+    overflow: visible !important;
+  }
+</style>
+
+
+<!-- v677: hard cleanup for the REPAIR cell.
+     Goal: make REPAIR behave visually like SCORE, with no legacy barrier-status layout impact. -->
+<style id="v677-repair-cell-hard-cleanup-style">
+  /* Keep the REPAIR cell structurally stable and independent from legacy barrier visuals. */
+  #livesDisplay {
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  /* Kill any legacy status badge completely. */
+  #v632RepairBarrierStatus,
+  #livesDisplay #v632RepairBarrierStatus,
+  #livesDisplay.v632-barrier-damaged #v632RepairBarrierStatus,
+  #livesDisplay.v632-barrier-open #v632RepairBarrierStatus,
+  #livesDisplay.v632-barrier-danger-hit #v632RepairBarrierStatus {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Neutralize all legacy barrier-state visuals on the REPAIR cell itself. */
+  #livesDisplay.v632-barrier-damaged,
+  #livesDisplay.v632-barrier-open,
+  #livesDisplay.v632-barrier-danger-hit {
+    animation: none !important;
+    background: rgba(0, 0, 0, 0.70) !important;
+    border-color: #ef962f !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 226, 128, 0.07), 0 0 7px rgba(232, 138, 45, 0.18) !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* Force a stable centered value area identical in spirit to SCORE. */
+  #livesDisplay > div {
+    align-items: stretch !important;
+    justify-items: stretch !important;
+  }
+
+  #livesText {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    align-self: stretch !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    line-height: 1 !important;
+    transform: none !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div {
+    padding-top: 0 !important;
+  }
+</style>
+
+<script id="v677-repair-cell-hard-cleanup-runtime">
+(() => {
+  'use strict';
+
+  function v677NormalizeRepairCell() {
+    const cell = document.getElementById('livesDisplay');
+    if (!cell) return;
+
+    cell.classList.remove('v632-barrier-damaged', 'v632-barrier-open', 'v632-barrier-danger-hit');
+
+    const badge = document.getElementById('v632RepairBarrierStatus');
+    if (badge && badge.parentNode) {
+      badge.parentNode.removeChild(badge);
+    }
+
+    const label = document.querySelector('#livesDisplay > div > div:nth-child(2) > div');
+    if (label) label.textContent = 'REPAIR';
+
+    const value = document.getElementById('livesText');
+    if (value) {
+      value.style.paddingTop = '0';
+      value.style.marginTop = '0';
+      value.style.transform = 'none';
+    }
+  }
+
+  /* Keep it normalized after any game update that may still touch the cell. */
+  const targets = [
+    'updateLivesDisplay',
+    'pulseBarrierWallImpact',
+    'resetBarrierWallStates',
+    'v418RestoreBarrierStates',
+    'updateFeatureAvailability'
+  ];
+
+  targets.forEach(name => {
+    if (typeof window[name] === 'function') {
+      const base = window[name];
+      window[name] = function() {
+        const result = base.apply(this, arguments);
+        requestAnimationFrame(v677NormalizeRepairCell);
+        return result;
+      };
+    }
+  });
+
+  const cell = document.getElementById('livesDisplay');
+  if (cell && typeof MutationObserver === 'function') {
+    const obs = new MutationObserver(() => requestAnimationFrame(v677NormalizeRepairCell));
+    obs.observe(cell, {
+      childList: true,
+      subtree: false,
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  requestAnimationFrame(v677NormalizeRepairCell);
+  setTimeout(v677NormalizeRepairCell, 50);
+  setInterval(v677NormalizeRepairCell, 250);
+})();
+</script>
+
 </body>
 </html>
 

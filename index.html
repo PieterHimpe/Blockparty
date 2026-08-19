@@ -63509,6 +63509,105 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 </style>
 
+
+<!-- v670: NEXT SET redesign only.
+     - top 40% title / bottom 60% content
+     - bottom split 40% figure / 60% preview
+     - title bigger and forced to "NEXT SET"
+     - preview blocks all keep the same size, sized for the 3-block case so 1/2/3 all match and stay inside -->
+<style id="v670-next-set-layout-style">
+  /* NEXT SET tile only */
+  #nextBlockDisplay > div {
+    grid-template-columns: 40% 60% !important;
+    grid-template-rows: 40% 60% !important;
+  }
+
+  /* Title area: larger and clearer */
+  #nextBlockDisplay > div > div:nth-child(2) {
+    grid-column: 1 / span 2 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 3px 4px 0 !important;
+  }
+
+  #nextBlockDisplay > div > div:nth-child(2) {
+    font-size: clamp(.76rem, 2.85vw, .96rem) !important;
+    line-height: 1 !important;
+    letter-spacing: .01em !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+
+  /* Bottom-left figure */
+  #nextBlockDisplay > div > img {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    width: 58% !important;
+    height: 68% !important;
+    object-fit: contain !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: 0 !important;
+  }
+
+  /* Bottom-right preview area */
+  #nextBlockPreview {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    padding: 0 4px 0 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+
+    /* Same block size for 1, 2 or 3 blocks.
+       Size is chosen from the 3-block case so a triple always fits. */
+    --v670-nextset-block-size: min(18px, calc((100% - 8px) / 3));
+  }
+
+  #nextBlockPreview > div {
+    width: var(--v670-nextset-block-size) !important;
+    height: var(--v670-nextset-block-size) !important;
+    min-width: var(--v670-nextset-block-size) !important;
+    min-height: var(--v670-nextset-block-size) !important;
+    max-width: var(--v670-nextset-block-size) !important;
+    max-height: var(--v670-nextset-block-size) !important;
+    flex: 0 0 var(--v670-nextset-block-size) !important;
+    margin: 0 !important;
+    transform: none !important;
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Identity marks scale a bit better inside the fixed blocks */
+  #nextBlockPreview > div > div {
+    max-width: 100% !important;
+    max-height: 100% !important;
+  }
+</style>
+
+<script id="v670-next-set-layout-runtime">
+(() => {
+  'use strict';
+
+  function v670FixNextSetLabel() {
+    const label = document.querySelector('#nextBlockDisplay > div > div:nth-child(2)');
+    if (!label) return;
+    label.textContent = 'NEXT SET';
+  }
+
+  requestAnimationFrame(v670FixNextSetLabel);
+  setTimeout(v670FixNextSetLabel, 50);
+  setInterval(v670FixNextSetLabel, 250);
+})();
+</script>
+
 </body>
 </html>
 

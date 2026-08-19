@@ -63506,6 +63506,292 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v658:
+     Fine-tune center tiles + Party Goal vertical text + full Party Mission teaser cleanup. -->
+<style id="v658-center-cells-and-mission-cleanup-style">
+
+  /* =========================
+     A) Lower Party Goal text a bit
+     ========================= */
+  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel {
+    justify-content: flex-start !important;
+    padding-top: 5px !important;
+    padding-bottom: 2px !important;
+  }
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-label {
+    margin-top: 2px !important;
+  }
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-sub {
+    margin-top: 1px !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* =========================
+     B) 4 center cells: align titles equally, fix NEXT SET and preview size
+     ========================= */
+  #livesDisplay > div,
+  #scoreDisplay > div,
+  #nextBlockDisplay > div,
+  #extraCell1 > div {
+    grid-template-columns: 44% 56% !important;
+    grid-template-rows: 32% 68% !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2),
+  #scoreDisplay > div > div:nth-child(2),
+  #nextBlockDisplay > div > div:nth-child(2),
+  #levelStatusLabels {
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 6px 4px 2px !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div,
+  #scoreDisplay > div > div:nth-child(2),
+  #nextBlockDisplay > div > div:nth-child(2),
+  #levelLabel {
+    display: block !important;
+    width: 100% !important;
+    font-size: clamp(.64rem, 2.25vw, .78rem) !important;
+    line-height: .98 !important;
+    letter-spacing: .01em !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+
+  /* explicit gap in NEXT SET */
+  #nextBlockDisplay > div > div:nth-child(2) {
+    letter-spacing: 0 !important;
+  }
+
+  #livesDisplay > div > img,
+  #scoreDisplay > div > img,
+  #nextBlockDisplay > div > img,
+  #extraCell1 > div > img {
+    width: 58% !important;
+    height: 68% !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin-top: 2px !important;
+  }
+
+  #livesText,
+  #scoreValue,
+  #nextBlockPreview,
+  #levelStatusValues {
+    padding: 0 8px 0 0 !important;
+  }
+
+  #livesText,
+  #scoreValue,
+  #levelDisplayExtra {
+    font-size: clamp(1.34rem, 4.7vw, 1.68rem) !important;
+    line-height: 1 !important;
+  }
+
+  /* remove the 0/8 text, keep only the small segment tracker */
+  #v632LevelProgressText {
+    display: none !important;
+  }
+  #v632LevelProgress {
+    margin-top: 0 !important;
+    gap: 0 !important;
+  }
+  #v632LevelSegments {
+    width: min(86%, 62px) !important;
+    gap: 2px !important;
+  }
+
+  /* smaller preview blocks */
+  #nextBlockPreview {
+    gap: 2px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding-right: 6px !important;
+  }
+  #nextBlockPreview > div {
+    margin: 0 1px !important;
+    transform: scale(.82) !important;
+    transform-origin: center center !important;
+  }
+
+  /* =========================
+     C) Full Party Mission teaser cleanup
+     ========================= */
+  #levelDisplay.v658-mission-teaser-active {
+    position: relative !important;
+    overflow: hidden !important;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(244,198,68,.06), transparent 30%),
+      linear-gradient(180deg, rgba(52,37,31,.98), rgba(28,21,22,.98)) !important;
+    border-color: rgba(232,138,45,.86) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,225,150,.06),
+      0 0 6px rgba(232,138,45,.12) !important;
+  }
+
+  #levelDisplay.v658-mission-teaser-active::before,
+  #levelDisplay.v658-mission-teaser-active::after {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  /* hide EVERYTHING legacy and also the v657 overlay */
+  #levelDisplay.v658-mission-teaser-active > :not(.v658-mission-overlay) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  #levelDisplay .v658-mission-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    grid-template-rows: 1fr 1fr;
+    align-items: center;
+    justify-items: center;
+    padding: 6px 8px 5px;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+
+  #levelDisplay.v658-mission-teaser-active .v658-mission-overlay {
+    display: grid !important;
+  }
+
+  #levelDisplay .v658-main,
+  #levelDisplay .v658-sub {
+    width: 100%;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  #levelDisplay .v658-main {
+    align-self: end;
+    font-size: clamp(.52rem, 2.05vw, .66rem);
+    color: #f4c644;
+    font-weight: 900;
+    letter-spacing: .02em;
+  }
+
+  #levelDisplay .v658-sub {
+    align-self: start;
+    font-size: clamp(.50rem, 1.95vw, .62rem);
+    color: #fff0be;
+    font-weight: 900;
+  }
+
+  #levelDisplay .v658-lock-badge {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    padding: 1px 4px 0;
+    border-radius: 7px;
+    background: rgba(19,16,22,.92);
+    border: 1px solid rgba(232,138,45,.56);
+    color: #f4c644;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    font-size: .38rem;
+    line-height: 1.05;
+    font-weight: 900;
+  }
+</style>
+
+<script id="v658-center-cells-and-mission-cleanup-runtime">
+(() => {
+  'use strict';
+
+  function v658MissionLevel() {
+    try {
+      const lvl = Number(window.level) || 0;
+      const next = Math.floor(lvl / 5) * 5 + 5;
+      return String(next > lvl ? next : lvl + 5);
+    } catch (_) {
+      return '20';
+    }
+  }
+
+  function v658EnsureMissionOverlay(cell) {
+    let overlay = cell.querySelector('.v658-mission-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'v658-mission-overlay';
+      cell.appendChild(overlay);
+    }
+    return overlay;
+  }
+
+  function v658RefreshMission() {
+    const cell = document.getElementById('levelDisplay');
+    if (!cell) return;
+
+    const pre = cell.classList.contains('v632-pre-mission-teaser');
+    const nxt = cell.classList.contains('v632-next-mission-teaser');
+
+    if (!pre && !nxt) {
+      cell.classList.remove('v658-mission-teaser-active');
+      const ov = cell.querySelector('.v658-mission-overlay');
+      if (ov) ov.style.display = 'none';
+      return;
+    }
+
+    const overlay = v658EnsureMissionOverlay(cell);
+    cell.classList.add('v658-mission-teaser-active');
+
+    let main = '1ST MISSION';
+    let sub = 'LEVEL 15';
+    let badge = '<span class="v658-lock-badge">LOCKED</span>';
+
+    if (nxt) {
+      main = 'NEXT MISSION';
+      sub = 'LEVEL ' + v658MissionLevel();
+      badge = '';
+    }
+
+    overlay.innerHTML =
+      `<div class="v658-main">${main}</div>` +
+      `<div class="v658-sub">${sub}</div>` +
+      badge;
+
+    cell.appendChild(overlay);
+    overlay.style.display = 'grid';
+  }
+
+  function v658FixCenterLabels() {
+    const nextLabel = document.querySelector('#nextBlockDisplay > div > div:nth-child(2)');
+    if (nextLabel) nextLabel.textContent = 'NEXT SET';
+    const levelLabel = document.getElementById('levelLabel');
+    if (levelLabel) levelLabel.textContent = 'LEVEL';
+  }
+
+  requestAnimationFrame(() => {
+    v658RefreshMission();
+    v658FixCenterLabels();
+  });
+
+  setInterval(() => {
+    v658RefreshMission();
+    v658FixCenterLabels();
+  }, 120);
+
+  const levelDisplay = document.getElementById('levelDisplay');
+  if (levelDisplay && typeof MutationObserver === 'function') {
+    const obs = new MutationObserver(() => requestAnimationFrame(v658RefreshMission));
+    obs.observe(levelDisplay, {childList: true, subtree: false, attributes: true, attributeFilter: ['class']});
+  }
+})();
+</script>
+
 </body>
 </html>
 

@@ -64334,6 +64334,56 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 </style>
 
+
+<!-- v679: LEVEL only.
+     Make the 8-segment progress fan deliberately MUCH smaller than the level number.
+     Progress logic remains unchanged. -->
+<style id="v679-tiny-level-fan-big-number-style">
+
+  /* Tiny progress fan: just a small accent behind the number. */
+  #v664LevelRing {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1 !important;
+    opacity: .82 !important;
+  }
+
+  /* Absolutely no donut hole. */
+  #v664LevelRing::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Level number is intentionally much larger than the fan. */
+  #levelDisplayExtra {
+    position: relative !important;
+    z-index: 4 !important;
+    font-size: clamp(2.45rem, 8.2vw, 2.85rem) !important;
+    line-height: .86 !important;
+    letter-spacing: -.035em !important;
+    color: #f4c644 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-shadow:
+      -1.5px -1.5px 0 rgba(48, 34, 22, .90),
+       1.5px -1.5px 0 rgba(48, 34, 22, .90),
+      -1.5px  1.5px 0 rgba(48, 34, 22, .90),
+       1.5px  1.5px 0 rgba(48, 34, 22, .90),
+       0 2px 3px rgba(0,0,0,.58) !important;
+  }
+</style>
+
 </body>
 </html>
 

@@ -63000,6 +63000,63 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v663: change Party preview copy to "NEXT MISSION" / "IN X LEVELS"
+     and make that preview text about 2x smaller. -->
+<style id="v663-next-mission-in-x-levels-style">
+  #levelDisplay.v662-party-preview .v662-party-main {
+    font-size: clamp(.28rem, 1.1vw, .35rem) !important;
+    line-height: 1.02 !important;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-sub {
+    font-size: clamp(.24rem, 1.0vw, .30rem) !important;
+    line-height: 1.02 !important;
+    margin-top: 1px !important;
+  }
+</style>
+
+<script id="v663-next-mission-in-x-levels-runtime">
+(() => {
+  'use strict';
+
+  if (typeof v662ApplyPartyPreview === 'function') {
+    const v663BaseApply = v662ApplyPartyPreview;
+    window.v662ApplyPartyPreview = function() {
+      const result = v663BaseApply.apply(this, arguments);
+
+      const cell = document.getElementById('levelDisplay');
+      const copy = document.getElementById('challengeInfoText');
+      if (!cell || !copy || !cell.classList.contains('v662-party-preview')) return result;
+
+      let currentLevel = 1;
+      try { currentLevel = Number(level) || 1; } catch (_) {}
+
+      const txt = copy.textContent || '';
+      const m = txt.match(/LEVEL\s+(\d+)/i);
+      if (!m) return result;
+
+      const targetLevel = Number(m[1]) || currentLevel;
+      const diff = Math.max(0, targetLevel - currentLevel);
+      const unit = diff === 1 ? 'LEVEL' : 'LEVELS';
+
+      copy.innerHTML =
+        '<span class="v662-party-main">NEXT MISSION</span>' +
+        `<span class="v662-party-sub">IN ${diff} ${unit}</span>`;
+
+      return result;
+    };
+
+    requestAnimationFrame(() => {
+      try { window.v662ApplyPartyPreview(); } catch (_) {}
+    });
+    setTimeout(() => {
+      try { window.v662ApplyPartyPreview(); } catch (_) {}
+    }, 60);
+  }
+})();
+</script>
+
 </body>
 </html>
 

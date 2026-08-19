@@ -59272,11 +59272,11 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     cell.classList.toggle('v632-barrier-open', severity === 'open');
 
     if (severity === 'open') {
-      badge.textContent = 'BARRIER OPEN';
-      badge.setAttribute('aria-label', 'Party Barrier has an open gap');
+      badge.textContent = '';
+      badge.removeAttribute('aria-label');
     } else if (severity === 'damaged') {
-      badge.textContent = 'DAMAGED';
-      badge.setAttribute('aria-label', 'Party Barrier is damaged');
+      badge.textContent = '';
+      badge.removeAttribute('aria-label');
     } else {
       badge.textContent = '';
       badge.removeAttribute('aria-label');

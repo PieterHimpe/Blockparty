@@ -59272,11 +59272,11 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     cell.classList.toggle('v632-barrier-open', severity === 'open');
 
     if (severity === 'open') {
-      badge.textContent = 'BARRIER OPEN';
-      badge.setAttribute('aria-label', 'Party Barrier has an open gap');
+      badge.textContent = '';
+      badge.removeAttribute('aria-label');
     } else if (severity === 'damaged') {
-      badge.textContent = 'DAMAGED';
-      badge.setAttribute('aria-label', 'Party Barrier is damaged');
+      badge.textContent = '';
+      badge.removeAttribute('aria-label');
     } else {
       badge.textContent = '';
       badge.removeAttribute('aria-label');
@@ -63822,6 +63822,239 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
 </style>
+
+
+<!-- v674: make the 4 larger center cells visually fuller.
+     Bigger titles, bigger figures, bigger numbers, bigger level ring,
+     and larger NEXT SET preview blocks, while preserving logic. -->
+<style id="v674-center-cells-scaled-up-style">
+  /* Use a little less title space and more content space */
+  #livesDisplay > div,
+  #scoreDisplay > div,
+  #extraCell1 > div,
+  #nextBlockDisplay > div {
+    grid-template-columns: 38% 62% !important;
+    grid-template-rows: 34% 66% !important;
+  }
+
+  /* Larger titles with less empty padding */
+  #livesDisplay > div > div:nth-child(2),
+  #scoreDisplay > div > div:nth-child(2),
+  #levelStatusLabels,
+  #nextBlockDisplay > div > div:nth-child(2) {
+    padding: 2px 3px 0 !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div,
+  #scoreDisplay > div > div:nth-child(2),
+  #levelLabel,
+  #nextBlockDisplay > div > div:nth-child(2) {
+    font-size: clamp(.88rem, 3.2vw, 1.08rem) !important;
+    line-height: .96 !important;
+    letter-spacing: .005em !important;
+  }
+
+  /* Bigger supporting figures */
+  #livesDisplay > div > img,
+  #scoreDisplay > div > img,
+  #extraCell1 > div > img,
+  #nextBlockDisplay > div > img {
+    width: 76% !important;
+    height: 84% !important;
+  }
+
+  /* Let right-hand content breathe less and occupy more */
+  #livesText,
+  #scoreValue,
+  #levelStatusValues,
+  #nextBlockPreview {
+    padding: 0 2px 0 0 !important;
+  }
+
+  /* Bigger repairs / score values */
+  #livesText,
+  #scoreValue {
+    font-size: clamp(1.78rem, 6.3vw, 2.16rem) !important;
+  }
+
+  /* Bigger level number and ring */
+  #levelDisplayExtra {
+    font-size: clamp(1.58rem, 5.5vw, 1.98rem) !important;
+  }
+
+  #v664LevelRing {
+    width: 70px !important;
+    height: 70px !important;
+  }
+
+  #v664LevelRing::after {
+    inset: 8px !important;
+  }
+
+  /* Bigger NEXT SET blocks, still based on the 3-block case */
+  #nextBlockPreview {
+    gap: 2px !important;
+    --v674-nextset-block-size: min(20px, calc((100% - 6px) / 3)) !important;
+  }
+
+  #nextBlockPreview > div {
+    width: var(--v674-nextset-block-size) !important;
+    height: var(--v674-nextset-block-size) !important;
+    min-width: var(--v674-nextset-block-size) !important;
+    min-height: var(--v674-nextset-block-size) !important;
+    max-width: var(--v674-nextset-block-size) !important;
+    max-height: var(--v674-nextset-block-size) !important;
+    flex: 0 0 var(--v674-nextset-block-size) !important;
+    border-radius: 5px !important;
+  }
+
+  /* Make tiny glyphs inside preview blocks scale a bit better */
+  #nextBlockPreview > div > div {
+    transform: scale(1.08) !important;
+    transform-origin: center center !important;
+  }
+</style>
+
+
+<!-- v675:
+     - REPAIRS title becomes REPAIR
+     - empty barrier-status bar is fully hidden
+     - 4 larger center cells are filled more strongly
+     - level ring is made rounder/cleaner
+-->
+<style id="v675-repair-singular-fuller-center-cells-style">
+  /* Hide the Repairs status badge completely and neutralize special warning styling in that cell. */
+  #v632RepairBarrierStatus,
+  #livesDisplay.v632-barrier-damaged #v632RepairBarrierStatus,
+  #livesDisplay.v632-barrier-open #v632RepairBarrierStatus {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  #livesDisplay.v632-barrier-damaged,
+  #livesDisplay.v632-barrier-open {
+    border-color: #e88a2d !important;
+    box-shadow: none !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+  }
+
+  /* Make the 4 large center cells feel fuller. */
+  #livesDisplay > div,
+  #scoreDisplay > div,
+  #extraCell1 > div,
+  #nextBlockDisplay > div {
+    grid-template-columns: 36% 64% !important;
+    grid-template-rows: 32% 68% !important;
+  }
+
+  /* Larger titles */
+  #livesDisplay > div > div:nth-child(2),
+  #scoreDisplay > div > div:nth-child(2),
+  #levelStatusLabels,
+  #nextBlockDisplay > div > div:nth-child(2) {
+    padding: 1px 2px 0 !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div,
+  #scoreDisplay > div > div:nth-child(2),
+  #levelLabel,
+  #nextBlockDisplay > div > div:nth-child(2) {
+    font-size: clamp(.96rem, 3.55vw, 1.16rem) !important;
+    line-height: .94 !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Bigger figures with a bit of visual scale to counter transparent whitespace inside the source PNGs. */
+  #livesDisplay > div > img,
+  #scoreDisplay > div > img,
+  #extraCell1 > div > img,
+  #nextBlockDisplay > div > img {
+    width: 86% !important;
+    height: 92% !important;
+    transform: scale(1.10) !important;
+    transform-origin: center center !important;
+  }
+
+  /* Right side uses more of its space. */
+  #livesText,
+  #scoreValue,
+  #levelStatusValues,
+  #nextBlockPreview {
+    padding: 0 1px 0 0 !important;
+  }
+
+  /* Bigger primary values. */
+  #livesText,
+  #scoreValue {
+    font-size: clamp(2.02rem, 7.15vw, 2.42rem) !important;
+    line-height: .92 !important;
+  }
+
+  /* Bigger level number + cleaner round ring. */
+  #levelDisplayExtra {
+    font-size: clamp(1.76rem, 6.1vw, 2.14rem) !important;
+    line-height: 1 !important;
+  }
+
+  #v664LevelRing {
+    width: 76px !important;
+    height: 76px !important;
+    min-width: 76px !important;
+    min-height: 76px !important;
+    max-width: 76px !important;
+    max-height: 76px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+  }
+
+  #v664LevelRing::after {
+    inset: 9px !important;
+    border-radius: 50% !important;
+    background: rgba(61, 45, 34, 0.94) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 230, 128, 0.08) !important;
+  }
+
+  /* Larger NEXT SET blocks, still with identical block size for 1/2/3 blocks. */
+  #nextBlockPreview {
+    gap: 2px !important;
+    --v675-nextset-block-size: min(22px, calc((100% - 6px) / 3)) !important;
+  }
+
+  #nextBlockPreview > div {
+    width: var(--v675-nextset-block-size) !important;
+    height: var(--v675-nextset-block-size) !important;
+    min-width: var(--v675-nextset-block-size) !important;
+    min-height: var(--v675-nextset-block-size) !important;
+    max-width: var(--v675-nextset-block-size) !important;
+    max-height: var(--v675-nextset-block-size) !important;
+    flex: 0 0 var(--v675-nextset-block-size) !important;
+    border-radius: 5px !important;
+  }
+
+  #nextBlockPreview > div > div {
+    transform: scale(1.10) !important;
+    transform-origin: center center !important;
+  }
+</style>
+
+<script id="v675-repair-singular-runtime">
+(() => {
+  'use strict';
+
+  function v675ApplyRepairTitle() {
+    const label = document.querySelector('#livesDisplay > div > div:nth-child(2) > div');
+    if (!label) return;
+    label.textContent = 'REPAIR';
+  }
+
+  requestAnimationFrame(v675ApplyRepairTitle);
+  setTimeout(v675ApplyRepairTitle, 50);
+  setInterval(v675ApplyRepairTitle, 400);
+})();
+</script>
 
 </body>
 </html>

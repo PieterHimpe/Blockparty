@@ -8489,7 +8489,7 @@ button.image-fallback-label,
       </div>
     </div>
 
-    <div id="livesText" style="width: 33.33%; font-size: 1rem; text-align: center; color: #f4c644; font-weight: bold;padding-top: 2px;">0</div>
+    <div id="livesText">0</div>
   </div>
 </div>
 
@@ -8570,7 +8570,7 @@ button.image-fallback-label,
   SCORE
 </div>
 
-    <div id="scoreValue" style="width: 34%; font-size: 0.7rem; text-align: center; color: #f4c644; font-weight: bold;padding-top: 4px;">0</div>
+    <div id="scoreValue">0</div>
   </div>
 </div>
 
@@ -8611,37 +8611,12 @@ button.image-fallback-label,
     <img alt="Level icon 1" src="images/fig10.png" style="width: 33%; object-fit: cover;" />
 
     <!-- Midden: LEVEL + BPM (BPM pas zichtbaar na eerste gewonnen mission) -->
-    <div id="levelStatusLabels" style="
-      width: 33%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      font-family: 'Baloo Bhaina 2', sans-serif;
-      font-weight: bold;
-      color: #f4c644;
-      padding-top: 10px;
-padding-bottom: 6px;
-      box-sizing: border-box;
-    ">
-   <span id="levelLabel" style="font-size: 0.7rem; line-height: 0.9;">LEVEL</span>
+    <div id="levelStatusLabels">
+   <span id="levelLabel">LEVEL</span>
   <span id="bpmLabel" style="font-size: 0.7rem; line-height: 0.9;">BPM</span>
     </div>
 <!-- Rechterdeel met LEVEL + BPM, voortgangsbalk enkel onder LEVEL -->
-<div id="levelStatusValues" style="
-  width: 34%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-   padding-top: 10px;
-padding-bottom: 6px;
-  box-sizing: border-box;
-">
+<div id="levelStatusValues">
 
   <!-- Container voor level + voortgangsbalk -->
   <div style="position: relative; width: 100%; display: flex; justify-content: center;">
@@ -8658,16 +8633,7 @@ padding-bottom: 6px;
     "></div>
 
     <!-- Level-cijfer -->
-    <span id="levelDisplayExtra" style="
-      position: relative;
-      font-size: 0.7rem;
-      line-height: 0.9;
-      text-align: center;
-      color: #f4c644;
-      font-weight: bold;
-      font-family: 'Baloo Bhaina 2', sans-serif;
-      z-index: 2;
-    ">0</span>
+    <span id="levelDisplayExtra">0</span>
   </div>
 
   <!-- BPM-waarde -->
@@ -63059,136 +63025,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
 
 <!-- v664: replace 0/8 text with a segmented circular ring around the level number. -->
-<style id="v664-level-ring-progress-style">
-  /* Hide old text and old horizontal segment tracker */
-  #v632LevelProgressText,
-  #v632LevelSegments,
-  #v632LevelProgress {
-    display: none !important;
-  }
-
-  /* Level value host for circular ring */
-  #levelStatusValues > div:first-child {
-    position: relative !important;
-    width: 100% !important;
-    min-height: 58px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  #levelDisplayExtra {
-    position: relative !important;
-    z-index: 2 !important;
-  }
-
-  #v664LevelRing {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 56px;
-    height: 56px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  #v664LevelRing::after {
-    content: '';
-    position: absolute;
-    inset: 7px;
-    border-radius: 50%;
-    background: rgba(61, 45, 34, 0.92);
-    box-shadow: inset 0 0 0 1px rgba(255, 230, 128, 0.10);
-  }
-</style>
-
-<script id="v664-level-ring-progress-runtime">
-(() => {
-  'use strict';
-
-  const V664_TOTAL_SEGMENTS = 8;
-  const V664_SEGMENT_DEG = 39;
-  const V664_GAP_DEG = 6;
-  const V664_START_DEG = -90;
-
-  function v664EnsureRing() {
-    const host = document.querySelector('#levelStatusValues > div:first-child');
-    if (!host) return null;
-
-    let ring = document.getElementById('v664LevelRing');
-    if (!ring) {
-      ring = document.createElement('div');
-      ring.id = 'v664LevelRing';
-      host.insertBefore(ring, host.firstChild || null);
-    }
-    return ring;
-  }
-
-  function v664CurrentLevel() {
-    try { return Number(level) || 1; } catch (_) { return 1; }
-  }
-
-  function v664FilledSegments(levelNumber) {
-    if (levelNumber < 15) return 0;
-    return Math.max(0, Math.min(V664_TOTAL_SEGMENTS, Math.floor((levelNumber - 10) / 5)));
-  }
-
-  function v664BuildGradient(filledCount) {
-    const slices = [];
-    const light = 'rgba(255, 232, 150, 0.34)';
-    const strong = '#f4c644';
-
-    for (let i = 0; i < V664_TOTAL_SEGMENTS; i++) {
-      const start = V664_START_DEG + i * (V664_SEGMENT_DEG + V664_GAP_DEG);
-      const end = start + V664_SEGMENT_DEG;
-      const color = i < filledCount ? strong : light;
-      slices.push(`${color} ${start}deg ${end}deg`);
-      slices.push(`transparent ${end}deg ${end + V664_GAP_DEG}deg`);
-    }
-
-    return `conic-gradient(${slices.join(', ')})`;
-  }
-
-  function v664UpdateLevelRing() {
-    const ring = v664EnsureRing();
-    if (!ring) return;
-
-    const currentLevel = v664CurrentLevel();
-    const filled = v664FilledSegments(currentLevel);
-
-    ring.style.background = v664BuildGradient(filled);
-    ring.setAttribute(
-      'aria-label',
-      `Level ${currentLevel}; ${filled} of ${V664_TOTAL_SEGMENTS} milestone segments filled`
-    );
-  }
-
-  if (typeof updateLevelDisplay === 'function') {
-    const v664BaseUpdateLevelDisplay = updateLevelDisplay;
-    updateLevelDisplay = function() {
-      const result = v664BaseUpdateLevelDisplay.apply(this, arguments);
-      v664UpdateLevelRing();
-      return result;
-    };
-  }
-
-  if (typeof updateLevelAndBpmDisplay === 'function') {
-    const v664BaseUpdateLevelAndBpmDisplay = updateLevelAndBpmDisplay;
-    updateLevelAndBpmDisplay = function() {
-      const result = v664BaseUpdateLevelAndBpmDisplay.apply(this, arguments);
-      v664UpdateLevelRing();
-      return result;
-    };
-  }
-
-  requestAnimationFrame(v664UpdateLevelRing);
-  setTimeout(v664UpdateLevelRing, 60);
-})();
-</script>
-
-
 <!-- v665: hard-fix Party preview text and vertical stacking.
      - NEXT PARTY / LEVEL XX becomes NEXT MISSION / IN X LEVELS
      - the two lines are stacked vertically with flex-direction: column -->
@@ -63283,111 +63119,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
      The ring now shows progress WITHIN the current level:
      each completed valid group of 5+ fills one of the levelProgressThreshold segments.
      It resets naturally when bigGroupCount resets on level-up. -->
-<script id="v666-correct-level-ring-progress-runtime">
-(() => {
-  'use strict';
-
-  function v666EnsureRing() {
-    const host = document.querySelector('#levelStatusValues > div:first-child');
-    if (!host) return null;
-
-    let ring = document.getElementById('v664LevelRing');
-    if (!ring) {
-      ring = document.createElement('div');
-      ring.id = 'v664LevelRing';
-      host.insertBefore(ring, host.firstChild || null);
-    }
-    return ring;
-  }
-
-  function v666Threshold() {
-    try {
-      const n = Number(levelProgressThreshold);
-      return Number.isFinite(n) && n > 0 ? Math.round(n) : 8;
-    } catch (_) {
-      return 8;
-    }
-  }
-
-  function v666Progress() {
-    const total = v666Threshold();
-    try {
-      const n = Number(bigGroupCount);
-      return Number.isFinite(n)
-        ? Math.max(0, Math.min(total, Math.round(n)))
-        : 0;
-    } catch (_) {
-      return 0;
-    }
-  }
-
-  function v666BuildGradient(current, total) {
-    const segmentSize = 360 / total;
-    const gap = Math.min(5, segmentSize * 0.16);
-    const fillPart = segmentSize - gap;
-    const light = 'rgba(255, 232, 150, 0.30)';
-    const strong = '#f4c644';
-
-    const slices = [];
-    for (let i = 0; i < total; i++) {
-      const start = i * segmentSize;
-      const end = start + fillPart;
-      const color = i < current ? strong : light;
-      slices.push(`${color} ${start}deg ${end}deg`);
-      slices.push(`transparent ${end}deg ${start + segmentSize}deg`);
-    }
-    return `conic-gradient(from -90deg, ${slices.join(', ')})`;
-  }
-
-  function v666UpdateLevelRing() {
-    const ring = v666EnsureRing();
-    if (!ring) return;
-
-    const total = v666Threshold();
-    const current = v666Progress();
-
-    ring.style.background = v666BuildGradient(current, total);
-    ring.setAttribute(
-      'aria-label',
-      `Level progress ${current} of ${total} groups`
-    );
-  }
-
-  /* Update exactly when level progress changes. */
-  if (typeof updateLevelProgressBar === 'function') {
-    const v666BaseUpdateLevelProgressBar = updateLevelProgressBar;
-    updateLevelProgressBar = function() {
-      const result = v666BaseUpdateLevelProgressBar.apply(this, arguments);
-      v666UpdateLevelRing();
-      return result;
-    };
-  }
-
-  /* Also refresh after level changes / resume. */
-  if (typeof updateLevelDisplay === 'function') {
-    const v666BaseUpdateLevelDisplay = updateLevelDisplay;
-    updateLevelDisplay = function() {
-      const result = v666BaseUpdateLevelDisplay.apply(this, arguments);
-      v666UpdateLevelRing();
-      return result;
-    };
-  }
-
-  if (typeof updateLevelAndBpmDisplay === 'function') {
-    const v666BaseUpdateLevelAndBpmDisplay = updateLevelAndBpmDisplay;
-    updateLevelAndBpmDisplay = function() {
-      const result = v666BaseUpdateLevelAndBpmDisplay.apply(this, arguments);
-      v666UpdateLevelRing();
-      return result;
-    };
-  }
-
-  requestAnimationFrame(v666UpdateLevelRing);
-  setTimeout(v666UpdateLevelRing, 60);
-})();
-</script>
-
-
 <!-- v667:
      - NEW PARTY GOAL card shows +100 POINTS only once
      - card border is thicker and festive with a rotating 7-color ring -->
@@ -63515,987 +63246,335 @@ triggerPromoGroupCelebration = function(group, groupColor) {
      - bottom split 40% figure / 60% preview
      - title bigger and forced to "NEXT SET"
      - preview blocks all keep the same size, sized for the 3-block case so 1/2/3 all match and stay inside -->
-<style id="v670-next-set-layout-style">
-  /* NEXT SET tile only */
-  #nextBlockDisplay > div {
-    grid-template-columns: 40% 60% !important;
-    grid-template-rows: 40% 60% !important;
-  }
-
-  /* Title area: larger and clearer */
-  #nextBlockDisplay > div > div:nth-child(2) {
-    grid-column: 1 / span 2 !important;
-    grid-row: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 3px 4px 0 !important;
-  }
-
-  #nextBlockDisplay > div > div:nth-child(2) {
-    font-size: clamp(.76rem, 2.85vw, .96rem) !important;
-    line-height: 1 !important;
-    letter-spacing: .01em !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-  }
-
-  /* Bottom-left figure */
-  #nextBlockDisplay > div > img {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    width: 58% !important;
-    height: 68% !important;
-    object-fit: contain !important;
-    align-self: center !important;
-    justify-self: center !important;
-    margin: 0 !important;
-  }
-
-  /* Bottom-right preview area */
-  #nextBlockPreview {
-    grid-column: 2 !important;
-    grid-row: 2 !important;
-    width: 100% !important;
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 3px !important;
-    padding: 0 4px 0 0 !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-
-    /* Same block size for 1, 2 or 3 blocks.
-       Size is chosen from the 3-block case so a triple always fits. */
-    --v670-nextset-block-size: min(18px, calc((100% - 8px) / 3));
-  }
-
-  #nextBlockPreview > div {
-    width: var(--v670-nextset-block-size) !important;
-    height: var(--v670-nextset-block-size) !important;
-    min-width: var(--v670-nextset-block-size) !important;
-    min-height: var(--v670-nextset-block-size) !important;
-    max-width: var(--v670-nextset-block-size) !important;
-    max-height: var(--v670-nextset-block-size) !important;
-    flex: 0 0 var(--v670-nextset-block-size) !important;
-    margin: 0 !important;
-    transform: none !important;
-    border-radius: 4px !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Identity marks scale a bit better inside the fixed blocks */
-  #nextBlockPreview > div > div {
-    max-width: 100% !important;
-    max-height: 100% !important;
-  }
-</style>
-
-<script id="v670-next-set-layout-runtime">
-(() => {
-  'use strict';
-
-  function v670FixNextSetLabel() {
-    const label = document.querySelector('#nextBlockDisplay > div > div:nth-child(2)');
-    if (!label) return;
-    label.textContent = 'NEXT SET';
-  }
-
-  requestAnimationFrame(v670FixNextSetLabel);
-  setTimeout(v670FixNextSetLabel, 50);
-  setInterval(v670FixNextSetLabel, 250);
-})();
-</script>
-
-
 <!-- v671: unify all four large center cells.
      Shared structure:
      - top 40% = title
      - bottom 60% = 40% supporting figure / 60% functional information
      NEXT SET keeps the fixed preview-block sizing from v670. -->
-<style id="v671-four-center-cells-unified-style">
-
-  /* ============================================================
-     1. SAME 40/60 GRID FOR ALL FOUR LARGE CELLS
-     ============================================================ */
-  #livesDisplay > div,
-  #scoreDisplay > div,
-  #extraCell1 > div,
-  #nextBlockDisplay > div {
-    display: grid !important;
-    grid-template-columns: 40% 60% !important;
-    grid-template-rows: 40% 60% !important;
-    width: 100% !important;
-    height: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    position: relative !important;
-    gap: 0 !important;
-    align-items: stretch !important;
-    justify-items: stretch !important;
-  }
-
-  /* ============================================================
-     2. IDENTICAL TITLE ZONE
-     ============================================================ */
-  #livesDisplay > div > div:nth-child(2),
-  #scoreDisplay > div > div:nth-child(2),
-  #levelStatusLabels,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    grid-column: 1 / span 2 !important;
-    grid-row: 1 !important;
-    position: static !important;
-    width: 100% !important;
-    height: 100% !important;
-    box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    padding: 3px 4px 0 !important;
-    margin: 0 !important;
-    gap: 0 !important;
-  }
-
-  #livesDisplay > div > div:nth-child(2) > div,
-  #scoreDisplay > div > div:nth-child(2),
-  #levelLabel,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    text-align: center !important;
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-weight: 900 !important;
-    font-size: clamp(.76rem, 2.85vw, .96rem) !important;
-    line-height: 1 !important;
-    letter-spacing: .01em !important;
-    text-transform: uppercase !important;
-    color: #f4c644 !important;
-    white-space: nowrap !important;
-  }
-
-  #nextBlockDisplay > div > div:nth-child(2) br {
-    display: none !important;
-  }
-
-  /* BPM remains hidden: LEVEL owns the title row alone. */
-  #bpmLabel,
-  #bpmDisplay {
-    display: none !important;
-  }
-
-  /* ============================================================
-     3. SAME SUPPORTING FIGURE POSITION/SIZE
-     ============================================================ */
-  #livesDisplay > div > img,
-  #scoreDisplay > div > img,
-  #extraCell1 > div > img,
-  #nextBlockDisplay > div > img {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    position: static !important;
-    width: 58% !important;
-    height: 68% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: none !important;
-    max-height: none !important;
-    object-fit: contain !important;
-    align-self: center !important;
-    justify-self: center !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* ============================================================
-     4. RIGHT-HAND FUNCTIONAL INFORMATION
-     ============================================================ */
-  #livesText,
-  #scoreValue,
-  #levelStatusValues,
-  #nextBlockPreview {
-    grid-column: 2 !important;
-    grid-row: 2 !important;
-    position: static !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    box-sizing: border-box !important;
-    align-self: stretch !important;
-    justify-self: stretch !important;
-    margin: 0 !important;
-    padding: 0 5px 0 0 !important;
-    text-align: center !important;
-  }
-
-  /* Repairs + Score: same dominant number treatment. */
-  #livesText,
-  #scoreValue {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-weight: 900 !important;
-    font-size: clamp(1.42rem, 5.0vw, 1.76rem) !important;
-    line-height: 1 !important;
-    color: #f4c644 !important;
-  }
-
-  /* ============================================================
-     5. LEVEL: figure left, ring + number right
-     ============================================================ */
-  #levelStatusValues {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0 !important;
-  }
-
-  #levelStatusValues > div:first-child {
-    position: relative !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  #levelDisplayExtra {
-    position: relative !important;
-    z-index: 2 !important;
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-weight: 900 !important;
-    font-size: clamp(1.36rem, 4.8vw, 1.68rem) !important;
-    line-height: 1 !important;
-    color: #f4c644 !important;
-    text-align: center !important;
-  }
-
-  #v664LevelRing {
-    width: 54px !important;
-    height: 54px !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-  }
-
-  /* Old textual/horizontal level progress stays fully hidden. */
-  #levelProgressBar,
-  #v632LevelProgress,
-  #v632LevelProgressText,
-  #v632LevelSegments {
-    display: none !important;
-  }
-
-  /* ============================================================
-     6. NEXT SET: retain v670 fixed-size block behavior
-     ============================================================ */
-  #nextBlockPreview {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 3px !important;
-    overflow: hidden !important;
-    --v670-nextset-block-size: min(18px, calc((100% - 8px) / 3));
-  }
-
-  #nextBlockPreview > div {
-    width: var(--v670-nextset-block-size) !important;
-    height: var(--v670-nextset-block-size) !important;
-    min-width: var(--v670-nextset-block-size) !important;
-    min-height: var(--v670-nextset-block-size) !important;
-    max-width: var(--v670-nextset-block-size) !important;
-    max-height: var(--v670-nextset-block-size) !important;
-    flex: 0 0 var(--v670-nextset-block-size) !important;
-    margin: 0 !important;
-    transform: none !important;
-    border-radius: 4px !important;
-    box-sizing: border-box !important;
-  }
-
-</style>
-
-
 <!-- v674: make the 4 larger center cells visually fuller.
      Bigger titles, bigger figures, bigger numbers, bigger level ring,
      and larger NEXT SET preview blocks, while preserving logic. -->
-<style id="v674-center-cells-scaled-up-style">
-  /* Use a little less title space and more content space */
-  #livesDisplay > div,
-  #scoreDisplay > div,
-  #extraCell1 > div,
-  #nextBlockDisplay > div {
-    grid-template-columns: 38% 62% !important;
-    grid-template-rows: 34% 66% !important;
-  }
-
-  /* Larger titles with less empty padding */
-  #livesDisplay > div > div:nth-child(2),
-  #scoreDisplay > div > div:nth-child(2),
-  #levelStatusLabels,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    padding: 2px 3px 0 !important;
-  }
-
-  #livesDisplay > div > div:nth-child(2) > div,
-  #scoreDisplay > div > div:nth-child(2),
-  #levelLabel,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    font-size: clamp(.88rem, 3.2vw, 1.08rem) !important;
-    line-height: .96 !important;
-    letter-spacing: .005em !important;
-  }
-
-  /* Bigger supporting figures */
-  #livesDisplay > div > img,
-  #scoreDisplay > div > img,
-  #extraCell1 > div > img,
-  #nextBlockDisplay > div > img {
-    width: 76% !important;
-    height: 84% !important;
-  }
-
-  /* Let right-hand content breathe less and occupy more */
-  #livesText,
-  #scoreValue,
-  #levelStatusValues,
-  #nextBlockPreview {
-    padding: 0 2px 0 0 !important;
-  }
-
-  /* Bigger repairs / score values */
-  #livesText,
-  #scoreValue {
-    font-size: clamp(1.78rem, 6.3vw, 2.16rem) !important;
-  }
-
-  /* Bigger level number and ring */
-  #levelDisplayExtra {
-    font-size: clamp(1.58rem, 5.5vw, 1.98rem) !important;
-  }
-
-  #v664LevelRing {
-    width: 70px !important;
-    height: 70px !important;
-  }
-
-  #v664LevelRing::after {
-    inset: 8px !important;
-  }
-
-  /* Bigger NEXT SET blocks, still based on the 3-block case */
-  #nextBlockPreview {
-    gap: 2px !important;
-    --v674-nextset-block-size: min(20px, calc((100% - 6px) / 3)) !important;
-  }
-
-  #nextBlockPreview > div {
-    width: var(--v674-nextset-block-size) !important;
-    height: var(--v674-nextset-block-size) !important;
-    min-width: var(--v674-nextset-block-size) !important;
-    min-height: var(--v674-nextset-block-size) !important;
-    max-width: var(--v674-nextset-block-size) !important;
-    max-height: var(--v674-nextset-block-size) !important;
-    flex: 0 0 var(--v674-nextset-block-size) !important;
-    border-radius: 5px !important;
-  }
-
-  /* Make tiny glyphs inside preview blocks scale a bit better */
-  #nextBlockPreview > div > div {
-    transform: scale(1.08) !important;
-    transform-origin: center center !important;
-  }
-</style>
-
-
 <!-- v675:
      - REPAIRS title becomes REPAIR
      - empty barrier-status bar is fully hidden
      - 4 larger center cells are filled more strongly
      - level ring is made rounder/cleaner
 -->
-<style id="v675-repair-singular-fuller-center-cells-style">
-  /* Hide the Repairs status badge completely and neutralize special warning styling in that cell. */
-  #v632RepairBarrierStatus,
-  #livesDisplay.v632-barrier-damaged #v632RepairBarrierStatus,
-  #livesDisplay.v632-barrier-open #v632RepairBarrierStatus {
-    display: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-
-  #livesDisplay.v632-barrier-damaged,
-  #livesDisplay.v632-barrier-open {
-    border-color: #e88a2d !important;
-    box-shadow: none !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-  }
-
-  /* Make the 4 large center cells feel fuller. */
-  #livesDisplay > div,
-  #scoreDisplay > div,
-  #extraCell1 > div,
-  #nextBlockDisplay > div {
-    grid-template-columns: 36% 64% !important;
-    grid-template-rows: 32% 68% !important;
-  }
-
-  /* Larger titles */
-  #livesDisplay > div > div:nth-child(2),
-  #scoreDisplay > div > div:nth-child(2),
-  #levelStatusLabels,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    padding: 1px 2px 0 !important;
-  }
-
-  #livesDisplay > div > div:nth-child(2) > div,
-  #scoreDisplay > div > div:nth-child(2),
-  #levelLabel,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    font-size: clamp(.96rem, 3.55vw, 1.16rem) !important;
-    line-height: .94 !important;
-    letter-spacing: 0 !important;
-  }
-
-  /* Bigger figures with a bit of visual scale to counter transparent whitespace inside the source PNGs. */
-  #livesDisplay > div > img,
-  #scoreDisplay > div > img,
-  #extraCell1 > div > img,
-  #nextBlockDisplay > div > img {
-    width: 86% !important;
-    height: 92% !important;
-    transform: scale(1.10) !important;
-    transform-origin: center center !important;
-  }
-
-  /* Right side uses more of its space. */
-  #livesText,
-  #scoreValue,
-  #levelStatusValues,
-  #nextBlockPreview {
-    padding: 0 1px 0 0 !important;
-  }
-
-  /* Bigger primary values. */
-  #livesText,
-  #scoreValue {
-    font-size: clamp(2.02rem, 7.15vw, 2.42rem) !important;
-    line-height: .92 !important;
-  }
-
-  /* Bigger level number + cleaner round ring. */
-  #levelDisplayExtra {
-    font-size: clamp(1.76rem, 6.1vw, 2.14rem) !important;
-    line-height: 1 !important;
-  }
-
-  #v664LevelRing {
-    width: 76px !important;
-    height: 76px !important;
-    min-width: 76px !important;
-    min-height: 76px !important;
-    max-width: 76px !important;
-    max-height: 76px !important;
-    aspect-ratio: 1 / 1 !important;
-    border-radius: 50% !important;
-    overflow: hidden !important;
-  }
-
-  #v664LevelRing::after {
-    inset: 9px !important;
-    border-radius: 50% !important;
-    background: rgba(61, 45, 34, 0.94) !important;
-    box-shadow: inset 0 0 0 1px rgba(255, 230, 128, 0.08) !important;
-  }
-
-  /* Larger NEXT SET blocks, still with identical block size for 1/2/3 blocks. */
-  #nextBlockPreview {
-    gap: 2px !important;
-    --v675-nextset-block-size: min(22px, calc((100% - 6px) / 3)) !important;
-  }
-
-  #nextBlockPreview > div {
-    width: var(--v675-nextset-block-size) !important;
-    height: var(--v675-nextset-block-size) !important;
-    min-width: var(--v675-nextset-block-size) !important;
-    min-height: var(--v675-nextset-block-size) !important;
-    max-width: var(--v675-nextset-block-size) !important;
-    max-height: var(--v675-nextset-block-size) !important;
-    flex: 0 0 var(--v675-nextset-block-size) !important;
-    border-radius: 5px !important;
-  }
-
-  #nextBlockPreview > div > div {
-    transform: scale(1.10) !important;
-    transform-origin: center center !important;
-  }
-</style>
-
-<script id="v675-repair-singular-runtime">
-(() => {
-  'use strict';
-
-  function v675ApplyRepairTitle() {
-    const label = document.querySelector('#livesDisplay > div > div:nth-child(2) > div');
-    if (!label) return;
-    label.textContent = 'REPAIRS';
-  }
-
-  requestAnimationFrame(v675ApplyRepairTitle);
-  setTimeout(v675ApplyRepairTitle, 50);
-  setInterval(v675ApplyRepairTitle, 400);
-})();
-</script>
-
-
 <!-- v676: LEVEL progress becomes a compact 8-segment disc BEHIND the level number.
      The progress logic remains unchanged; only the visual treatment changes. -->
-<style id="v676-level-progress-behind-number-style">
-  /* Keep the level progress compact enough to stay fully inside the same
-     functional area as the values in REPAIR / SCORE / NEXT SET. */
-  #v664LevelRing {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
-    min-height: 52px !important;
-    max-width: 52px !important;
-    max-height: 52px !important;
-    aspect-ratio: 1 / 1 !important;
-    border-radius: 50% !important;
-    overflow: hidden !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 1 !important;
-  }
-
-  /* Remove the old dark centre hole: the eight progress slices now run
-     underneath the number instead of forming a large donut around it. */
-  #v664LevelRing::after {
-    display: none !important;
-    content: none !important;
-  }
-
-  /* Put the level number clearly on top of the segmented disc. */
-  #levelDisplayExtra {
-    position: relative !important;
-    z-index: 3 !important;
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    font-size: clamp(1.72rem, 5.9vw, 2.08rem) !important;
-    line-height: 1 !important;
-    color: #f4c644 !important;
-    text-shadow:
-      -2px -2px 0 rgba(54, 38, 24, .92),
-       2px -2px 0 rgba(54, 38, 24, .92),
-      -2px  2px 0 rgba(54, 38, 24, .92),
-       2px  2px 0 rgba(54, 38, 24, .92),
-       0  2px 4px rgba(0, 0, 0, .70) !important;
-  }
-
-  /* The holder itself should not crop the compact disc. */
-  #levelStatusValues > div:first-child {
-    overflow: visible !important;
-  }
-</style>
-
-
 <!-- v677: hard cleanup for the REPAIR cell.
      Goal: make REPAIR behave visually like SCORE, with no legacy barrier-status layout impact. -->
-<style id="v677-repair-cell-hard-cleanup-style">
-  /* Keep the REPAIR cell structurally stable and independent from legacy barrier visuals. */
-  #livesDisplay {
-    position: relative !important;
-    overflow: hidden !important;
-  }
-
-  /* Kill any legacy status badge completely. */
-  #v632RepairBarrierStatus,
-  #livesDisplay #v632RepairBarrierStatus,
-  #livesDisplay.v632-barrier-damaged #v632RepairBarrierStatus,
-  #livesDisplay.v632-barrier-open #v632RepairBarrierStatus,
-  #livesDisplay.v632-barrier-danger-hit #v632RepairBarrierStatus {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  /* Neutralize all legacy barrier-state visuals on the REPAIR cell itself. */
-  #livesDisplay.v632-barrier-damaged,
-  #livesDisplay.v632-barrier-open,
-  #livesDisplay.v632-barrier-danger-hit {
-    animation: none !important;
-    background: rgba(0, 0, 0, 0.70) !important;
-    border-color: #ef962f !important;
-    box-shadow: inset 0 0 0 1px rgba(255, 226, 128, 0.07), 0 0 7px rgba(232, 138, 45, 0.18) !important;
-    transform: none !important;
-    filter: none !important;
-  }
-
-  /* Force a stable centered value area identical in spirit to SCORE. */
-  #livesDisplay > div {
-    align-items: stretch !important;
-    justify-items: stretch !important;
-  }
-
-  #livesText {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    align-self: stretch !important;
-    justify-self: stretch !important;
-    width: 100% !important;
-    height: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    text-align: center !important;
-    line-height: 1 !important;
-    transform: none !important;
-  }
-
-  #livesDisplay > div > div:nth-child(2) > div {
-    padding-top: 0 !important;
-  }
-</style>
-
-<script id="v677-repair-cell-hard-cleanup-runtime">
-(() => {
-  'use strict';
-
-  function v677NormalizeRepairCell() {
-    const cell = document.getElementById('livesDisplay');
-    if (!cell) return;
-
-    cell.classList.remove('v632-barrier-damaged', 'v632-barrier-open', 'v632-barrier-danger-hit');
-
-    const badge = document.getElementById('v632RepairBarrierStatus');
-    if (badge && badge.parentNode) {
-      badge.parentNode.removeChild(badge);
-    }
-
-    const label = document.querySelector('#livesDisplay > div > div:nth-child(2) > div');
-    if (label) label.textContent = 'REPAIRS';
-
-    const value = document.getElementById('livesText');
-    if (value) {
-      value.style.paddingTop = '0';
-      value.style.marginTop = '0';
-      value.style.transform = 'none';
-    }
-  }
-
-  /* Keep it normalized after any game update that may still touch the cell. */
-  const targets = [
-    'updateLivesDisplay',
-    'pulseBarrierWallImpact',
-    'resetBarrierWallStates',
-    'v418RestoreBarrierStates',
-    'updateFeatureAvailability'
-  ];
-
-  targets.forEach(name => {
-    if (typeof window[name] === 'function') {
-      const base = window[name];
-      window[name] = function() {
-        const result = base.apply(this, arguments);
-        requestAnimationFrame(v677NormalizeRepairCell);
-        return result;
-      };
-    }
-  });
-
-  const cell = document.getElementById('livesDisplay');
-  if (cell && typeof MutationObserver === 'function') {
-    const obs = new MutationObserver(() => requestAnimationFrame(v677NormalizeRepairCell));
-    obs.observe(cell, {
-      childList: true,
-      subtree: false,
-      attributes: true,
-      attributeFilter: ['class']
-    });
-  }
-
-  requestAnimationFrame(v677NormalizeRepairCell);
-  setTimeout(v677NormalizeRepairCell, 50);
-  setInterval(v677NormalizeRepairCell, 250);
-})();
-</script>
-
-
 <!-- v678: extreme scale test for the 4 large center cells.
      Purpose: deliberately push size harder so the visual difference is obvious. -->
-<style id="v678-center-cells-extreme-scale-test-style">
-  /* More space to functional content, less to title */
-  #livesDisplay > div,
-  #scoreDisplay > div,
-  #extraCell1 > div,
-  #nextBlockDisplay > div {
-    grid-template-columns: 42% 58% !important;
-    grid-template-rows: 26% 74% !important;
-  }
-
-  /* Titles: larger, tighter, lower visual waste */
-  #livesDisplay > div > div:nth-child(2),
-  #scoreDisplay > div > div:nth-child(2),
-  #levelStatusLabels,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    padding: 0 1px 0 !important;
-    align-items: center !important;
-  }
-
-  #livesDisplay > div > div:nth-child(2) > div,
-  #scoreDisplay > div > div:nth-child(2),
-  #levelLabel,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    font-size: clamp(1.06rem, 4.0vw, 1.28rem) !important;
-    line-height: .90 !important;
-    letter-spacing: 0 !important;
-  }
-
-  /* Left-side figures: much larger to offset transparent whitespace in assets */
-  #livesDisplay > div > img,
-  #scoreDisplay > div > img,
-  #extraCell1 > div > img,
-  #nextBlockDisplay > div > img {
-    width: 96% !important;
-    height: 98% !important;
-    transform: scale(1.22) !important;
-    transform-origin: center center !important;
-  }
-
-  /* Right-side value areas: use nearly all available space */
-  #livesText,
-  #scoreValue,
-  #levelStatusValues,
-  #nextBlockPreview {
-    padding: 0 !important;
-  }
-
-  /* Repair / Score values: intentionally very large for testing */
-  #livesText,
-  #scoreValue {
-    font-size: clamp(2.38rem, 8.5vw, 2.90rem) !important;
-    line-height: .88 !important;
-    letter-spacing: -.02em !important;
-  }
-
-  /* Level: larger number and more prominent background progress disc */
-  #levelDisplayExtra {
-    font-size: clamp(2.00rem, 6.9vw, 2.42rem) !important;
-    line-height: .92 !important;
-    letter-spacing: -.01em !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,.45) !important;
-  }
-
-  /* The behind-number progress disc from v676 gets bigger, but stays compact */
-  #v676LevelDisc,
-  #v664LevelRing {
-    width: 60px !important;
-    height: 60px !important;
-    min-width: 60px !important;
-    min-height: 60px !important;
-    max-width: 60px !important;
-    max-height: 60px !important;
-    aspect-ratio: 1 / 1 !important;
-  }
-
-  /* Next Set: larger blocks, still identical size for 1/2/3 blocks */
-  #nextBlockPreview {
-    gap: 1px !important;
-    --v678-nextset-block-size: min(26px, calc((100% - 4px) / 3)) !important;
-  }
-
-  #nextBlockPreview > div {
-    width: var(--v678-nextset-block-size) !important;
-    height: var(--v678-nextset-block-size) !important;
-    min-width: var(--v678-nextset-block-size) !important;
-    min-height: var(--v678-nextset-block-size) !important;
-    max-width: var(--v678-nextset-block-size) !important;
-    max-height: var(--v678-nextset-block-size) !important;
-    flex: 0 0 var(--v678-nextset-block-size) !important;
-    border-radius: 5px !important;
-  }
-
-  #nextBlockPreview > div > div {
-    transform: scale(1.16) !important;
-    transform-origin: center center !important;
-  }
-</style>
-
-
 <!-- v679: LEVEL only.
      Make the 8-segment progress fan deliberately MUCH smaller than the level number.
      Progress logic remains unchanged. -->
-<style id="v679-tiny-level-fan-big-number-style">
-
-  /* Tiny progress fan: just a small accent behind the number. */
-  #v664LevelRing {
-    width: 28px !important;
-    height: 28px !important;
-    min-width: 28px !important;
-    min-height: 28px !important;
-    max-width: 28px !important;
-    max-height: 28px !important;
-    aspect-ratio: 1 / 1 !important;
-    border-radius: 50% !important;
-    overflow: hidden !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 1 !important;
-    opacity: .82 !important;
-  }
-
-  /* Absolutely no donut hole. */
-  #v664LevelRing::after {
-    display: none !important;
-    content: none !important;
-  }
-
-  /* Level number is intentionally much larger than the fan. */
-  #levelDisplayExtra {
-    position: relative !important;
-    z-index: 4 !important;
-    font-size: clamp(2.45rem, 8.2vw, 2.85rem) !important;
-    line-height: .86 !important;
-    letter-spacing: -.035em !important;
-    color: #f4c644 !important;
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    text-shadow:
-      -1.5px -1.5px 0 rgba(48, 34, 22, .90),
-       1.5px -1.5px 0 rgba(48, 34, 22, .90),
-      -1.5px  1.5px 0 rgba(48, 34, 22, .90),
-       1.5px  1.5px 0 rgba(48, 34, 22, .90),
-       0 2px 3px rgba(0,0,0,.58) !important;
-  }
-</style>
-
-
 <!-- v680: extreme double-size test for REPAIR / SCORE / LEVEL only.
      Purpose: make the numeric cells and their figures roughly twice as large,
      so the difference is unmistakable. -->
-<style id="v680-double-size-test-style">
-  /* Only target the three numeric center cells, not NEXT SET. */
-  #livesDisplay > div,
-  #scoreDisplay > div,
-  #extraCell1 > div {
-    grid-template-columns: 44% 56% !important;
-    grid-template-rows: 24% 76% !important;
-  }
-
-  /* Bigger titles in these 3 cells */
-  #livesDisplay > div > div:nth-child(2),
-  #scoreDisplay > div > div:nth-child(2),
-  #levelStatusLabels {
-    padding: 0 !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  #livesDisplay > div > div:nth-child(2) > div,
-  #scoreDisplay > div > div:nth-child(2),
-  #levelLabel {
-    font-size: clamp(1.18rem, 4.3vw, 1.42rem) !important;
-    line-height: .88 !important;
-    letter-spacing: 0 !important;
-  }
-
-  /* Almost 200% width/height for the figures in the 3 numeric cells. */
-  #livesDisplay > div > img,
-  #scoreDisplay > div > img,
-  #extraCell1 > div > img {
-    width: 192% !important;
-    height: 196% !important;
-    transform: none !important;
-    transform-origin: center center !important;
-    object-fit: contain !important;
-  }
-
-  /* Very large numeric values. */
-  #livesText,
-  #scoreValue {
-    font-size: clamp(4.70rem, 16.8vw, 5.70rem) !important;
-    line-height: .84 !important;
-    letter-spacing: -.035em !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* LEVEL number even slightly bigger. */
-  #levelDisplayExtra {
-    font-size: clamp(4.90rem, 17.3vw, 5.95rem) !important;
-    line-height: .80 !important;
-    letter-spacing: -.045em !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Keep the tiny fan as a tiny accent behind the large number. */
-  #v664LevelRing {
-    width: 28px !important;
-    height: 28px !important;
-    min-width: 28px !important;
-    min-height: 28px !important;
-    max-width: 28px !important;
-    max-height: 28px !important;
-  }
-
-  /* Make the right-side content use all space. */
-  #livesText,
-  #scoreValue,
-  #levelStatusValues {
-    padding: 0 !important;
-  }
-</style>
-
-
 <!-- v682: cleanup pass
      - fix specificity conflicts by targeting the exact live elements
      - figures in the large cells become 30% smaller than the extreme test
      - titles no longer hug the top edge
      - LEVEL gets a small segmented orange ring (8 parts), bright yellow per valid group of 5+ -->
-<style id="v682-clean-center-cells-style">
-  /* Title rows: give them breathing room again. */
-  #livesDisplay > div > div:nth-child(2),
-  #scoreDisplay > div > div:nth-child(2),
-  #levelStatusLabels,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    padding-top: 4px !important;
-    padding-bottom: 2px !important;
+<!-- v683: Mission-cell tutorial colors only.
+     Keep all 7 tutorial colors perfectly round in the narrower mission cell,
+     arranged as 4 on the first row and 3 centered on the second row.
+     Normal mission preview and active missions are untouched. -->
+<style id="v683-tutorial-mission-colors-round-4-3-style">
+
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker {
+    display: grid !important;
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 0 !important;
+    row-gap: 3px !important;
+    align-items: center !important;
+    justify-items: center !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+  }
+
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot {
+    width: var(--v683-tutorial-dot-size, 13px) !important;
+    height: var(--v683-tutorial-dot-size, 13px) !important;
+    min-width: var(--v683-tutorial-dot-size, 13px) !important;
+    min-height: var(--v683-tutorial-dot-size, 13px) !important;
+    max-width: var(--v683-tutorial-dot-size, 13px) !important;
+    max-height: var(--v683-tutorial-dot-size, 13px) !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+    justify-self: center !important;
+    align-self: center !important;
+  }
+
+  /* 4 circles on row 1 */
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot:nth-child(1) {
+    grid-column: 1 / span 2 !important;
+    grid-row: 1 !important;
+  }
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot:nth-child(2) {
+    grid-column: 3 / span 2 !important;
+    grid-row: 1 !important;
+  }
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot:nth-child(3) {
+    grid-column: 5 / span 2 !important;
+    grid-row: 1 !important;
+  }
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot:nth-child(4) {
+    grid-column: 7 / span 2 !important;
+    grid-row: 1 !important;
+  }
+
+  /* 3 circles centered on row 2 */
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot:nth-child(5) {
+    grid-column: 2 / span 2 !important;
+    grid-row: 2 !important;
+  }
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot:nth-child(6) {
+    grid-column: 4 / span 2 !important;
+    grid-row: 2 !important;
+  }
+  #levelDisplay.v606-tutorial-colors #v606MissionColorTracker .tutorial-color-slot:nth-child(7) {
+    grid-column: 6 / span 2 !important;
+    grid-row: 2 !important;
+  }
+</style>
+
+<script id="v683-tutorial-mission-colors-round-4-3-runtime">
+(() => {
+  'use strict';
+
+  function v683ResizeTutorialMissionDots() {
+    const cell = document.getElementById('levelDisplay');
+    const tracker = document.getElementById('v606MissionColorTracker');
+    if (!cell || !tracker || !cell.classList.contains('v606-tutorial-colors')) return;
+
+    const width = Math.max(0, tracker.clientWidth - 8);   // 4px padding each side
+    const height = Math.max(0, tracker.clientHeight - 11); // padding + row gap
+
+    /* Four circles must fit horizontally and two rows vertically.
+       Use the smallest available dimension so width and height always stay identical. */
+    const byWidth = width / 4;
+    const byHeight = height / 2;
+    const size = Math.max(8, Math.min(18, Math.floor(Math.min(byWidth, byHeight))));
+
+    tracker.style.setProperty('--v683-tutorial-dot-size', `${size}px`);
+  }
+
+  const schedule = () => requestAnimationFrame(v683ResizeTutorialMissionDots);
+
+  if (typeof ResizeObserver === 'function') {
+    const tracker = document.getElementById('v606MissionColorTracker');
+    if (tracker) {
+      const observer = new ResizeObserver(schedule);
+      observer.observe(tracker);
+    }
+  }
+
+  if (typeof updateFeatureAvailability === 'function') {
+    const base = updateFeatureAvailability;
+    updateFeatureAvailability = function() {
+      const result = base.apply(this, arguments);
+      schedule();
+      return result;
+    };
+  }
+
+  schedule();
+  setTimeout(v683ResizeTutorialMissionDots, 60);
+})();
+</script>
+
+
+<!-- v684: definitive HUD cleanup.
+     One owner for REPAIRS / SCORE / LEVEL / NEXT SET:
+     - identical title typography and top offset
+     - identical numeric typography for REPAIRS / SCORE / LEVEL
+     - numeric figures 30% smaller than the v680 extreme test
+     - no ring/disc/fan behind LEVEL
+     - LEVEL progress is shown only in the cell's own 8-part outer border
+     - v683 tutorial mission colors remain untouched -->
+<style id="v684-definitive-aligned-hud-style">
+  :root {
+    --v684-hud-title-size: 1.05rem;
+    --v684-hud-title-top: 6px;
+    --v684-hud-title-row: 31px;
+    --v684-hud-number-size: 3rem;
+    --v684-hud-orange: #e88a2d;
+    --v684-hud-yellow: #ffe600;
+  }
+
+  /* ============================================================
+     ONE DEFINITIVE GRID FOR THE FOUR LARGE CELLS
+     ============================================================ */
+  #livesDisplay.info-cell > div,
+  #scoreDisplay.info-cell > div,
+  #extraCell1.info-cell > div,
+  #nextBlockDisplay.info-cell > div {
+    display: grid !important;
+    grid-template-columns: 42% 58% !important;
+    grid-template-rows: var(--v684-hud-title-row) minmax(0, 1fr) !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    box-sizing: border-box !important;
+    align-items: stretch !important;
+    justify-items: stretch !important;
+    position: relative !important;
+  }
+
+  /* ============================================================
+     TITLES: EXACTLY THE SAME SIZE AND EXACTLY THE SAME TOP OFFSET
+     ============================================================ */
+  #livesDisplay.info-cell > div > div:nth-child(2),
+  #scoreDisplay.info-cell > div > div:nth-child(2),
+  #extraCell1.info-cell #levelStatusLabels,
+  #nextBlockDisplay.info-cell > div > div:nth-child(2) {
+    grid-column: 1 / span 2 !important;
+    grid-row: 1 !important;
+    position: static !important;
+    width: 100% !important;
+    height: var(--v684-hud-title-row) !important;
+    min-height: var(--v684-hud-title-row) !important;
+    max-height: var(--v684-hud-title-row) !important;
+    display: flex !important;
+    flex-direction: row !important;
     align-items: flex-start !important;
     justify-content: center !important;
-  }
-
-  #livesDisplay > div > div:nth-child(2) > div,
-  #scoreDisplay > div > div:nth-child(2),
-  #levelLabel,
-  #nextBlockDisplay > div > div:nth-child(2) {
-    font-size: clamp(.98rem, 3.4vw, 1.12rem) !important;
-    line-height: .98 !important;
-    letter-spacing: 0 !important;
-  }
-
-  /* Force the 3 numeric-cell values with specific selectors to beat old conflicting styles. */
-  #livesDisplay > div > #livesText,
-  #scoreDisplay > div > #scoreValue {
-    font-size: clamp(4.70rem, 16.8vw, 5.70rem) !important;
-    line-height: .82 !important;
-    letter-spacing: -.04em !important;
+    padding: var(--v684-hud-title-top) 2px 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
     text-align: center !important;
+    gap: 0 !important;
+  }
+
+  #livesDisplay.info-cell > div > div:nth-child(2) > div,
+  #scoreDisplay.info-cell > div > div:nth-child(2),
+  #extraCell1.info-cell #levelStatusLabels #levelLabel,
+  #nextBlockDisplay.info-cell > div > div:nth-child(2) {
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: var(--v684-hud-title-size) !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+    color: #f4c644 !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+  }
+
+  #nextBlockDisplay.info-cell > div > div:nth-child(2) br {
+    display: none !important;
+  }
+
+  #extraCell1.info-cell #bpmLabel,
+  #extraCell1.info-cell #bpmDisplay {
+    display: none !important;
+  }
+
+  /* ============================================================
+     BOTTOM-LEFT FIGURES
+     Numeric figures are exactly 30% smaller than v680's 192/196%.
+     ============================================================ */
+  #livesDisplay.info-cell > div > img,
+  #scoreDisplay.info-cell > div > img,
+  #extraCell1.info-cell > div > img {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    position: static !important;
+    width: 134% !important;
+    height: 137% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 1 !important;
+  }
+
+  /* NEXT SET keeps a calmer figure because its right side must fit 1–3 blocks. */
+  #nextBlockDisplay.info-cell > div > img {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    position: static !important;
+    width: 86% !important;
+    height: 88% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ============================================================
+     NUMBERS: REPAIRS / SCORE / LEVEL ARE IDENTICAL
+     ============================================================ */
+  #livesDisplay.info-cell > div > #livesText,
+  #scoreDisplay.info-cell > div > #scoreValue,
+  #extraCell1.info-cell #levelStatusValues #levelDisplayExtra {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    align-self: stretch !important;
+    justify-self: stretch !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: var(--v684-hud-number-size) !important;
+    font-weight: 900 !important;
+    line-height: .90 !important;
+    letter-spacing: -.025em !important;
+    color: #f4c644 !important;
+    text-align: center !important;
+    transform: none !important;
+    background: transparent !important;
+    z-index: 3 !important;
+  }
+
+  #extraCell1.info-cell #levelStatusValues {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #extraCell1.info-cell #levelStatusValues > div:first-child {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -64503,170 +63582,234 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     margin: 0 !important;
   }
 
-  #extraCell1 #levelDisplayExtra {
-    font-size: clamp(4.90rem, 17.3vw, 5.95rem) !important;
-    line-height: .80 !important;
-    letter-spacing: -.05em !important;
-    text-align: center !important;
-    padding: 0 !important;
+  /* No old textual, horizontal, circular or fan-style level progress remains visible. */
+  #extraCell1 #levelProgressBar,
+  #extraCell1 #v632LevelProgress,
+  #extraCell1 #v632LevelProgressText,
+  #extraCell1 #v632LevelSegments,
+  #extraCell1 #v664LevelRing,
+  #extraCell1 #v676LevelDisc {
+    display: none !important;
+  }
+
+  /* ============================================================
+     NEXT SET
+     Same title alignment; fixed block size remains identical for 1/2/3.
+     ============================================================ */
+  #nextBlockDisplay.info-cell #nextBlockPreview {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    padding: 0 2px 0 0 !important;
     margin: 0 !important;
-    position: relative !important;
-    z-index: 4 !important;
-    text-shadow:
-      -1.5px -1.5px 0 rgba(48,34,22,.92),
-       1.5px -1.5px 0 rgba(48,34,22,.92),
-      -1.5px  1.5px 0 rgba(48,34,22,.92),
-       1.5px  1.5px 0 rgba(48,34,22,.92),
-       0 2px 4px rgba(0,0,0,.55) !important;
-  }
-
-  /* The large-cell figures become 30% smaller than the extreme test. */
-  #livesDisplay > div > img,
-  #scoreDisplay > div > img,
-  #extraCell1 > div > img {
-    width: 134% !important;
-    height: 137% !important;
-    transform: none !important;
-    object-fit: contain !important;
-  }
-
-  /* NEXT SET figure slightly calmer too, so the 4-cell family stays coherent. */
-  #nextBlockDisplay > div > img {
-    width: 86% !important;
-    height: 88% !important;
-    transform: none !important;
-    object-fit: contain !important;
-  }
-
-  /* Small segmented orange level ring. No filled disc. */
-  #extraCell1 #v664LevelRing {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
-    min-height: 34px !important;
-    max-width: 34px !important;
-    max-height: 34px !important;
-    aspect-ratio: 1 / 1 !important;
-    border-radius: 50% !important;
+    box-sizing: border-box !important;
     overflow: hidden !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    position: absolute !important;
-    z-index: 1 !important;
+    --v684-nextset-block-size: min(23px, calc((100% - 6px) / 3));
   }
 
-  /* Cut out the middle so it's a ring, not a disc. */
-  #extraCell1 #v664LevelRing::after {
-    content: '' !important;
-    display: block !important;
+  #nextBlockDisplay.info-cell #nextBlockPreview > div {
+    width: var(--v684-nextset-block-size) !important;
+    height: var(--v684-nextset-block-size) !important;
+    min-width: var(--v684-nextset-block-size) !important;
+    min-height: var(--v684-nextset-block-size) !important;
+    max-width: var(--v684-nextset-block-size) !important;
+    max-height: var(--v684-nextset-block-size) !important;
+    flex: 0 0 var(--v684-nextset-block-size) !important;
+    margin: 0 !important;
+    transform: none !important;
+    border-radius: 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ============================================================
+     REPAIRS: no old barrier-status badge may alter this cell.
+     ============================================================ */
+  #livesDisplay #v632RepairBarrierStatus {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  #livesDisplay.v632-barrier-damaged,
+  #livesDisplay.v632-barrier-open,
+  #livesDisplay.v632-barrier-danger-hit {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+    background: rgba(0,0,0,.70) !important;
+    border-color: #ef962f !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,226,128,.07),
+      0 0 7px rgba(232,138,45,.18) !important;
+  }
+
+  /* ============================================================
+     LEVEL BORDER: native border replaced by our 8-part SVG border.
+     ============================================================ */
+  #extraCell1.info-cell {
+    position: relative !important;
+    border-color: transparent !important;
+    overflow: visible !important;
+  }
+
+  #v684LevelBorderProgress {
     position: absolute !important;
-    inset: 8px !important;
-    border-radius: 50% !important;
-    background: rgba(61,45,34,.92) !important;
+    inset: -2px !important;
+    width: calc(100% + 4px) !important;
+    height: calc(100% + 4px) !important;
+    z-index: 20 !important;
+    pointer-events: none !important;
+    overflow: visible !important;
   }
 </style>
 
-<script id="v682-clean-center-cells-runtime">
+<script id="v684-definitive-aligned-hud-runtime">
 (() => {
   'use strict';
 
-  function v682BuildLevelRing(current, total = 8) {
-    const segment = 360 / total;
-    const gap = 5;
-    const fill = segment - gap;
-    const orange = '#e88a2d';
-    const yellow = '#ffe600';
-    const slices = [];
+  const V684_TOTAL = 8;
+  const V684_ORANGE = '#e88a2d';
+  const V684_YELLOW = '#ffe600';
 
-    for (let i = 0; i < total; i++) {
-      const start = -90 + i * segment;
-      const end = start + fill;
-      const color = i < current ? yellow : orange;
-      slices.push(`${color} ${start}deg ${end}deg`);
-      slices.push(`transparent ${end}deg ${start + segment}deg`);
-    }
-    return `conic-gradient(${slices.join(', ')})`;
-  }
-
-  function v682CurrentProgress() {
+  function v684Progress() {
     try {
-      const total = Number(levelProgressThreshold);
-      const safeTotal = Number.isFinite(total) && total > 0 ? Math.round(total) : 8;
-      const current = Number(bigGroupCount);
-      return {
-        total: 8,
-        current: Number.isFinite(current) ? Math.max(0, Math.min(8, Math.round(current))) : 0,
-        announcedTotal: safeTotal
-      };
+      const n = Number(bigGroupCount);
+      return Number.isFinite(n) ? Math.max(0, Math.min(V684_TOTAL, Math.round(n))) : 0;
     } catch (_) {
-      return { total: 8, current: 0, announcedTotal: 8 };
+      return 0;
     }
   }
 
-  function v682NormalizeCenterCells() {
-    const repairValue = document.getElementById('livesText');
-    if (repairValue) {
-      repairValue.style.setProperty('font-size', '4.70rem', 'important');
-      repairValue.style.setProperty('line-height', '.82', 'important');
-      repairValue.style.setProperty('padding-top', '0', 'important');
-      repairValue.style.setProperty('display', 'flex', 'important');
-      repairValue.style.setProperty('align-items', 'center', 'important');
-      repairValue.style.setProperty('justify-content', 'center', 'important');
+  function v684RemoveOldLevelGraphics() {
+    const oldRing = document.getElementById('v664LevelRing');
+    if (oldRing) oldRing.remove();
+
+    const oldDisc = document.getElementById('v676LevelDisc');
+    if (oldDisc) oldDisc.remove();
+  }
+
+  function v684EnsureLevelBorder() {
+    const cell = document.getElementById('extraCell1');
+    if (!cell) return null;
+
+    let svg = document.getElementById('v684LevelBorderProgress');
+    if (svg) return svg;
+
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'v684LevelBorderProgress';
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+
+    for (let i = 0; i < V684_TOTAL; i++) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', '1.7');
+      rect.setAttribute('y', '1.7');
+      rect.setAttribute('width', '96.6');
+      rect.setAttribute('height', '96.6');
+      rect.setAttribute('rx', '8.5');
+      rect.setAttribute('ry', '8.5');
+      rect.setAttribute('fill', 'none');
+      rect.setAttribute('pathLength', '800');
+      rect.setAttribute('stroke-width', '4');
+      rect.setAttribute('vector-effect', 'non-scaling-stroke');
+
+      /* One eighth of the complete rounded-rectangle perimeter.
+         92 units visible + 8 units gap = exactly 100 units per eighth. */
+      rect.setAttribute('stroke-dasharray', '92 708');
+      rect.setAttribute('stroke-dashoffset', String(-i * 100));
+      rect.dataset.segmentIndex = String(i);
+      svg.appendChild(rect);
     }
 
-    const scoreValue = document.getElementById('scoreValue');
-    if (scoreValue) {
-      scoreValue.style.setProperty('font-size', '4.70rem', 'important');
-      scoreValue.style.setProperty('line-height', '.82', 'important');
-      scoreValue.style.setProperty('padding-top', '0', 'important');
-      scoreValue.style.setProperty('display', 'flex', 'important');
-      scoreValue.style.setProperty('align-items', 'center', 'important');
-      scoreValue.style.setProperty('justify-content', 'center', 'important');
-    }
+    cell.appendChild(svg);
+    return svg;
+  }
 
-    const levelValue = document.getElementById('levelDisplayExtra');
-    if (levelValue) {
-      levelValue.style.setProperty('font-size', '4.90rem', 'important');
-      levelValue.style.setProperty('line-height', '.80', 'important');
-      levelValue.style.setProperty('padding-top', '0', 'important');
-    }
+  function v684UpdateLevelBorder() {
+    v684RemoveOldLevelGraphics();
 
-    const titles = [
-      document.querySelector('#livesDisplay > div > div:nth-child(2) > div'),
-      document.querySelector('#scoreDisplay > div > div:nth-child(2)'),
-      document.getElementById('levelLabel'),
-      document.querySelector('#nextBlockDisplay > div > div:nth-child(2)')
-    ];
-    titles.forEach(el => {
-      if (!el) return;
-      el.style.setProperty('padding-top', '0', 'important');
-      el.style.setProperty('margin-top', '0', 'important');
+    const svg = v684EnsureLevelBorder();
+    if (!svg) return;
+
+    const current = v684Progress();
+    const segments = Array.from(svg.querySelectorAll('rect[data-segment-index]'));
+
+    segments.forEach((segment, index) => {
+      segment.setAttribute('stroke', index < current ? V684_YELLOW : V684_ORANGE);
     });
 
-    const progress = v682CurrentProgress();
-    const ring = document.getElementById('v664LevelRing');
-    if (ring) {
-      ring.style.background = v682BuildLevelRing(progress.current, 8);
-      ring.setAttribute('aria-label', `Level progress ${progress.current} of 8 groups`);
-    }
+    svg.setAttribute(
+      'aria-label',
+      `Level progress ${current} of ${V684_TOTAL} groups of five or more`
+    );
   }
 
-  const wrapped = ['updateLevelProgressBar', 'updateLevelDisplay', 'updateLevelAndBpmDisplay', 'updateLivesDisplay', 'updateScoreDisplay'];
-  wrapped.forEach(name => {
-    if (typeof window[name] === 'function') {
-      const base = window[name];
-      window[name] = function() {
-        const result = base.apply(this, arguments);
-        requestAnimationFrame(v682NormalizeCenterCells);
-        return result;
-      };
-    }
+  function v684NormalizeRepairCell() {
+    const cell = document.getElementById('livesDisplay');
+    if (!cell) return;
+
+    cell.classList.remove(
+      'v632-barrier-damaged',
+      'v632-barrier-open',
+      'v632-barrier-danger-hit'
+    );
+
+    const badge = document.getElementById('v632RepairBarrierStatus');
+    if (badge) badge.remove();
+  }
+
+  function v684NormalizeLabels() {
+    const repairLabel = document.querySelector(
+      '#livesDisplay > div > div:nth-child(2) > div'
+    );
+    if (repairLabel) repairLabel.textContent = 'REPAIRS';
+
+    const nextLabel = document.querySelector(
+      '#nextBlockDisplay > div > div:nth-child(2)'
+    );
+    if (nextLabel) nextLabel.textContent = 'NEXT SET';
+  }
+
+  function v684Refresh() {
+    v684NormalizeRepairCell();
+    v684NormalizeLabels();
+    v684UpdateLevelBorder();
+  }
+
+  /* Wrap only the functions that can actually change these states.
+     No polling / setInterval is used. */
+  [
+    'updateLevelProgressBar',
+    'updateLevelDisplay',
+    'updateLevelAndBpmDisplay',
+    'updateLivesDisplay',
+    'pulseBarrierWallImpact',
+    'resetBarrierWallStates',
+    'v418RestoreBarrierStates',
+    'updateFeatureAvailability'
+  ].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      requestAnimationFrame(v684Refresh);
+      return result;
+    };
   });
 
-  requestAnimationFrame(v682NormalizeCenterCells);
-  setTimeout(v682NormalizeCenterCells, 50);
-  setInterval(v682NormalizeCenterCells, 250);
+  requestAnimationFrame(v684Refresh);
+  setTimeout(v684Refresh, 60);
 })();
 </script>
 

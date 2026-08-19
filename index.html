@@ -62796,6 +62796,210 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 <!-- v657:
      Party Mission teaser is fully rebuilt with a hard overlay.
      In teaser mode, every legacy child/pseudo-element is hidden and replaced by one clean overlay. -->
+
+<!-- v662: only two changes on top of v661.
+     (1) When no Party Mission is active, the mission cell keeps the left figure and shows on the right:
+         NEXT PARTY / LEVEL XX.
+     (2) Tutorial Party Goal colors are forced to render as true circles, not ellipses. -->
+<style id="v662-party-preview-and-real-circles-style">
+  /* --- Party Mission preview: same left-figure / right-copy structure as the active cell --- */
+  #levelDisplay.v662-party-preview {
+    position: relative;
+    overflow: hidden;
+  }
+
+  #levelDisplay.v662-party-preview #levelImage {
+    width: 30% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    opacity: 1 !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  #levelDisplay.v662-party-preview #challengeInfoText {
+    width: 70% !important;
+    height: 100% !important;
+    position: relative;
+    z-index: 6;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-top: 0 !important;
+    text-align: center !important;
+    line-height: 1.05 !important;
+    text-shadow: 0 2px 3px rgba(0,0,0,.82);
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-main {
+    display: block;
+    color: #f4c644;
+    font-weight: 900;
+    font-size: clamp(.52rem, 2.15vw, .68rem);
+    line-height: 1.02;
+    letter-spacing: .01em;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-sub {
+    display: block;
+    margin-top: 2px;
+    color: #ffe680;
+    font-weight: 900;
+    font-size: clamp(.46rem, 1.95vw, .60rem);
+    line-height: 1.02;
+    white-space: nowrap;
+  }
+
+  /* Keep the cell visually clean in preview mode. */
+  #levelDisplay.v662-party-preview.feature-locked::after {
+    background-image: none !important;
+    background-color: rgba(13,10,15,.18) !important;
+    filter: none !important;
+    z-index: 4 !important;
+  }
+
+  #levelDisplay.v662-party-preview.feature-locked > * {
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  /* --- Tutorial Party Goal color dots: force perfect circles --- */
+  #v468OnboardingToast.v638-party-goal-toast .v638-toast-colors {
+    align-items: center !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast .v638-color-dot,
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-color-dot {
+    display: inline-block !important;
+    box-sizing: border-box !important;
+    inline-size: 19px !important;
+    block-size: 19px !important;
+    width: 19px !important;
+    height: 19px !important;
+    min-width: 19px !important;
+    min-height: 19px !important;
+    max-width: 19px !important;
+    max-height: 19px !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 0 19px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    transform: none !important;
+    line-height: 0 !important;
+    vertical-align: middle !important;
+  }
+</style>
+
+<script id="v662-party-preview-and-real-circles-runtime">
+(() => {
+  'use strict';
+
+  const V662_MISSION_LEVELS = [15, 20, 25, 30, 35, 40, 45];
+
+  function v662LevelNumber() {
+    try { return Number(level) || 1; } catch (_) { return 1; }
+  }
+
+  function v662AnyMissionActive() {
+    try {
+      if (typeof isAnyChallengeActive === 'function') return !!isAnyChallengeActive();
+    } catch (_) {}
+    try {
+      return !!(
+        challengeActive || challenge2Active || challenge3Active ||
+        challenge4Active || challenge5Active || challenge6Active || challenge7Active
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function v662ChallengeFeatureDiscovered() {
+    try {
+      return localStorage.getItem(FEATURE_DISCOVERY_KEYS.challenge) === 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function v662NextMissionLevel(currentLevel) {
+    return V662_MISSION_LEVELS.find(level => level > currentLevel) || null;
+  }
+
+  function v662ApplyPartyPreview() {
+    const cell = document.getElementById('levelDisplay');
+    const copy = document.getElementById('challengeInfoText');
+    if (!cell || !copy) return;
+
+    const currentLevel = v662LevelNumber();
+    const activeMission = v662AnyMissionActive();
+
+    if (currentLevel < 10 || activeMission) {
+      cell.classList.remove('v662-party-preview');
+      return;
+    }
+
+    const discovered = v662ChallengeFeatureDiscovered();
+    let targetLevel = null;
+
+    if (!discovered && currentLevel < 15) {
+      targetLevel = 15;
+    } else {
+      targetLevel = v662NextMissionLevel(currentLevel);
+    }
+
+    if (!targetLevel) {
+      cell.classList.remove('v662-party-preview');
+      return;
+    }
+
+    cell.classList.add('v662-party-preview');
+    copy.innerHTML =
+      '<span class="v662-party-main">NEXT PARTY</span>' +
+      `<span class="v662-party-sub">LEVEL ${targetLevel}</span>`;
+  }
+
+  if (typeof updateChallengeInfoText === 'function') {
+    const v662BaseUpdateChallengeInfoText = updateChallengeInfoText;
+    updateChallengeInfoText = function() {
+      const result = v662BaseUpdateChallengeInfoText.apply(this, arguments);
+      v662ApplyPartyPreview();
+      return result;
+    };
+  }
+
+  if (typeof updateFeatureAvailability === 'function') {
+    const v662BaseUpdateFeatureAvailability = updateFeatureAvailability;
+    updateFeatureAvailability = function() {
+      const result = v662BaseUpdateFeatureAvailability.apply(this, arguments);
+      v662ApplyPartyPreview();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelDisplay === 'function') {
+    const v662BaseUpdateLevelDisplay = updateLevelDisplay;
+    updateLevelDisplay = function() {
+      const result = v662BaseUpdateLevelDisplay.apply(this, arguments);
+      v662ApplyPartyPreview();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelAndBpmDisplay === 'function') {
+    const v662BaseUpdateLevelAndBpmDisplay = updateLevelAndBpmDisplay;
+    updateLevelAndBpmDisplay = function() {
+      const result = v662BaseUpdateLevelAndBpmDisplay.apply(this, arguments);
+      v662ApplyPartyPreview();
+      return result;
+    };
+  }
+
+  requestAnimationFrame(v662ApplyPartyPreview);
+  setTimeout(v662ApplyPartyPreview, 50);
+})();
+</script>
+
 </body>
 </html>
 

@@ -8710,7 +8710,7 @@ padding-bottom: 6px;
   <div id="saveWrapper" style="display: flex; align-items: center; justify-content: center; width: 100%;height: 100%;padding: 0 6px;">
     <img src="images/fig12.png" style="width: 33.33%; object-fit: cover;">
  <div style="width: 33.33%; text-align: center; font-family: 'Baloo Bhaina 2', sans-serif; font-weight: bold; font-size: 0.60rem; color: #f4c644; line-height: 1.1; padding-top: 5px; text-transform: uppercase;">
-  SAVE ?
+  SAVE<br>NOW
 </div>
 
     <span id="saveBlockCounter" style="width: 33.33%; text-align: center; color:  #f4c644; font-weight: bold; font-size: 1rem; font-family: 'Baloo Bhaina 2', sans-serif;">50</span>
@@ -19582,7 +19582,7 @@ if (!saveUnlocked) {
       <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
 
         <div style="width: 33.33%; text-align: center; font-family: 'Baloo Bhaina 2', sans-serif; font-weight: bold; font-size: 0.6rem; color: #f4c644; line-height: 1.1; padding-top: 5px; text-transform: uppercase;">
-    SAVE ?
+    SAVE<br>NOW
   </div>
       <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
     `;
@@ -19629,7 +19629,7 @@ if (!saveUnlocked) {
             <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
            
         <div style="width: 33.33%; text-align: center; font-family: 'Baloo Bhaina 2', sans-serif; font-weight: bold; font-size: 0.60rem; color: #f4c644; line-height: 1.1; padding-top: 5px; text-transform: uppercase;">
-    SAVE ?
+    SAVE<br>NOW
   </div>
             <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
           `;
@@ -19943,7 +19943,7 @@ if (!saveUnlocked) {
     wrapper.innerHTML = `
       <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
       <div style="width: 33.33%; text-align: center; font-family: 'Baloo Bhaina 2', sans-serif; font-weight: bold; font-size: 0.60rem; color: #f4c644; line-height: 1.1; padding-top: 5px; text-transform: uppercase;">
-    SAVE ?
+    SAVE<br>NOW
   </div>
       <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
     `;
@@ -19989,7 +19989,7 @@ if (!saveUnlocked) {
           wrapper.innerHTML = `
             <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
             <div style="width: 33.33%; text-align: center; font-family: 'Baloo Bhaina 2', sans-serif; font-weight: bold; font-size: 0.60rem; color: #f4c644; line-height: 1.1; padding-top: 5px; text-transform: uppercase;">
-    SAVE ?
+    SAVE<br>NOW
   </div>
             <img src="images/fig53.png" style="width: 33.33%; object-fit: cover;">
           `;
@@ -59070,8 +59070,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       cell.classList.add('v632-pre-mission-teaser');
       cell.classList.remove('v632-next-mission-teaser');
       copy.innerHTML =
-        '<span class="v632-mission-main">PARTY MISSION</span>' +
-        '<span class="v632-mission-sub">UNLOCKS AT 15</span>';
+        '<span class="v632-mission-main">1ST MISSION</span>' +
+        '<span class="v632-mission-sub">LEVEL 15</span>';
       return;
     }
 
@@ -60814,11 +60814,12 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const toast = v468EnsureToast();
     if (!toast) return;
     toast.classList.add('v637-party-goal-toast');
-    if (toastCleanupTimer) clearTimeout(toastCleanupTimer);
-    toastCleanupTimer = setTimeout(() => {
-      toast.classList.remove('v637-party-goal-toast');
+    if (toastCleanupTimer) {
+      clearTimeout(toastCleanupTimer);
       toastCleanupTimer = null;
-    }, 1550);
+    }
+    /* v642: v638 owns the full display lifetime and removes the class when the
+       card actually closes. Do not change styling halfway through the card. */
   }
 
   function watchGoalToast() {
@@ -61316,6 +61317,10 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const toast = document.getElementById('v468OnboardingToast');
     if (!toast || !toast.classList.contains('v638-party-goal-toast')) return;
 
+    /* v642: once this visible Party Goal card is built, leave its DOM completely
+       untouched. This prevents the images/text/dots from jumping every 220 ms. */
+    if (toast.querySelector('.v639-card-row')) return;
+
     const titleNode = toast.querySelector('.v638-toast-title');
     if (!titleNode) return;
 
@@ -61341,15 +61346,54 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
     toast.classList.add('v639-party-goal-card');
     toast.innerHTML = v639BuildPartyGoalCard(title, text, colors);
+
+    /* Reuse the exact left/right Party Goal image sources that are already
+       present in the lower Party Goal field. This avoids depending on a second
+       independently-resolved image path in Chrome. */
+    const lowerLeft =
+      host?.querySelector('.v614-party-goal-image.v615-left img') ||
+      host?.querySelector('.v614-party-goal-image img');
+    const lowerRight =
+      host?.querySelector('.v614-party-goal-image.v615-right img') ||
+      lowerLeft;
+
+    const cardImages = toast.querySelectorAll('.v639-side-figure');
+    if (cardImages[0] && lowerLeft) {
+      const src = lowerLeft.currentSrc || lowerLeft.src;
+      if (src) cardImages[0].src = src;
+    }
+    if (cardImages[1] && lowerRight) {
+      const src = lowerRight.currentSrc || lowerRight.src;
+      if (src) cardImages[1].src = src;
+    }
   }
 
-  setInterval(() => {
-    v639UpgradeVisibleToast();
-  }, 220);
+  /* v642: no permanent 220 ms rebuilding loop.
+     Observe only real changes to the toast and upgrade a new Party Goal card once. */
+  let v642ToastObserver = null;
 
-  requestAnimationFrame(() => {
-    v639UpgradeVisibleToast();
-  });
+  function v642InstallToastObserver() {
+    const toast = document.getElementById('v468OnboardingToast');
+    if (!toast) {
+      setTimeout(v642InstallToastObserver, 120);
+      return;
+    }
+
+    if (typeof MutationObserver === 'function') {
+      v642ToastObserver = new MutationObserver(() => {
+        requestAnimationFrame(v639UpgradeVisibleToast);
+      });
+      v642ToastObserver.observe(toast, {
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+
+    requestAnimationFrame(v639UpgradeVisibleToast);
+  }
+
+  v642InstallToastObserver();
 })();
 </script>
 
@@ -61511,6 +61555,510 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-reward {
     margin-top: 7px !important;
     font-size: 13px !important;
+  }
+</style>
+
+
+<!-- v642: hard layout stability for Party Goal start card. -->
+<style id="v642-stable-party-goal-start-card">
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card {
+    contain: layout paint !important;
+    height: 150px !important;
+    min-height: 150px !important;
+    max-height: 150px !important;
+    overflow: hidden !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-card-row {
+    height: 62px !important;
+    min-height: 62px !important;
+    max-height: 62px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-side-figure {
+    display: block !important;
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+    min-height: 58px !important;
+    max-width: 58px !important;
+    max-height: 58px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-toast-colors {
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+  }
+</style>
+
+
+<!-- v643:
+     On each Party Goal progress hit, the Party Goal cell below DROP BLOCK
+     gets a short score-like enlargement pulse. The pulse background/accent
+     is chosen from a palette that is not one of the 5 current Party Goal colors. -->
+<style id="v643-party-goal-progress-pulse-style">
+  @keyframes v643PartyGoalProgressPulse {
+    0%   { transform: scale(1); }
+    22%  { transform: scale(1.11); }
+    52%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v643-party-progress-pop {
+    transform-origin: center center !important;
+    animation: v643PartyGoalProgressPulse 460ms ease-in-out 1 !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v643-party-progress-pop > .v606-party-goal-panel {
+    background: var(--v643-party-accent, #8f7cff) !important;
+    border-color: #ffffff !important;
+    box-shadow:
+      0 0 0 2px rgba(255,255,255,.92),
+      0 0 14px var(--v643-party-accent, #8f7cff),
+      0 0 28px var(--v643-party-accent, #8f7cff) !important;
+    transition: none !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v643-party-progress-pop > .v606-party-goal-panel * {
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,.85) !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v643-party-progress-pop .v606-party-goal-dot {
+    border-color: rgba(255,255,255,.92) !important;
+    box-shadow: 0 0 5px rgba(255,255,255,.30) !important;
+  }
+</style>
+
+<script id="v643-party-goal-progress-pulse-runtime">
+(() => {
+  'use strict';
+
+  function v643VisibleGoalHost() {
+    const hosts = Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+    return hosts.find(host => {
+      const rect = host.getBoundingClientRect();
+      const style = getComputedStyle(host);
+      return rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+    }) || hosts[0] || null;
+  }
+
+  function v643NormalizedCssColor(colorValue) {
+    if (!colorValue) return '';
+    const probe = document.createElement('div');
+    probe.style.color = colorValue;
+    probe.style.position = 'absolute';
+    probe.style.opacity = '0';
+    probe.style.pointerEvents = 'none';
+    document.body.appendChild(probe);
+    const normalized = getComputedStyle(probe).color;
+    probe.remove();
+    return normalized || String(colorValue).trim();
+  }
+
+  function v643CollectGoalColors(host) {
+    if (!host) return new Set();
+    const colors = new Set();
+    host.querySelectorAll('.v606-party-goal-dots .v619-color-target').forEach(dot => {
+      const cssVar = String(dot.style.getPropertyValue('--v619-goal-color') || '').trim();
+      const bg = cssVar || getComputedStyle(dot).backgroundColor || '';
+      const normalized = v643NormalizedCssColor(bg);
+      if (normalized) colors.add(normalized);
+    });
+    return colors;
+  }
+
+  function v643ChooseAccentColor(host) {
+    const forbidden = v643CollectGoalColors(host);
+    const candidates = [
+      '#8f7cff', // violet
+      '#50e3c2', // teal
+      '#ff79c6', // pink
+      '#ffffff', // white
+      '#3b6cff', // royal blue
+      '#ffd166'  // warm gold
+    ];
+    for (const candidate of candidates) {
+      const normalized = v643NormalizedCssColor(candidate);
+      if (!forbidden.has(normalized)) return candidate;
+    }
+    return '#8f7cff';
+  }
+
+  function v643PulsePartyGoalHost() {
+    const host = v643VisibleGoalHost();
+    if (!host) return;
+
+    const accent = v643ChooseAccentColor(host);
+    host.style.setProperty('--v643-party-accent', accent);
+
+    host.classList.remove('v643-party-progress-pop');
+    void host.offsetWidth;
+    host.classList.add('v643-party-progress-pop');
+
+    if (host._v643PulseTimer) clearTimeout(host._v643PulseTimer);
+    host._v643PulseTimer = setTimeout(() => {
+      host.classList.remove('v643-party-progress-pop');
+      host.style.removeProperty('--v643-party-accent');
+      host._v643PulseTimer = null;
+    }, 500);
+  }
+
+  if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onProgress === 'function') {
+    const v643BaseOnProgress = window.bpPartyGoalV634.onProgress;
+    window.bpPartyGoalV634.onProgress = function(payload) {
+      const result = v643BaseOnProgress.apply(this, arguments);
+      try { v643PulsePartyGoalHost(); } catch (_) {}
+      return result;
+    };
+  }
+
+  window.v643PulsePartyGoalHost = v643PulsePartyGoalHost;
+})();
+</script>
+
+
+<!-- v644:
+     Give the Party Goal cell a calmer warm brown background that blends with the
+     rest of the HUD, while keeping the temporary v643 progress accent override. -->
+<style id="v644-party-goal-blended-bg-style">
+  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel {
+    background:
+      radial-gradient(circle at 50% 0%,
+        rgba(244,198,68,.12) 0%,
+        rgba(244,198,68,.07) 18%,
+        transparent 58%),
+      linear-gradient(180deg,
+        #47382A 0%,
+        #322820 100%) !important;
+    border: 2px solid #E88A2D !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,225,150,.10),
+      0 0 8px rgba(232,138,45,.22) !important;
+  }
+
+  /* Keep the static decorative overlay subtle and warm. */
+  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel::before {
+    opacity: .11 !important;
+    background:
+      linear-gradient(120deg,
+        transparent 0%,
+        rgba(255,218,92,.06) 18%,
+        transparent 34%,
+        rgba(80,227,194,.03) 52%,
+        transparent 68%,
+        rgba(232,138,45,.05) 84%,
+        transparent 100%) !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+  }
+
+  /* Slightly warmer text balance inside the calmer panel. */
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-label,
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-sub {
+    color: #FFE680 !important;
+  }
+
+  /* v643 progress pulse still wins because its selector is more specific.
+     This rule only defines the normal resting appearance. */
+</style>
+
+
+<!-- v646:
+     Re-layout the 4 large priority cells so they all follow the same structure:
+     top-left icon, top-right label, and bottom value / preview blocks. -->
+<style id="v646-four-big-cells-layout">
+
+  /* Base layout for the 4 large tiles */
+  #livesDisplay > div,
+  #scoreDisplay > div,
+  #nextBlockDisplay > div,
+  #extraCell1 > div {
+    display: grid !important;
+    grid-template-columns: 34px 1fr !important;
+    grid-template-rows: auto 1fr !important;
+    width: 100% !important;
+    height: 100% !important;
+    align-items: start !important;
+    column-gap: 6px !important;
+    row-gap: 2px !important;
+    padding: 4px 4px 3px 4px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ---------- Top-left icon ---------- */
+  #livesDisplay > div > img,
+  #scoreDisplay > div > img,
+  #nextBlockDisplay > div > img,
+  #extraCell1 > div > img {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 30px !important;
+    height: 30px !important;
+    object-fit: contain !important;
+    align-self: start !important;
+    justify-self: start !important;
+    margin: 0 !important;
+  }
+
+  /* ---------- Top-right label ---------- */
+  #livesDisplay > div > div:nth-child(2),
+  #scoreDisplay > div > div:nth-child(2),
+  #nextBlockDisplay > div > div:nth-child(2) {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+    text-align: right !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div,
+  #scoreDisplay > div > div:nth-child(2),
+  #nextBlockDisplay > div > div:nth-child(2) {
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-weight: 900 !important;
+    font-size: clamp(.64rem, 2.3vw, .78rem) !important;
+    line-height: 1.0 !important;
+    text-transform: uppercase !important;
+    color: #f4c644 !important;
+    text-align: right !important;
+    width: 100% !important;
+    padding-top: 0 !important;
+  }
+
+  /* ---------- Bottom value / preview ---------- */
+  #livesText,
+  #scoreValue,
+  #nextBlockPreview {
+    grid-column: 1 / span 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    align-self: center !important;
+    justify-self: center !important;
+    text-align: center !important;
+    padding-top: 0 !important;
+    margin: 0 !important;
+  }
+
+  #livesText,
+  #scoreValue {
+    font-size: clamp(1.24rem, 4.7vw, 1.55rem) !important;
+    line-height: 1 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-weight: 900 !important;
+    color: #f4c644 !important;
+  }
+
+  #nextBlockPreview {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    min-height: 22px !important;
+  }
+
+  #nextBlockPreview > div {
+    margin: 0 1px !important;
+  }
+
+  /* ---------- LEVEL tile specific ---------- */
+  #levelStatusLabels {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: flex-start !important;
+    text-align: right !important;
+    gap: 1px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #levelLabel {
+    font-size: clamp(.66rem, 2.4vw, .80rem) !important;
+    line-height: 1 !important;
+    text-transform: uppercase !important;
+    text-align: right !important;
+    width: 100% !important;
+  }
+
+  #bpmLabel {
+    font-size: clamp(.42rem, 1.55vw, .56rem) !important;
+    line-height: 1 !important;
+    text-transform: uppercase !important;
+    text-align: right !important;
+    width: 100% !important;
+    opacity: .9 !important;
+  }
+
+  #levelStatusValues {
+    grid-column: 1 / span 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #levelStatusValues > div:first-child {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  #levelDisplayExtra {
+    font-size: clamp(1.26rem, 4.8vw, 1.58rem) !important;
+    line-height: 1 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-weight: 900 !important;
+    color: #f4c644 !important;
+  }
+
+  #bpmDisplay {
+    font-size: clamp(.50rem, 1.8vw, .66rem) !important;
+    line-height: 1 !important;
+    text-align: center !important;
+  }
+
+  #v632LevelProgress {
+    margin-top: 0 !important;
+    gap: 1px !important;
+  }
+
+  #v632LevelProgressText {
+    font-size: clamp(.44rem, 1.6vw, .56rem) !important;
+    line-height: 1 !important;
+  }
+
+  #v632LevelSegments {
+    width: min(100%, 66px) !important;
+    justify-content: center !important;
+  }
+</style>
+
+
+<!-- v647:
+     Simplify the Party Mission cell so it feels calmer and less crowded. -->
+<style id="v647-simpler-party-mission-cell-style">
+  /* Base calmer cell */
+  #levelDisplay.v632-pre-mission-teaser,
+  #levelDisplay.v632-next-mission-teaser {
+    position: relative;
+    overflow: hidden;
+    background: rgba(0,0,0,.70) !important;
+    border-color: rgba(232,138,45,.82) !important;
+    box-shadow: inset 0 0 0 1px rgba(255,225,150,.06) !important;
+  }
+
+  /* Remove heavy dark overlay effect */
+  #levelDisplay.v632-pre-mission-teaser.feature-locked::after {
+    background-image: none !important;
+    background-color: transparent !important;
+    filter: none !important;
+    z-index: 0 !important;
+  }
+
+  /* Layout calmer: smaller image, more copy room */
+  #levelDisplay.v632-pre-mission-teaser > div,
+  #levelDisplay.v632-next-mission-teaser > div {
+    display: grid !important;
+    grid-template-columns: 36% 64% !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser #levelImage,
+  #levelDisplay.v632-next-mission-teaser #levelImage {
+    width: 100% !important;
+    max-width: 44px !important;
+    height: auto !important;
+    max-height: 30px !important;
+    justify-self: center !important;
+    align-self: center !important;
+    opacity: .58 !important;
+    filter: none !important;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser #challengeInfoText,
+  #levelDisplay.v632-next-mission-teaser #challengeInfoText {
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 6px 0 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    text-align: left !important;
+    line-height: 1 !important;
+    text-shadow: none !important;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser .v632-mission-main,
+  #levelDisplay.v632-next-mission-teaser .v632-mission-main {
+    display: block !important;
+    font-size: clamp(.54rem, 2.25vw, .68rem) !important;
+    line-height: 1.0 !important;
+    letter-spacing: .02em !important;
+    color: #f4c644 !important;
+    font-weight: 900 !important;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser .v632-mission-sub,
+  #levelDisplay.v632-next-mission-teaser .v632-mission-sub {
+    display: block !important;
+    margin-top: 2px !important;
+    font-size: clamp(.48rem, 1.95vw, .60rem) !important;
+    line-height: 1.0 !important;
+    color: #ffe9a8 !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Remove inline lock emoji before subtitle */
+  #levelDisplay.v632-pre-mission-teaser .v632-mission-sub::before {
+    content: none !important;
+  }
+
+  /* Small quiet locked badge instead of noisy text decorations */
+  #levelDisplay.v632-pre-mission-teaser::before {
+    content: 'LOCKED';
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    z-index: 8;
+    padding: 1px 4px 0;
+    border-radius: 7px;
+    background: rgba(19,16,22,.88);
+    border: 1px solid rgba(232,138,45,.62);
+    color: #f4c644;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    font-size: .42rem;
+    line-height: 1.1;
+    font-weight: 900;
+    letter-spacing: .02em;
+  }
+
+  /* Remove generic feature-locked visual noise inside this calmer mission tile */
+  #levelDisplay.v632-pre-mission-teaser.feature-locked > * {
+    filter: none !important;
+    opacity: 1 !important;
   }
 </style>
 

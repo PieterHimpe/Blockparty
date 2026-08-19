@@ -64233,6 +64233,107 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v678: extreme scale test for the 4 large center cells.
+     Purpose: deliberately push size harder so the visual difference is obvious. -->
+<style id="v678-center-cells-extreme-scale-test-style">
+  /* More space to functional content, less to title */
+  #livesDisplay > div,
+  #scoreDisplay > div,
+  #extraCell1 > div,
+  #nextBlockDisplay > div {
+    grid-template-columns: 42% 58% !important;
+    grid-template-rows: 26% 74% !important;
+  }
+
+  /* Titles: larger, tighter, lower visual waste */
+  #livesDisplay > div > div:nth-child(2),
+  #scoreDisplay > div > div:nth-child(2),
+  #levelStatusLabels,
+  #nextBlockDisplay > div > div:nth-child(2) {
+    padding: 0 1px 0 !important;
+    align-items: center !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div,
+  #scoreDisplay > div > div:nth-child(2),
+  #levelLabel,
+  #nextBlockDisplay > div > div:nth-child(2) {
+    font-size: clamp(1.06rem, 4.0vw, 1.28rem) !important;
+    line-height: .90 !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Left-side figures: much larger to offset transparent whitespace in assets */
+  #livesDisplay > div > img,
+  #scoreDisplay > div > img,
+  #extraCell1 > div > img,
+  #nextBlockDisplay > div > img {
+    width: 96% !important;
+    height: 98% !important;
+    transform: scale(1.22) !important;
+    transform-origin: center center !important;
+  }
+
+  /* Right-side value areas: use nearly all available space */
+  #livesText,
+  #scoreValue,
+  #levelStatusValues,
+  #nextBlockPreview {
+    padding: 0 !important;
+  }
+
+  /* Repair / Score values: intentionally very large for testing */
+  #livesText,
+  #scoreValue {
+    font-size: clamp(2.38rem, 8.5vw, 2.90rem) !important;
+    line-height: .88 !important;
+    letter-spacing: -.02em !important;
+  }
+
+  /* Level: larger number and more prominent background progress disc */
+  #levelDisplayExtra {
+    font-size: clamp(2.00rem, 6.9vw, 2.42rem) !important;
+    line-height: .92 !important;
+    letter-spacing: -.01em !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.45) !important;
+  }
+
+  /* The behind-number progress disc from v676 gets bigger, but stays compact */
+  #v676LevelDisc,
+  #v664LevelRing {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+    min-height: 60px !important;
+    max-width: 60px !important;
+    max-height: 60px !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  /* Next Set: larger blocks, still identical size for 1/2/3 blocks */
+  #nextBlockPreview {
+    gap: 1px !important;
+    --v678-nextset-block-size: min(26px, calc((100% - 4px) / 3)) !important;
+  }
+
+  #nextBlockPreview > div {
+    width: var(--v678-nextset-block-size) !important;
+    height: var(--v678-nextset-block-size) !important;
+    min-width: var(--v678-nextset-block-size) !important;
+    min-height: var(--v678-nextset-block-size) !important;
+    max-width: var(--v678-nextset-block-size) !important;
+    max-height: var(--v678-nextset-block-size) !important;
+    flex: 0 0 var(--v678-nextset-block-size) !important;
+    border-radius: 5px !important;
+  }
+
+  #nextBlockPreview > div > div {
+    transform: scale(1.16) !important;
+    transform-origin: center center !important;
+  }
+</style>
+
 </body>
 </html>
 

@@ -55084,7 +55084,7 @@ body.v546-onboarding-levels #levelProgressBar {
   const POST_GOAL_TARGET = 5;
   const POST_GOAL_COOLDOWN_SETS = 5;
   const POST_GOAL_REWARD = 100;
-  const POST_GOAL_KEY = 'v619PostTutorialPartyGoalColorV1';
+  const POST_GOAL_KEY = 'v634PostTutorialPartyGoalColorV2';
   const POST_GOAL_COLORS = [
     '#4A90E2', // Blue
     '#7ED321', // Green
@@ -55103,6 +55103,7 @@ body.v546-onboarding-levels #levelProgressBar {
     mode: 'inactive',       // inactive | active | cooldown
     current: 0,
     cooldownRemaining: 0,
+    pendingStartRemaining: 0, // v636: fresh level-11 start waits this many set starts before the first Party Goal
     ignoreNextSpawn: false,
     introShown: false,
     targets: [],
@@ -55114,13 +55115,14 @@ body.v546-onboarding-levels #levelProgressBar {
   }
 
   function inOnboarding(){
-    // Goal 7 is completed in level 9. Level 10 is Full Party and therefore
-    // already uses the normal post-tutorial Party Goal + locked Missions cell.
+    // Goal 7 is completed in level 9.
     return safeLevel() >= 1 && safeLevel() <= 9;
   }
 
   function inFullParty(){
-    return safeLevel() >= 10;
+    // V634: the repeating five-colour Party Goal begins at level 11.
+    // Level 10 is the Full Party transition and deliberately shows PARTY GOAL / SOON.
+    return safeLevel() >= 11;
   }
 
   function loadPostGoal(){
@@ -55134,6 +55136,7 @@ body.v546-onboarding-levels #levelProgressBar {
         0,
         Math.min(POST_GOAL_COOLDOWN_SETS, Number(parsed.cooldownRemaining) || 0)
       );
+      postGoal.pendingStartRemaining = Math.max(0, Math.min(5, Number(parsed.pendingStartRemaining) || 0));
       postGoal.ignoreNextSpawn = !!parsed.ignoreNextSpawn;
       postGoal.introShown = !!parsed.introShown;
 
@@ -55156,11 +55159,13 @@ body.v546-onboarding-levels #levelProgressBar {
     try { localStorage.setItem(POST_GOAL_KEY, JSON.stringify(postGoal)); } catch (_) {}
   }
 
-  function resetPostGoal(){
+  function resetPostGoal(options = {}){
+    const pendingStartRemaining = Math.max(0, Math.min(5, Number(options.pendingStartRemaining) || 0));
     postGoal = {
       mode: 'inactive',
       current: 0,
       cooldownRemaining: 0,
+      pendingStartRemaining,
       ignoreNextSpawn: false,
       introShown: false,
       targets: [],
@@ -55484,8 +55489,10 @@ body.v546-onboarding-levels #levelProgressBar {
     });
   }
 
-  function renderCooldown(){
+  function renderPendingStartGoal(){
     ensureGoalPanels();
+    const remaining = Math.max(0, Math.min(5, Number(postGoal.pendingStartRemaining) || 0));
+
     goalHosts().forEach((host) => {
       const panel = host.querySelector('.v606-party-goal-panel');
       if (!panel) return;
@@ -55497,13 +55504,65 @@ body.v546-onboarding-levels #levelProgressBar {
       const sub = panel.querySelector('.v606-party-goal-sub');
       const dots = panel.querySelector('.v606-party-goal-dots');
 
-      if (label) label.textContent = 'NEXT PARTY GOAL';
+      if (label) label.textContent = 'PARTY GOAL';
       if (sub) {
-        const n = Math.max(0, Number(postGoal.cooldownRemaining) || 0);
-        sub.textContent = n === 1 ? '1 SET' : `${n} SETS`;
+        sub.textContent = remaining <= 0
+          ? 'SOON'
+          : (remaining === 1 ? 'STARTS IN 1 SET' : `STARTS IN ${remaining} SETS`);
       }
-      if (dots) dots.innerHTML = '';
+      if (dots) {
+        dots.innerHTML = '';
+        dots.setAttribute('aria-label', `${remaining} sets until the first Party Goal starts`);
+        host.classList.add('v641-static-star-countdown');
+        for (let i = 0; i < 5; i++) {
+          const star = document.createElement('span');
+          const filled = i < remaining;
+          star.className = 'v641-pending-star ' + (filled ? 'filled' : 'empty');
+          star.textContent = filled ? '★' : '☆';
+          star.setAttribute('aria-hidden', 'true');
+          dots.appendChild(star);
+        }
+      }
     });
+  }
+
+  function renderCooldown(){
+    ensureGoalPanels();
+    const remaining = Math.max(0, Number(postGoal.cooldownRemaining) || 0);
+
+    goalHosts().forEach((host) => {
+      host.classList.remove('v641-static-star-countdown');
+      const panel = host.querySelector('.v606-party-goal-panel');
+      if (!panel) return;
+      panel.dataset.total = '0';
+      panel.dataset.v634CooldownRemaining = String(remaining);
+      host.classList.remove('v614-one-more','v614-complete');
+      host.classList.toggle('v634-cooldown-last', remaining === 1);
+      v614SetPartyGoalImage(panel, 0, 5);
+
+      const label = panel.querySelector('.v606-party-goal-label');
+      const sub = panel.querySelector('.v606-party-goal-sub');
+      const dots = panel.querySelector('.v606-party-goal-dots');
+
+      if (label) label.textContent = 'NEXT PARTY GOAL';
+      if (sub) sub.textContent = remaining === 1 ? '1 SET' : `${remaining} SETS`;
+
+      if (dots) {
+        dots.innerHTML = '';
+        dots.setAttribute('aria-label', `${remaining} sets until the next Party Goal`);
+        for (let i = 0; i < POST_GOAL_COOLDOWN_SETS; i++) {
+          const dot = document.createElement('span');
+          dot.className = 'v634-cooldown-dot' + (i < remaining ? ' remaining' : ' passed');
+          dots.appendChild(dot);
+        }
+      }
+    });
+
+    try {
+      if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onCooldown === 'function') {
+        window.bpPartyGoalV634.onCooldown({ remaining, total: POST_GOAL_COOLDOWN_SETS });
+      }
+    } catch (_) {}
   }
 
   function animateHosts(className, duration){
@@ -55536,13 +55595,36 @@ body.v546-onboarding-levels #levelProgressBar {
     postGoal.completed = Array(POST_GOAL_TARGET).fill(false);
     savePostGoal();
     renderPostGoal();
+    try {
+      if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onStart === 'function') {
+        window.bpPartyGoalV634.onStart({
+          targets: postGoal.targets.slice(),
+          completed: postGoal.completed.slice(),
+          animate: !!animate,
+          level: safeLevel()
+        });
+      }
+    } catch (_) {}
     if (animate) animateHosts('v606-new-goal', 950);
   }
 
   function ensurePostGoalActive(){
+    if (safeLevel() === 10) {
+      renderWaitingTutorialGoal();
+      return;
+    }
     if (!inFullParty()) return;
-    if (postGoal.mode === 'inactive') startPostGoal({animate:false});
-    else renderPostGoal();
+
+    if (postGoal.mode === 'inactive') {
+      if ((Number(postGoal.pendingStartRemaining) || 0) > 0) {
+        renderPendingStartGoal();
+        return;
+      }
+      startPostGoal({animate:false});
+      return;
+    }
+
+    renderPostGoal();
   }
 
   function completePostGoal(){
@@ -55559,9 +55641,22 @@ body.v546-onboarding-levels #levelProgressBar {
 
     // v535 only awards onboarding Goals 1-7. At Full Party this toast therefore
     // supplies the visual +100 feedback without a second score award.
-    if (typeof v468Toast === 'function') {
+    const v634MissionActiveForGoal =
+      (typeof isAnyChallengeActive === 'function' && isAnyChallengeActive());
+
+    if (!v634MissionActiveForGoal && typeof v468Toast === 'function') {
       v468Toast('PARTY GOAL COMPLETE!', '+100 POINTS', 1600);
     }
+
+    try {
+      if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
+        window.bpPartyGoalV634.onComplete({
+          reward: POST_GOAL_REWARD,
+          score: Number(score) || 0,
+          muted: !!v634MissionActiveForGoal
+        });
+      }
+    } catch (_) {}
 
     postGoal.mode = 'cooldown';
     postGoal.cooldownRemaining = POST_GOAL_COOLDOWN_SETS;
@@ -55597,11 +55692,36 @@ body.v546-onboarding-levels #levelProgressBar {
     renderPostGoal();
     animateHosts('v606-goal-hit', 440);
 
+    try {
+      if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onProgress === 'function') {
+        window.bpPartyGoalV634.onProgress({
+          color: clearedColor,
+          targetIndex,
+          current: postGoal.current,
+          total: POST_GOAL_TARGET,
+          completed: postGoal.completed.slice()
+        });
+      }
+    } catch (_) {}
+
     if (postGoal.current >= POST_GOAL_TARGET) completePostGoal();
   }
 
   function registerPostGoalSetStart(){
     if (!inFullParty()) return;
+
+    if (postGoal.mode === 'inactive' && (Number(postGoal.pendingStartRemaining) || 0) > 0) {
+      postGoal.pendingStartRemaining = Math.max(0, (Number(postGoal.pendingStartRemaining) || 0) - 1);
+
+      if (postGoal.pendingStartRemaining <= 0) {
+        savePostGoal();
+        startPostGoal({animate:true});
+      } else {
+        savePostGoal();
+        renderPendingStartGoal();
+      }
+      return;
+    }
 
     ensurePostGoalActive();
 
@@ -55782,7 +55902,7 @@ body.v546-onboarding-levels #levelProgressBar {
   if (typeof startFreshPartyAtLevel11 === 'function') {
     const baseStartFreshPartyAtLevel11 = startFreshPartyAtLevel11;
     startFreshPartyAtLevel11 = function(){
-      resetPostGoal();
+      resetPostGoal({ pendingStartRemaining: 5 });
       return baseStartFreshPartyAtLevel11.apply(this, arguments);
     };
   }
@@ -55791,7 +55911,7 @@ body.v546-onboarding-levels #levelProgressBar {
   if (typeof startTutorialFromBeginning === 'function') {
     const baseStartTutorialFromBeginning = startTutorialFromBeginning;
     startTutorialFromBeginning = function(){
-      resetPostGoal();
+      resetPostGoal({ pendingStartRemaining: 0 });
       return baseStartTutorialFromBeginning.apply(this, arguments);
     };
   }
@@ -58505,6 +58625,2894 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   requestAnimationFrame(removePanels);
 })();
 </script>
+
+
+<!-- v632: focused retention/readability pass for Full Party.
+     1) LEVEL shows explicit groups-to-next-level progress (x/8).
+     2) Locked Party Missions tease UNLOCKS AT 15; after first unlock the cell teases the next mission level.
+     3) NEXT SET preview is larger and briefly links to still-needed Party Goal colors.
+     4) REPAIRS reflects real Party Barrier danger (damaged/open), without changing gameplay. -->
+<style id="v632-retention-ui-style">
+  /* ---------- LEVEL: explicit group progress ---------- */
+  #extraCell1 #levelProgressBar {
+    display: none !important;
+  }
+
+  #v632LevelProgress {
+    width: 100%;
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    pointer-events: none;
+  }
+
+  #v632LevelProgressText {
+    color: #ffe680;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    font-size: clamp(.38rem, 1.55vw, .50rem);
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0,0,0,.9);
+  }
+
+  #v632LevelSegments {
+    width: min(100%, 58px);
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 1px;
+  }
+
+  #v632LevelSegments .v632-level-segment {
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255,230,128,.18);
+    box-shadow: inset 0 0 0 1px rgba(255,230,128,.24);
+  }
+
+  #v632LevelSegments .v632-level-segment.done {
+    background: #f4c644;
+    box-shadow: 0 0 4px rgba(244,198,68,.75);
+  }
+
+  #v632LevelProgress.v632-mission-frozen #v632LevelProgressText {
+    color: rgba(255,230,128,.68);
+  }
+
+  #v632LevelProgress.v632-mission-frozen #v632LevelSegments {
+    opacity: .42;
+  }
+
+  /* Keep LEVEL readable when BPM becomes visible after mission 1. */
+  #extraCell1:not(.level-only) #levelStatusValues {
+    gap: 0 !important;
+    padding-top: 5px !important;
+    padding-bottom: 3px !important;
+  }
+
+  #extraCell1:not(.level-only) #levelStatusLabels {
+    gap: 0 !important;
+    padding-top: 5px !important;
+    padding-bottom: 3px !important;
+  }
+
+  /* ---------- PARTY MISSION teaser ---------- */
+  #levelDisplay.v632-pre-mission-teaser {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Before level 15: keep it non-interactive/locked, but replace the anonymous giant lock
+     with useful anticipation copy. */
+  #levelDisplay.v632-pre-mission-teaser.feature-locked > * {
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser.feature-locked::after {
+    background-image: none !important;
+    background-color: rgba(13,10,15,.58) !important;
+    filter: none !important;
+    z-index: 4 !important;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser #levelImage,
+  #levelDisplay.v632-next-mission-teaser #levelImage {
+    opacity: .68;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser #challengeInfoText,
+  #levelDisplay.v632-next-mission-teaser #challengeInfoText {
+    position: relative;
+    z-index: 6;
+    width: 58% !important;
+    padding-top: 0 !important;
+    font-size: clamp(.48rem, 2.1vw, .64rem) !important;
+    line-height: 1.03 !important;
+    text-shadow: 0 2px 3px rgba(0,0,0,.9);
+  }
+
+  #levelDisplay.v632-pre-mission-teaser #levelImage,
+  #levelDisplay.v632-next-mission-teaser #levelImage {
+    position: relative;
+    z-index: 5;
+    width: 42% !important;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser .v632-mission-main,
+  #levelDisplay.v632-next-mission-teaser .v632-mission-main {
+    display: block;
+    color: #f4c644;
+    font-weight: 900;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser .v632-mission-sub {
+    display: block;
+    margin-top: 2px;
+    color: #ffe680;
+    font-size: .88em;
+    white-space: nowrap;
+  }
+
+  #levelDisplay.v632-pre-mission-teaser .v632-mission-sub::before {
+    content: "🔒 ";
+    font-family: sans-serif;
+    font-size: .86em;
+  }
+
+  #levelDisplay.v632-next-mission-teaser .v632-mission-sub {
+    display: block;
+    margin-top: 2px;
+    color: #ffe680;
+    font-size: .88em;
+    white-space: nowrap;
+  }
+
+  /* ---------- NEXT SET: larger + Party Goal link ---------- */
+  #nextBlockPreview {
+    position: relative;
+    gap: 1px;
+    overflow: visible !important;
+    transform-origin: center;
+  }
+
+  #nextBlockPreview > div {
+    flex: 0 0 auto;
+  }
+
+  #nextBlockDisplay.v632-goal-match {
+    --v632-match-color: #ffe680;
+  }
+
+  #nextBlockDisplay.v632-goal-match #nextBlockPreview {
+    animation: v632NextGoalPop 620ms cubic-bezier(.18,.89,.32,1.25) 1;
+  }
+
+  #nextBlockDisplay.v632-goal-match #nextBlockPreview::after {
+    content: "GOAL";
+    position: absolute;
+    left: 50%;
+    top: -8px;
+    transform: translateX(-50%);
+    padding: 1px 4px 0;
+    border-radius: 5px;
+    color: #fff8da;
+    background: rgba(26,14,18,.88);
+    border: 1px solid var(--v632-match-color);
+    box-shadow: 0 0 6px var(--v632-match-color);
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    font-weight: 900;
+    font-size: clamp(.34rem, 1.35vw, .44rem);
+    line-height: 1.05;
+    letter-spacing: .02em;
+    pointer-events: none;
+  }
+
+  .v606-party-goal-dot.v619-color-target.v632-next-set-target {
+    animation: v632GoalDotLink 620ms ease-out 1 !important;
+    transform-origin: center !important;
+  }
+
+  @keyframes v632NextGoalPop {
+    0%   { transform: scale(1); filter: none; }
+    35%  { transform: scale(1.17); filter: drop-shadow(0 0 5px var(--v632-match-color)); }
+    70%  { transform: scale(1.08); filter: drop-shadow(0 0 3px var(--v632-match-color)); }
+    100% { transform: scale(1); filter: none; }
+  }
+
+  @keyframes v632GoalDotLink {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.75); box-shadow: 0 0 11px var(--v619-goal-color) !important; }
+    100% { transform: scale(1); }
+  }
+
+  /* ---------- REPAIRS: real Party Barrier danger ---------- */
+  #livesDisplay {
+    position: relative;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+
+  #v632RepairBarrierStatus {
+    position: absolute;
+    right: 4px;
+    bottom: 1px;
+    z-index: 8;
+    display: none;
+    padding: 1px 3px 0;
+    border-radius: 4px;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    font-size: clamp(.34rem, 1.35vw, .44rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: .01em;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,.95);
+  }
+
+  #livesDisplay.v632-barrier-damaged {
+    border-color: #ffbe45 !important;
+    box-shadow: inset 0 0 0 1px rgba(255,190,69,.28), 0 0 7px rgba(255,190,69,.32) !important;
+  }
+
+  #livesDisplay.v632-barrier-damaged #v632RepairBarrierStatus {
+    display: block;
+    color: #ffe6a6;
+    background: rgba(82,42,7,.92);
+    border: 1px solid #ffbe45;
+  }
+
+  #livesDisplay.v632-barrier-open {
+    border-color: #ff633f !important;
+    box-shadow: inset 0 0 0 1px rgba(255,99,63,.34), 0 0 9px rgba(255,99,63,.46) !important;
+    background-color: rgba(83,20,12,.18);
+  }
+
+  #livesDisplay.v632-barrier-open #v632RepairBarrierStatus {
+    display: block;
+    color: #fff2dc;
+    background: rgba(99,20,9,.94);
+    border: 1px solid #ff633f;
+  }
+
+  #livesDisplay.v632-barrier-danger-hit {
+    animation: v632RepairDangerHit 560ms ease-out 1;
+  }
+
+  @keyframes v632RepairDangerHit {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #nextBlockDisplay.v632-goal-match #nextBlockPreview,
+    .v606-party-goal-dot.v619-color-target.v632-next-set-target,
+    #livesDisplay.v632-barrier-danger-hit {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script id="v632-retention-ui-runtime">
+(() => {
+  'use strict';
+
+  const V632_MISSION_LEVELS = [15, 20, 25, 30, 35, 40, 45];
+  let v632LastBarrierSeverity = null;
+  let v632NextGoalFlashTimer = null;
+
+  function v632LevelNumber() {
+    try { return Number(level) || 1; } catch (_) { return 1; }
+  }
+
+  function v632AnyMissionActive() {
+    try {
+      if (typeof isAnyChallengeActive === 'function') return !!isAnyChallengeActive();
+    } catch (_) {}
+    try {
+      return !!(
+        challengeActive || challenge2Active || challenge3Active ||
+        challenge4Active || challenge5Active || challenge6Active || challenge7Active
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /* ============================================================
+     1. LEVEL x/8
+     ============================================================ */
+  function v632EnsureLevelProgress() {
+    const values = document.getElementById('levelStatusValues');
+    if (!values) return null;
+
+    let root = document.getElementById('v632LevelProgress');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'v632LevelProgress';
+      root.innerHTML =
+        '<div id="v632LevelProgressText">0/8</div>' +
+        '<div id="v632LevelSegments" aria-hidden="true"></div>';
+
+      const segments = root.querySelector('#v632LevelSegments');
+      for (let i = 0; i < 8; i++) {
+        const segment = document.createElement('span');
+        segment.className = 'v632-level-segment';
+        segments.appendChild(segment);
+      }
+
+      /* Put progress directly below the level number and before BPM. */
+      const bpm = document.getElementById('bpmDisplay');
+      values.insertBefore(root, bpm || null);
+    }
+    return root;
+  }
+
+  function v632UpdateLevelProgress() {
+    const root = v632EnsureLevelProgress();
+    if (!root) return;
+
+    const currentLevel = v632LevelNumber();
+    const visible = currentLevel >= 10;
+    root.style.display = visible ? 'flex' : 'none';
+    if (!visible) return;
+
+    const total = (() => {
+      try {
+        const n = Number(levelProgressThreshold);
+        return Number.isFinite(n) && n > 0 ? Math.round(n) : 8;
+      } catch (_) {
+        return 8;
+      }
+    })();
+
+    const current = (() => {
+      try {
+        const n = Number(bigGroupCount);
+        return Number.isFinite(n) ? Math.max(0, Math.min(total, Math.round(n))) : 0;
+      } catch (_) {
+        return 0;
+      }
+    })();
+
+    const missionActive = v632AnyMissionActive();
+    root.classList.toggle('v632-mission-frozen', missionActive);
+
+    const text = root.querySelector('#v632LevelProgressText');
+    if (text) {
+      text.textContent = missionActive ? `${current}/${total} • MISSION` : `${current}/${total}`;
+      text.setAttribute(
+        'aria-label',
+        missionActive
+          ? `Level progress ${current} of ${total}; normal level progression paused during Party Mission`
+          : `Level progress ${current} of ${total} groups`
+      );
+    }
+
+    const segments = Array.from(root.querySelectorAll('.v632-level-segment'));
+    segments.forEach((segment, index) => {
+      segment.classList.toggle('done', index < current);
+      if (index >= total) segment.style.display = 'none';
+      else segment.style.display = '';
+    });
+  }
+
+  if (typeof updateLevelProgressBar === 'function') {
+    const v632BaseUpdateLevelProgressBar = updateLevelProgressBar;
+    updateLevelProgressBar = function() {
+      const result = v632BaseUpdateLevelProgressBar.apply(this, arguments);
+      v632UpdateLevelProgress();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelDisplay === 'function') {
+    const v632BaseUpdateLevelDisplay = updateLevelDisplay;
+    updateLevelDisplay = function() {
+      const result = v632BaseUpdateLevelDisplay.apply(this, arguments);
+      v632UpdateLevelProgress();
+      v632UpdateMissionTeaser();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelAndBpmDisplay === 'function') {
+    const v632BaseUpdateLevelAndBpmDisplay = updateLevelAndBpmDisplay;
+    updateLevelAndBpmDisplay = function() {
+      const result = v632BaseUpdateLevelAndBpmDisplay.apply(this, arguments);
+      v632UpdateLevelProgress();
+      v632UpdateMissionTeaser();
+      return result;
+    };
+  }
+
+  /* ============================================================
+     2. PARTY MISSION anticipation
+     ============================================================ */
+  function v632ChallengeFeatureDiscovered() {
+    try {
+      return localStorage.getItem(FEATURE_DISCOVERY_KEYS.challenge) === 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function v632NextMissionLevel(currentLevel) {
+    return V632_MISSION_LEVELS.find(missionLevel => missionLevel > currentLevel) || null;
+  }
+
+  function v632UpdateMissionTeaser() {
+    const cell = document.getElementById('levelDisplay');
+    const copy = document.getElementById('challengeInfoText');
+    if (!cell || !copy) return;
+
+    const currentLevel = v632LevelNumber();
+
+    /* Onboarding keeps its existing Party Goal / tutorial ownership. */
+    if (currentLevel < 10) {
+      cell.classList.remove('v632-pre-mission-teaser', 'v632-next-mission-teaser');
+      return;
+    }
+
+    /* Active mission status counters are owned by the mission system. */
+    if (v632AnyMissionActive()) {
+      cell.classList.remove('v632-pre-mission-teaser', 'v632-next-mission-teaser');
+      return;
+    }
+
+    const discovered = v632ChallengeFeatureDiscovered();
+
+    /* Level 10-14: useful teaser instead of an anonymous lock. */
+    if (!discovered && currentLevel < 15) {
+      cell.classList.add('v632-pre-mission-teaser');
+      cell.classList.remove('v632-next-mission-teaser');
+      copy.innerHTML =
+        '<span class="v632-mission-main">PARTY MISSION</span>' +
+        '<span class="v632-mission-sub">UNLOCKS AT 15</span>';
+      return;
+    }
+
+    /* At the actual first unlock moment restore the normal lock/unlock animation. */
+    if (!discovered) {
+      cell.classList.remove('v632-pre-mission-teaser', 'v632-next-mission-teaser');
+      return;
+    }
+
+    const next = v632NextMissionLevel(currentLevel);
+    cell.classList.remove('v632-pre-mission-teaser');
+    cell.classList.add('v632-next-mission-teaser');
+
+    if (next) {
+      copy.innerHTML =
+        '<span class="v632-mission-main">NEXT MISSION</span>' +
+        `<span class="v632-mission-sub">LEVEL ${next}</span>`;
+    } else {
+      copy.innerHTML =
+        '<span class="v632-mission-main">PARTY MISSIONS</span>' +
+        '<span class="v632-mission-sub">SET COMPLETE</span>';
+    }
+  }
+
+  /* Clean after the existing mission-cell owner has done its work. */
+  if (typeof updateChallengeInfoText === 'function') {
+    const v632BaseChallengeInfo = updateChallengeInfoText;
+    updateChallengeInfoText = function() {
+      const result = v632BaseChallengeInfo.apply(this, arguments);
+      v632UpdateMissionTeaser();
+      v632UpdateLevelProgress();
+      return result;
+    };
+  }
+
+  /* V609 also owns this cell after onboarding; wrap availability last so our
+     post-tutorial anticipation copy remains the final rendered state. */
+  if (typeof updateFeatureAvailability === 'function') {
+    const v632BaseAvailability = updateFeatureAvailability;
+    updateFeatureAvailability = function() {
+      const result = v632BaseAvailability.apply(this, arguments);
+      v632UpdateMissionTeaser();
+      v632UpdateLevelProgress();
+      return result;
+    };
+  }
+
+  /* ============================================================
+     3. NEXT SET ↔ PARTY GOAL visual link
+     ============================================================ */
+  function v632NormalizeColor(color) {
+    return String(color || '').trim().toUpperCase();
+  }
+
+  function v632NeededGoalDotsForColor(color) {
+    const wanted = v632NormalizeColor(color);
+    if (!wanted) return [];
+
+    return Array.from(
+      document.querySelectorAll('.v606-party-goal-dot.v619-color-target:not(.done)')
+    ).filter(dot => {
+      const dotColor = v632NormalizeColor(
+        dot.style.getPropertyValue('--v619-goal-color')
+      );
+      return dotColor === wanted;
+    });
+  }
+
+  function v632ClearNextGoalLink() {
+    const cell = document.getElementById('nextBlockDisplay');
+    if (cell) {
+      cell.classList.remove('v632-goal-match');
+      cell.style.removeProperty('--v632-match-color');
+    }
+    document
+      .querySelectorAll('.v606-party-goal-dot.v632-next-set-target')
+      .forEach(dot => dot.classList.remove('v632-next-set-target'));
+  }
+
+  function v632ApplyNextGoalLink(color, isMulticolor) {
+    v632ClearNextGoalLink();
+    if (isMulticolor) return;
+
+    const dots = v632NeededGoalDotsForColor(color);
+    if (!dots.length) return;
+
+    const cell = document.getElementById('nextBlockDisplay');
+    if (!cell) return;
+
+    const matchColor = v632NormalizeColor(color);
+    cell.style.setProperty('--v632-match-color', matchColor || '#ffe680');
+    cell.classList.add('v632-goal-match');
+    dots.forEach(dot => {
+      dot.classList.remove('v632-next-set-target');
+      void dot.offsetWidth;
+      dot.classList.add('v632-next-set-target');
+    });
+
+    if (v632NextGoalFlashTimer) clearTimeout(v632NextGoalFlashTimer);
+    v632NextGoalFlashTimer = setTimeout(() => {
+      cell.classList.remove('v632-goal-match');
+      dots.forEach(dot => dot.classList.remove('v632-next-set-target'));
+      v632NextGoalFlashTimer = null;
+    }, 760);
+  }
+
+  if (typeof updateNextBlockDisplay === 'function') {
+    const v632BaseNextBlockDisplay = updateNextBlockDisplay;
+    updateNextBlockDisplay = function(color, length = 1, isDiva = false, isSpecial = false, isMulticolor = false) {
+      const result = v632BaseNextBlockDisplay.apply(this, arguments);
+
+      const preview = document.getElementById('nextBlockPreview');
+      if (preview) {
+        Array.from(preview.children).forEach(block => {
+          block.style.width = '17px';
+          block.style.height = '17px';
+          block.style.margin = '1px';
+          block.style.borderRadius = '4px';
+
+          /* Scale the embedded identity marks with the larger preview tile. */
+          Array.from(block.children).forEach(mark => {
+            if (isDiva) {
+              mark.style.fontSize = '11px';
+              mark.style.lineHeight = '17px';
+            } else if (isMulticolor) {
+              mark.style.width = '9px';
+              mark.style.height = '9px';
+            } else if (isSpecial) {
+              mark.style.fontSize = '12px';
+            }
+          });
+        });
+      }
+
+      requestAnimationFrame(() => v632ApplyNextGoalLink(color, isMulticolor));
+      return result;
+    };
+  }
+
+  /* When Party Goal progress itself changes, refresh the link for the already-visible
+     Next Set too. This prevents a completed target from remaining highlighted. */
+  function v632RefreshVisibleNextLinkFromQueuedBlock() {
+    try {
+      if (!nextBlock) return;
+      v632ApplyNextGoalLink(nextBlock.color, !!nextBlock.isMulticolor);
+    } catch (_) {}
+  }
+
+  /* ============================================================
+     4. REPAIRS ↔ real Barrier state
+     ============================================================ */
+  function v632EnsureRepairStatusBadge() {
+    const cell = document.getElementById('livesDisplay');
+    if (!cell) return null;
+
+    let badge = document.getElementById('v632RepairBarrierStatus');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'v632RepairBarrierStatus';
+      cell.appendChild(badge);
+    }
+    return badge;
+  }
+
+  function v632BarrierSeverity() {
+    try {
+      let hasDamaged = false;
+      let hasOpen = false;
+
+      for (const side of ['top', 'right', 'bottom', 'left']) {
+        const states = barrierWallStates && barrierWallStates[side];
+        if (!Array.isArray(states)) continue;
+
+        for (const state of states) {
+          if (state === BARRIER_STATE_OPEN) hasOpen = true;
+          else if (state === BARRIER_STATE_DAMAGED) hasDamaged = true;
+        }
+      }
+
+      return hasOpen ? 'open' : (hasDamaged ? 'damaged' : 'intact');
+    } catch (_) {
+      return 'intact';
+    }
+  }
+
+  function v632UpdateRepairDangerVisual({animateTransition = false} = {}) {
+    const cell = document.getElementById('livesDisplay');
+    const badge = v632EnsureRepairStatusBadge();
+    if (!cell || !badge) return;
+
+    const severity = v632BarrierSeverity();
+    const changed = v632LastBarrierSeverity !== null && v632LastBarrierSeverity !== severity;
+    v632LastBarrierSeverity = severity;
+
+    cell.classList.toggle('v632-barrier-damaged', severity === 'damaged');
+    cell.classList.toggle('v632-barrier-open', severity === 'open');
+
+    if (severity === 'open') {
+      badge.textContent = 'BARRIER OPEN';
+      badge.setAttribute('aria-label', 'Party Barrier has an open gap');
+    } else if (severity === 'damaged') {
+      badge.textContent = 'DAMAGED';
+      badge.setAttribute('aria-label', 'Party Barrier is damaged');
+    } else {
+      badge.textContent = '';
+      badge.removeAttribute('aria-label');
+    }
+
+    if (animateTransition && changed && severity !== 'intact') {
+      cell.classList.remove('v632-barrier-danger-hit');
+      void cell.offsetWidth;
+      cell.classList.add('v632-barrier-danger-hit');
+      setTimeout(() => cell.classList.remove('v632-barrier-danger-hit'), 620);
+    }
+  }
+
+  /* Every real hit and every manual Repair already funnels through the barrier pulse. */
+  if (typeof pulseBarrierWallImpact === 'function') {
+    const v632BaseBarrierPulse = pulseBarrierWallImpact;
+    pulseBarrierWallImpact = function() {
+      const result = v632BaseBarrierPulse.apply(this, arguments);
+      requestAnimationFrame(() => {
+        v632UpdateRepairDangerVisual({animateTransition: true});
+        v632RefreshVisibleNextLinkFromQueuedBlock();
+      });
+      return result;
+    };
+  }
+
+  if (typeof resetBarrierWallStates === 'function') {
+    const v632BaseResetBarrier = resetBarrierWallStates;
+    resetBarrierWallStates = function() {
+      const result = v632BaseResetBarrier.apply(this, arguments);
+      requestAnimationFrame(() => v632UpdateRepairDangerVisual({animateTransition: false}));
+      return result;
+    };
+  }
+
+  if (typeof v418RestoreBarrierStates === 'function') {
+    const v632BaseRestoreBarrier = v418RestoreBarrierStates;
+    v418RestoreBarrierStates = function() {
+      const result = v632BaseRestoreBarrier.apply(this, arguments);
+      requestAnimationFrame(() => v632UpdateRepairDangerVisual({animateTransition: false}));
+      return result;
+    };
+  }
+
+  if (typeof updateLivesDisplay === 'function') {
+    const v632BaseLivesDisplay = updateLivesDisplay;
+    updateLivesDisplay = function() {
+      const result = v632BaseLivesDisplay.apply(this, arguments);
+      v632UpdateRepairDangerVisual({animateTransition: false});
+      return result;
+    };
+  }
+
+  /* ---------- Initial render ---------- */
+  const v632InitialRender = () => {
+    v632UpdateLevelProgress();
+    v632UpdateMissionTeaser();
+    v632UpdateRepairDangerVisual({animateTransition: false});
+    v632RefreshVisibleNextLinkFromQueuedBlock();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      requestAnimationFrame(v632InitialRender);
+    }, {once: true});
+  } else {
+    requestAnimationFrame(v632InitialRender);
+  }
+
+  window.bpV632RefreshUI = v632InitialRender;
+})();
+</script>
+
+
+<!-- v633: HUD hierarchy pass.
+     Preserve the existing 3x4 cell positions and touch targets, but make the middle
+     gameplay column (REPAIRS / SCORE / LEVEL / NEXT SET) wider and more prominent.
+     Utility cells remain fully usable but visually quieter at rest. -->
+<style id="v633-hud-hierarchy-style">
+
+  /* ============================================================
+     1. Keep the same 3 x 4 structure, but privilege gameplay data.
+     ============================================================ */
+  .info-container {
+    grid-template-columns: minmax(0, 30fr) minmax(0, 40fr) minmax(0, 30fr) !important;
+  }
+
+  .info-container > .info-cell {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* ============================================================
+     2. PRIMARY GAMEPLAY COLUMN
+        Repairs / Score / Level / Next Set
+     ============================================================ */
+  #livesDisplay,
+  #scoreDisplay,
+  #extraCell1,
+  #nextBlockDisplay {
+    background: rgba(0, 0, 0, 0.70) !important;
+    border-color: #ef962f !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 226, 128, 0.07),
+      0 0 7px rgba(232, 138, 45, 0.18);
+  }
+
+  /* SCORE: number is the hero, label remains secondary. */
+  #scoreDisplay #scoreValue {
+    font-size: clamp(.94rem, 3.9vw, 1.16rem) !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+    padding-top: 2px !important;
+  }
+
+  #scoreDisplay > div > div:nth-child(2) {
+    font-size: clamp(.66rem, 2.65vw, .80rem) !important;
+    padding-top: 3px !important;
+  }
+
+  /* LEVEL: number + x/8 should read immediately. */
+  #extraCell1 #levelDisplayExtra {
+    font-size: clamp(.96rem, 3.9vw, 1.15rem) !important;
+    line-height: .95 !important;
+    font-weight: 900 !important;
+  }
+
+  #extraCell1 #levelLabel {
+    font-size: clamp(.70rem, 2.7vw, .82rem) !important;
+    font-weight: 900 !important;
+  }
+
+  #extraCell1 #bpmLabel,
+  #extraCell1 #bpmDisplay {
+    font-size: clamp(.56rem, 2.15vw, .68rem) !important;
+  }
+
+  #v632LevelProgressText {
+    font-size: clamp(.44rem, 1.8vw, .56rem) !important;
+    font-weight: 900 !important;
+  }
+
+  #v632LevelSegments {
+    width: min(100%, 72px) !important;
+    gap: 1.5px !important;
+  }
+
+  #v632LevelSegments .v632-level-segment {
+    height: 3.5px !important;
+  }
+
+  /* NEXT SET: use the extra central-column width for a clearer preview. */
+  #nextBlockDisplay > div > div:nth-child(2) {
+    font-size: clamp(.62rem, 2.45vw, .74rem) !important;
+    line-height: 1.02 !important;
+    padding-top: 3px !important;
+  }
+
+  #nextBlockPreview > div {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 4px !important;
+    margin: 1px !important;
+  }
+
+  /* Identity marks inside the enlarged preview. */
+  #nextBlockPreview > div > div {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  /* REPAIRS stays calm when safe; count is easier to scan.
+     v632 danger states still override border/shadow when damaged/open. */
+  #livesDisplay #livesText {
+    font-size: clamp(.98rem, 4vw, 1.16rem) !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2) > div {
+    font-size: clamp(.70rem, 2.7vw, .82rem) !important;
+  }
+
+  #livesDisplay.v632-barrier-damaged,
+  #livesDisplay.v632-barrier-open {
+    /* Preserve v632's context-driven danger emphasis above the normal primary style. */
+    box-shadow: revert-layer;
+  }
+
+  /* ============================================================
+     3. SECONDARY GAMEPLAY RESOURCES
+        Multicolor / Skip / Take a Picture
+        Keep current brightness; just ensure they fit the narrower side column.
+     ============================================================ */
+  #multicolorDisplay,
+  #renewCell,
+  #freePictureDisplay {
+    overflow: hidden;
+  }
+
+  #multicolorDisplay > div,
+  #renewCell > div,
+  #freePictureDisplay > div {
+    min-width: 0;
+  }
+
+  #multicolorDisplay img,
+  #renewCell img,
+  #freePictureDisplay img {
+    min-width: 0;
+  }
+
+  /* ============================================================
+     4. UTILITY / ADMIN CELLS
+        Pause / Shop / Save / Go Home
+        Same size and touch target, lower resting visual weight.
+     ============================================================ */
+  #pauseCell,
+  #shopCell,
+  #saveScoreCell,
+  #dropCell {
+    background: rgba(0, 0, 0, 0.66) !important;
+    border-color: rgba(232, 138, 45, 0.66) !important;
+    box-shadow: none !important;
+  }
+
+  #pauseCell:not(.feature-locked) > *,
+  #shopCell:not(.feature-locked) > *,
+  #saveScoreCell:not(.feature-locked) > *,
+  #dropCell:not(.feature-locked) > * {
+    opacity: .78;
+    transition: opacity 150ms ease, filter 150ms ease;
+  }
+
+  /* On interaction or when tutorial/unlock logic deliberately draws attention,
+     immediately restore full visual strength. */
+  #pauseCell:active > *,
+  #shopCell:active > *,
+  #saveScoreCell:active > *,
+  #dropCell:active > *,
+  #pauseCell.feature-unlock-focus > *,
+  #shopCell.feature-unlock-focus > *,
+  #saveScoreCell.feature-unlock-focus > *,
+  #dropCell.feature-unlock-focus > *,
+  #pauseCell.feature-just-unlocked > *,
+  #shopCell.feature-just-unlocked > *,
+  #saveScoreCell.feature-just-unlocked > *,
+  #dropCell.feature-just-unlocked > *,
+  #saveScoreCell.v551-save-intro-focus > *,
+  #pauseCell.tutorial-info-highlight > *,
+  #shopCell.tutorial-info-highlight > *,
+  #saveScoreCell.tutorial-info-highlight > *,
+  #dropCell.tutorial-info-highlight > * {
+    opacity: 1 !important;
+  }
+
+  #pauseCell:active,
+  #shopCell:active,
+  #saveScoreCell:active,
+  #dropCell:active,
+  #pauseCell.feature-unlock-focus,
+  #shopCell.feature-unlock-focus,
+  #saveScoreCell.feature-unlock-focus,
+  #dropCell.feature-unlock-focus,
+  #pauseCell.feature-just-unlocked,
+  #shopCell.feature-just-unlocked,
+  #saveScoreCell.feature-just-unlocked,
+  #dropCell.feature-just-unlocked,
+  #saveScoreCell.v551-save-intro-focus {
+    border-color: #e88a2d !important;
+  }
+
+  /* ============================================================
+     5. PARTY MISSION is contextual, not permanently quiet.
+        Teaser = slightly restrained; active mission = strong.
+     ============================================================ */
+  #levelDisplay.v632-pre-mission-teaser,
+  #levelDisplay.v632-next-mission-teaser {
+    background: rgba(0, 0, 0, 0.66) !important;
+    border-color: rgba(232, 138, 45, 0.78) !important;
+  }
+
+  #levelDisplay.challenge-active {
+    border-color: #ffe680 !important;
+    box-shadow: 0 0 9px rgba(255, 230, 128, .48) !important;
+  }
+
+  /* ============================================================
+     6. Small-screen safety.
+     Keep the hierarchy, but don't let side-column copy overflow.
+     ============================================================ */
+  @media (max-width: 420px) {
+    .info-container {
+      grid-template-columns: minmax(0, 29fr) minmax(0, 42fr) minmax(0, 29fr) !important;
+    }
+
+    #pauseCell,
+    #shopCell,
+    #saveScoreCell,
+    #dropCell,
+    #multicolorDisplay,
+    #renewCell,
+    #freePictureDisplay {
+      padding-left: 3px !important;
+      padding-right: 3px !important;
+    }
+
+    #scoreDisplay,
+    #livesDisplay,
+    #extraCell1,
+    #nextBlockDisplay {
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+    }
+
+    #nextBlockPreview > div {
+      width: 18px !important;
+      height: 18px !important;
+    }
+  }
+
+</style>
+
+
+<!-- v634: Party Goal spotlight cycle.
+     First real repeating Party Goal starts at level 11; progress is linked visually
+     to the dance floor, 4/5 becomes a stronger ONE MORE state, completion gives a
+     short +100 payoff, cooldown shows five countdown pips, and Party Missions
+     temporarily reduce Party Goal visual priority without stopping its logic. -->
+<style id="v634-party-goal-spotlight-style">
+
+  /* ------------------------------------------------------------
+     First Party Goal at level 11: 1.5s non-blocking spotlight.
+     ------------------------------------------------------------ */
+  body.v634-first-goal-intro-active .button-wrapper > *:not(.v606-party-goal-host) {
+    opacity: .60 !important;
+    transition: opacity 240ms ease !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-first-goal-intro {
+    z-index: 80 !important;
+    overflow: visible !important;
+    animation: v634FirstGoalHost 1500ms cubic-bezier(.18,.88,.26,1) 1 !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-first-goal-intro > .v606-party-goal-panel {
+    box-shadow:
+      inset 0 0 0 1px rgba(255,244,190,.20),
+      0 0 18px rgba(244,198,68,.68) !important;
+  }
+
+  @keyframes v634FirstGoalHost {
+    0%   { transform: scale(1); }
+    16%  { transform: scale(1.16); }
+    73%  { transform: scale(1.16); }
+    100% { transform: scale(1); }
+  }
+
+  #v634GoalAnnouncement {
+    position: fixed;
+    z-index: 2147480000;
+    transform: translate(-50%, -100%);
+    min-width: 150px;
+    max-width: min(78vw, 270px);
+    padding: 7px 11px 6px;
+    border: 1.5px solid #f4c644;
+    border-radius: 10px;
+    background: rgba(22,15,18,.95);
+    box-shadow: 0 0 14px rgba(244,198,68,.44);
+    color: #ffe680;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    text-align: center;
+    line-height: 1.02;
+    pointer-events: none;
+    animation: v634Announcement 1500ms ease both;
+  }
+
+  #v634GoalAnnouncement .v634-ann-main {
+    display: block;
+    font-size: clamp(.78rem, 3vw, .98rem);
+    font-weight: 1000;
+  }
+
+  #v634GoalAnnouncement .v634-ann-sub {
+    display: block;
+    margin-top: 2px;
+    color: #fff4c7;
+    font-size: clamp(.56rem, 2.2vw, .70rem);
+    font-weight: 850;
+  }
+
+  #v634GoalAnnouncement .v634-ann-reward {
+    display: block;
+    margin-top: 2px;
+    color: #50e3c2;
+    font-size: clamp(.52rem, 2vw, .66rem);
+    font-weight: 900;
+  }
+
+  @keyframes v634Announcement {
+    0%   { opacity:0; transform:translate(-50%,-86%) scale(.90); }
+    14%  { opacity:1; transform:translate(-50%,-100%) scale(1); }
+    78%  { opacity:1; transform:translate(-50%,-100%) scale(1); }
+    100% { opacity:0; transform:translate(-50%,-112%) scale(.96); }
+  }
+
+  /* New recipes after cooldown get a smaller, quick event. */
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-new-recipe {
+    animation: v634NewRecipeHost 850ms cubic-bezier(.18,.89,.32,1.20) 1 !important;
+  }
+
+  @keyframes v634NewRecipeHost {
+    0%,100% { transform:scale(1); }
+    36% { transform:scale(1.08); box-shadow:0 0 15px rgba(244,198,68,.60) !important; }
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-dot.v634-recipe-arrive {
+    opacity: 0;
+    animation: v634RecipeDotArrive 430ms cubic-bezier(.18,.89,.32,1.32) forwards !important;
+  }
+
+  @keyframes v634RecipeDotArrive {
+    0%   { opacity:0; transform:scale(.20) rotate(-18deg); filter:brightness(1.8); }
+    65%  { opacity:1; transform:scale(1.28) rotate(4deg); filter:brightness(1.35); }
+    100% { opacity:1; transform:scale(1) rotate(0); filter:brightness(1); }
+  }
+
+  /* ------------------------------------------------------------
+     Progress hit: travel spark + short x/5 matched chip.
+     ------------------------------------------------------------ */
+  .v634-goal-spark {
+    position: fixed;
+    z-index: 2147480001;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    margin-top: -5px;
+    border-radius: 3px;
+    background: var(--v634-spark-color);
+    border: 1px solid rgba(255,255,255,.90);
+    box-shadow: 0 0 9px var(--v634-spark-color);
+    pointer-events: none;
+    animation: v634GoalSparkFly 590ms cubic-bezier(.20,.68,.18,1) forwards;
+  }
+
+  @keyframes v634GoalSparkFly {
+    0% {
+      opacity:0;
+      transform: translate(0,0) scale(.45) rotate(0);
+    }
+    12% { opacity:1; }
+    70% {
+      opacity:1;
+      transform: translate(calc(var(--v634-dx) * .78), calc(var(--v634-dy) * .78)) scale(1.10) rotate(160deg);
+    }
+    100% {
+      opacity:0;
+      transform: translate(var(--v634-dx), var(--v634-dy)) scale(.28) rotate(250deg);
+    }
+  }
+
+  .v634-progress-chip {
+    position: absolute;
+    z-index: 55;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    padding: 1px 5px 0;
+    border-radius: 6px;
+    background: rgba(20,13,16,.92);
+    border: 1px solid rgba(255,224,128,.75);
+    color: #fff2ba;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    font-size: 7px;
+    font-weight: 950;
+    line-height: 1.15;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: v634ProgressChip 720ms ease both;
+  }
+
+  @keyframes v634ProgressChip {
+    0%   { opacity:0; transform:translate(-50%,4px) scale(.82); }
+    18%  { opacity:1; transform:translate(-50%,-2px) scale(1.04); }
+    72%  { opacity:1; transform:translate(-50%,-2px) scale(1); }
+    100% { opacity:0; transform:translate(-50%,-7px) scale(.94); }
+  }
+
+  /* ------------------------------------------------------------
+     4/5: the one remaining requested colour becomes the tension point.
+     ------------------------------------------------------------ */
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-one-left {
+    animation: v634OneLeftHost 1.35s ease-in-out infinite !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host .v619-color-target.v634-last-target {
+    animation: v634LastTarget 1.05s ease-in-out infinite !important;
+    transform-origin: center !important;
+  }
+
+  @keyframes v634OneLeftHost {
+    0%,100% { box-shadow:0 0 7px rgba(232,138,45,.46) !important; }
+    50% { box-shadow:0 0 12px rgba(255,219,103,.80),0 0 20px rgba(232,138,45,.34) !important; }
+  }
+
+  @keyframes v634LastTarget {
+    0%,100% { transform:scale(1); }
+    50% { transform:scale(1.28); box-shadow:0 0 12px var(--v619-goal-color) !important; }
+  }
+
+  /* ------------------------------------------------------------
+     Completion payoff: goal + score acknowledge the +100 together.
+     ------------------------------------------------------------ */
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-complete-payoff {
+    animation: v634CompletePayoff 1150ms cubic-bezier(.18,.88,.26,1) 1 !important;
+  }
+
+  #scoreDisplay.v634-score-goal-payoff {
+    animation: v634ScorePayoff 900ms cubic-bezier(.18,.88,.26,1) 1 !important;
+  }
+
+  @keyframes v634CompletePayoff {
+    0%,100% { transform:scale(1); }
+    24% { transform:scale(1.10); }
+    50% { transform:scale(1.04); }
+  }
+
+  @keyframes v634ScorePayoff {
+    0%,100% { transform:scale(1); }
+    32% { transform:scale(1.09); box-shadow:0 0 14px rgba(80,227,194,.62) !important; }
+  }
+
+  .v634-reward-chip {
+    position:absolute;
+    z-index:60;
+    left:50%;
+    top:2px;
+    transform:translateX(-50%);
+    padding:1px 6px 0;
+    border-radius:6px;
+    background:rgba(17,25,21,.94);
+    border:1px solid #50e3c2;
+    color:#bffbf1;
+    font-family:'Baloo Bhaina 2',sans-serif;
+    font-size:8px;
+    font-weight:1000;
+    line-height:1.2;
+    white-space:nowrap;
+    pointer-events:none;
+    animation:v634RewardChip 1050ms ease both;
+  }
+
+  @keyframes v634RewardChip {
+    0%{opacity:0;transform:translate(-50%,5px) scale(.75)}
+    18%{opacity:1;transform:translate(-50%,-2px) scale(1.08)}
+    72%{opacity:1;transform:translate(-50%,-2px) scale(1)}
+    100%{opacity:0;transform:translate(-50%,-10px) scale(.92)}
+  }
+
+  /* ------------------------------------------------------------
+     Cooldown = visible 5 → 4 → 3 → 2 → 1 set anticipation.
+     ------------------------------------------------------------ */
+  .button-wrapper .reset-btn.v606-party-goal-host .v634-cooldown-dot {
+    width: 10px !important;
+    height: 10px !important;
+    min-width: 10px !important;
+    border-radius: 50%;
+    border: 1.4px solid rgba(244,198,68,.62);
+    box-sizing: border-box;
+    flex: 0 0 auto;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host .v634-cooldown-dot.remaining {
+    background: #e88a2d;
+    border-color: #ffc868;
+    box-shadow: 0 0 5px rgba(232,138,45,.52);
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host .v634-cooldown-dot.passed {
+    background: rgba(35,23,22,.65);
+    border-color: rgba(244,198,68,.26);
+    box-shadow: none;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-cooldown-tick {
+    animation: v634CooldownTick 300ms ease-out 1 !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-cooldown-last .v606-party-goal-label,
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-cooldown-last .v606-party-goal-sub {
+    color:#ffe680 !important;
+    text-shadow:0 0 6px rgba(244,198,68,.48);
+  }
+
+  @keyframes v634CooldownTick {
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.035)}
+  }
+
+  /* ------------------------------------------------------------
+     Party Mission owns the foreground while active.
+     Party Goal keeps running, but becomes visually secondary.
+     ------------------------------------------------------------ */
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-mission-muted {
+    opacity: .68 !important;
+    filter: saturate(.72) brightness(.92);
+    box-shadow: 0 0 3px rgba(232,138,45,.24) !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-mission-muted .v614-party-goal-confetti {
+    display:none !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-mission-muted.v606-goal-hit,
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-mission-muted.v614-one-more,
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-mission-muted.v634-one-left {
+    animation:none !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v634-mission-muted .v619-color-target.v634-last-target {
+    animation:none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .button-wrapper .reset-btn.v606-party-goal-host.v634-first-goal-intro,
+    .button-wrapper .reset-btn.v606-party-goal-host.v634-new-recipe,
+    .button-wrapper .reset-btn.v606-party-goal-host.v634-one-left,
+    .button-wrapper .reset-btn.v606-party-goal-host.v634-complete-payoff,
+    .button-wrapper .reset-btn.v606-party-goal-host .v619-color-target.v634-last-target,
+    .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-dot.v634-recipe-arrive,
+    #scoreDisplay.v634-score-goal-payoff,
+    .v634-goal-spark,
+    #v634GoalAnnouncement,
+    .v634-progress-chip,
+    .v634-reward-chip {
+      animation:none !important;
+    }
+  }
+</style>
+
+<script id="v634-party-goal-spotlight-runtime">
+(() => {
+  'use strict';
+
+  const FIRST_INTRO_KEY = 'v634FirstPostGoalIntroSeen';
+  let lastCooldownRemaining = null;
+  let lastMissionState = null;
+
+  function missionActive() {
+    try {
+      return typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function goalHosts() {
+    return Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+  }
+
+  function visibleGoalHost() {
+    return goalHosts().find(host => {
+      const rect = host.getBoundingClientRect();
+      const style = getComputedStyle(host);
+      return rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+    }) || goalHosts()[0] || null;
+  }
+
+  function goalDots(host = visibleGoalHost()) {
+    return host ? Array.from(host.querySelectorAll('.v606-party-goal-dots > span')) : [];
+  }
+
+  function clearTransientHostClasses(host) {
+    if (!host) return;
+    host.classList.remove(
+      'v634-first-goal-intro',
+      'v634-new-recipe',
+      'v634-complete-payoff',
+      'v634-cooldown-tick'
+    );
+  }
+
+  function staggerRecipeDots(host, firstIntro) {
+    if (!host) return;
+    const dots = goalDots(host).filter(dot => dot.classList.contains('v619-color-target'));
+    dots.forEach((dot, index) => {
+      dot.classList.remove('v634-recipe-arrive');
+      dot.style.animationDelay = `${(firstIntro ? 240 : 70) + index * (firstIntro ? 145 : 85)}ms`;
+      void dot.offsetWidth;
+      dot.classList.add('v634-recipe-arrive');
+      setTimeout(() => {
+        dot.classList.remove('v634-recipe-arrive');
+        dot.style.removeProperty('animation-delay');
+      }, (firstIntro ? 1050 : 650) + index * 110);
+    });
+  }
+
+  function showFirstAnnouncement(host) {
+    if (!host) return;
+
+    const old = document.getElementById('v634GoalAnnouncement');
+    if (old) old.remove();
+
+    const rect = host.getBoundingClientRect();
+    const ann = document.createElement('div');
+    ann.id = 'v634GoalAnnouncement';
+    ann.innerHTML =
+      '<span class="v634-ann-main">NEW PARTY GOAL</span>' +
+      '<span class="v634-ann-sub">MATCH THESE 5 COLORS</span>' +
+      '<span class="v634-ann-reward">+100 POINTS</span>';
+
+    ann.style.left = `${Math.max(90, Math.min(innerWidth - 90, rect.left + rect.width / 2))}px`;
+    ann.style.top = `${Math.max(88, rect.top - 7)}px`;
+    document.body.appendChild(ann);
+    setTimeout(() => ann.remove(), 1550);
+  }
+
+  function runGoalStart(firstIntro) {
+    const muted = missionActive();
+
+    goalHosts().forEach(host => {
+      clearTransientHostClasses(host);
+      host.classList.remove('v634-one-left');
+      host.querySelectorAll('.v634-last-target').forEach(dot => dot.classList.remove('v634-last-target'));
+    });
+
+    const host = visibleGoalHost();
+    if (!host) return;
+
+    staggerRecipeDots(host, firstIntro);
+
+    if (muted) return;
+
+    if (firstIntro) {
+      document.body.classList.add('v634-first-goal-intro-active');
+      host.classList.add('v634-first-goal-intro');
+      showFirstAnnouncement(host);
+
+      setTimeout(() => {
+        document.body.classList.remove('v634-first-goal-intro-active');
+        host.classList.remove('v634-first-goal-intro');
+      }, 1520);
+    } else {
+      host.classList.add('v634-new-recipe');
+      const label = host.querySelector('.v606-party-goal-label');
+      if (label) {
+        const original = label.textContent;
+        label.textContent = 'NEW GOAL!';
+        setTimeout(() => {
+          if (label.textContent === 'NEW GOAL!') label.textContent = original || 'PARTY GOAL';
+        }, 720);
+      }
+      setTimeout(() => host.classList.remove('v634-new-recipe'), 900);
+    }
+  }
+
+  function canvasOrigin() {
+    const canvas =
+      document.getElementById('gameCanvas') ||
+      document.querySelector('canvas');
+    if (!canvas) return { x: innerWidth / 2, y: innerHeight / 2 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+  }
+
+  function flyProgressSpark(color, targetIndex) {
+    const host = visibleGoalHost();
+    if (!host) return;
+    const dots = goalDots(host);
+    const target = dots[targetIndex] || dots.find(dot => !dot.classList.contains('done'));
+    if (!target) return;
+
+    const start = canvasOrigin();
+    const rect = target.getBoundingClientRect();
+    const end = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+
+    const spark = document.createElement('div');
+    spark.className = 'v634-goal-spark';
+    spark.style.left = `${start.x}px`;
+    spark.style.top = `${start.y}px`;
+    spark.style.setProperty('--v634-spark-color', String(color || '#f4c644'));
+    spark.style.setProperty('--v634-dx', `${end.x - start.x}px`);
+    spark.style.setProperty('--v634-dy', `${end.y - start.y}px`);
+    document.body.appendChild(spark);
+    setTimeout(() => spark.remove(), 650);
+  }
+
+  function showProgressChip(host, current, total) {
+    if (!host) return;
+    host.querySelectorAll('.v634-progress-chip').forEach(node => node.remove());
+    const chip = document.createElement('div');
+    chip.className = 'v634-progress-chip';
+    chip.textContent = `${current}/${total} MATCHED`;
+    host.appendChild(chip);
+    setTimeout(() => chip.remove(), 760);
+  }
+
+  function syncOneLeft(current, total) {
+    const oneLeft = current === total - 1;
+    goalHosts().forEach(host => {
+      host.classList.toggle('v634-one-left', oneLeft && !missionActive());
+      host.querySelectorAll('.v634-last-target').forEach(dot => dot.classList.remove('v634-last-target'));
+      if (oneLeft) {
+        const remaining = host.querySelector('.v619-color-target:not(.done)');
+        if (remaining) remaining.classList.add('v634-last-target');
+      }
+    });
+  }
+
+  function runProgress(payload) {
+    const current = Number(payload.current) || 0;
+    const total = Number(payload.total) || 5;
+
+    syncOneLeft(current, total);
+
+    if (missionActive()) return;
+
+    const host = visibleGoalHost();
+    if (!host) return;
+
+    flyProgressSpark(payload.color, payload.targetIndex);
+    setTimeout(() => showProgressChip(host, current, total), 390);
+  }
+
+  function runComplete(payload) {
+    syncOneLeft(5, 5);
+    if (payload && payload.muted) return;
+
+    const host = visibleGoalHost();
+    if (host) {
+      host.classList.remove('v634-one-left');
+      host.classList.add('v634-complete-payoff');
+
+      const chip = document.createElement('div');
+      chip.className = 'v634-reward-chip';
+      chip.textContent = `+${Number(payload && payload.reward) || 100}`;
+      host.appendChild(chip);
+
+      setTimeout(() => {
+        host.classList.remove('v634-complete-payoff');
+        chip.remove();
+      }, 1200);
+    }
+
+    const scoreCell = document.getElementById('scoreDisplay');
+    if (scoreCell) {
+      scoreCell.classList.remove('v634-score-goal-payoff');
+      void scoreCell.offsetWidth;
+      scoreCell.classList.add('v634-score-goal-payoff');
+      setTimeout(() => scoreCell.classList.remove('v634-score-goal-payoff'), 950);
+    }
+  }
+
+  function runCooldown(payload) {
+    const remaining = Math.max(0, Number(payload.remaining) || 0);
+    if (lastCooldownRemaining === remaining) return;
+    lastCooldownRemaining = remaining;
+
+    goalHosts().forEach(host => {
+      host.classList.remove('v634-one-left');
+      host.querySelectorAll('.v634-last-target').forEach(dot => dot.classList.remove('v634-last-target'));
+    });
+
+    if (missionActive()) return;
+
+    const host = visibleGoalHost();
+    if (!host) return;
+    host.classList.remove('v634-cooldown-tick');
+    void host.offsetWidth;
+    host.classList.add('v634-cooldown-tick');
+    setTimeout(() => host.classList.remove('v634-cooldown-tick'), 330);
+  }
+
+  function syncMissionPriority() {
+    const active = missionActive();
+    if (active === lastMissionState) return;
+    lastMissionState = active;
+
+    goalHosts().forEach(host => {
+      host.classList.toggle('v634-mission-muted', active);
+      if (active) {
+        host.classList.remove(
+          'v634-first-goal-intro',
+          'v634-new-recipe',
+          'v634-complete-payoff',
+          'v634-one-left'
+        );
+        host.querySelectorAll('.v634-last-target').forEach(dot => dot.classList.remove('v634-last-target'));
+      }
+    });
+
+    if (active) document.body.classList.remove('v634-first-goal-intro-active');
+  }
+
+  window.bpPartyGoalV634 = {
+    onStart(payload) {
+      syncMissionPriority();
+
+      const firstIntroAlreadySeen = localStorage.getItem(FIRST_INTRO_KEY) === 'true';
+      const firstIntro =
+        !firstIntroAlreadySeen &&
+        Number(payload && payload.level) === 11;
+
+      if (firstIntro) {
+        localStorage.setItem(FIRST_INTRO_KEY, 'true');
+      }
+
+      runGoalStart(firstIntro);
+    },
+
+    onProgress(payload) {
+      syncMissionPriority();
+      runProgress(payload || {});
+    },
+
+    onComplete(payload) {
+      syncMissionPriority();
+      runComplete(payload || {});
+    },
+
+    onCooldown(payload) {
+      syncMissionPriority();
+      runCooldown(payload || {});
+    },
+
+    refresh() {
+      syncMissionPriority();
+    }
+  };
+
+  /* New Party/new onboarding run may show the level-11 introduction once again.
+     Resume does not clear it. */
+  if (typeof startFreshPartyAtLevel11 === 'function') {
+    const v634BaseFreshParty = startFreshPartyAtLevel11;
+    startFreshPartyAtLevel11 = function() {
+      try { localStorage.removeItem(FIRST_INTRO_KEY); } catch (_) {}
+      return v634BaseFreshParty.apply(this, arguments);
+    };
+  }
+
+  if (typeof startTutorialFromBeginning === 'function') {
+    const v634BaseFreshTutorial = startTutorialFromBeginning;
+    startTutorialFromBeginning = function() {
+      try { localStorage.removeItem(FIRST_INTRO_KEY); } catch (_) {}
+      return v634BaseFreshTutorial.apply(this, arguments);
+    };
+  }
+
+  /* Mission state can change through several challenge-specific paths.
+     A low-cost state-only watcher keeps the visual hierarchy correct. */
+  setInterval(syncMissionPriority, 400);
+  requestAnimationFrame(syncMissionPriority);
+})();
+</script>
+
+
+<!-- v635:
+     - The 4 primary middle HUD tiles (Repairs / Score / Level / Next Set) become a 2x2 block
+       of larger square-like tiles instead of one vertical column of 4 long rows.
+     - Remove the special Next Set annotation/highlight when the next colour matches Party Goal.
+     - Add a robust Party Goal start announcer that watches the real HUD state transition,
+       so the first level-11 start and later post-cooldown restarts are always announced. -->
+<style id="v635-middle-squares-and-party-goal-start-style">
+
+  /* ============================================================
+     1) Top HUD layout: 4 core tiles in a 2x2 middle block
+     ============================================================ */
+  .info-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(4, 4vh) !important;
+    height: 24vh !important;
+  }
+
+  /* Side columns stay 4-high */
+  #multicolorDisplay { grid-column: 1; grid-row: 1; }
+  #renewCell         { grid-column: 1; grid-row: 2; }
+  #freePictureDisplay{ grid-column: 1; grid-row: 3; }
+  #saveScoreCell     { grid-column: 1; grid-row: 4; }
+
+  #pauseCell         { grid-column: 4; grid-row: 1; }
+  #shopCell          { grid-column: 4; grid-row: 2; }
+  #levelDisplay      { grid-column: 4; grid-row: 3; }
+  #dropCell          { grid-column: 4; grid-row: 4; }
+
+  /* Middle priority block = 2 x 2 */
+  #livesDisplay      { grid-column: 2; grid-row: 1 / span 2; }
+  #scoreDisplay      { grid-column: 3; grid-row: 1 / span 2; }
+  #extraCell1        { grid-column: 2; grid-row: 3 / span 2; }
+  #nextBlockDisplay  { grid-column: 3; grid-row: 3 / span 2; }
+
+  /* Let the 4 priority cells breathe like squares */
+  #livesDisplay,
+  #scoreDisplay,
+  #extraCell1,
+  #nextBlockDisplay {
+    min-height: 0 !important;
+    padding: 5px !important;
+  }
+
+  /* ---------- Repairs / Score / Next Set: vertical tile composition ---------- */
+  #livesDisplay > div,
+  #scoreDisplay > div,
+  #nextBlockDisplay > div {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+  }
+
+  #livesDisplay > div > img,
+  #scoreDisplay > div > img,
+  #nextBlockDisplay > div > img {
+    width: min(34%, 34px) !important;
+    height: auto !important;
+    object-fit: contain !important;
+    margin-bottom: 1px !important;
+  }
+
+  #livesDisplay > div > div:nth-child(2),
+  #scoreDisplay > div > div:nth-child(2),
+  #nextBlockDisplay > div > div:nth-child(2) {
+    width: auto !important;
+    padding-top: 0 !important;
+    font-size: clamp(.62rem, 2.4vw, .78rem) !important;
+    line-height: 1.02 !important;
+  }
+
+  #livesText,
+  #scoreValue {
+    width: auto !important;
+    padding-top: 0 !important;
+    font-size: clamp(1.10rem, 4.2vw, 1.42rem) !important;
+    line-height: 1 !important;
+  }
+
+  #nextBlockPreview {
+    width: auto !important;
+    min-height: 24px !important;
+    padding-top: 0 !important;
+    gap: 2px !important;
+  }
+
+  /* ---------- Level: own square layout ---------- */
+  #extraCell1 > div {
+    width: 100% !important;
+    height: 100% !important;
+    display: grid !important;
+    grid-template-rows: auto auto auto auto !important;
+    justify-items: center !important;
+    align-items: center !important;
+    gap: 1px !important;
+    padding: 2px 0 !important;
+  }
+
+  #extraCell1 > div > img {
+    width: min(34%, 34px) !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  #levelStatusLabels,
+  #levelStatusValues {
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    gap: 1px !important;
+  }
+
+  #levelStatusLabels {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #levelStatusValues {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #levelLabel {
+    font-size: clamp(.66rem, 2.5vw, .80rem) !important;
+    line-height: 1 !important;
+  }
+
+  #levelDisplayExtra {
+    font-size: clamp(1.12rem, 4.2vw, 1.40rem) !important;
+    line-height: 1 !important;
+  }
+
+  #bpmLabel,
+  #bpmDisplay {
+    font-size: clamp(.50rem, 1.9vw, .62rem) !important;
+    line-height: 1 !important;
+  }
+
+  #v632LevelProgress {
+    margin-top: 1px !important;
+    gap: 1px !important;
+  }
+
+  #v632LevelProgressText {
+    font-size: clamp(.42rem, 1.7vw, .54rem) !important;
+  }
+
+  #v632LevelSegments {
+    width: min(100%, 64px) !important;
+  }
+
+  /* ---------- Side cells: keep readable inside 1-column width ---------- */
+  #pauseCell,
+  #shopCell,
+  #dropCell,
+  #saveScoreCell,
+  #multicolorDisplay,
+  #renewCell,
+  #freePictureDisplay,
+  #levelDisplay {
+    min-width: 0 !important;
+  }
+
+  #levelDisplay #challengeInfoText {
+    font-size: clamp(.50rem, 1.95vw, .62rem) !important;
+    line-height: 1.02 !important;
+    width: 56% !important;
+  }
+
+  #levelDisplay #levelImage {
+    width: 44% !important;
+  }
+
+  /* Small screen safety */
+  @media (max-width: 420px) {
+    #livesDisplay > div > img,
+    #scoreDisplay > div > img,
+    #nextBlockDisplay > div > img,
+    #extraCell1 > div > img {
+      width: min(30%, 30px) !important;
+    }
+
+    #nextBlockPreview > div {
+      width: 18px !important;
+      height: 18px !important;
+    }
+  }
+
+  /* ============================================================
+     2) Remove special Next Set annotation when matching Party Goal
+     ============================================================ */
+  #nextBlockDisplay.v632-goal-match,
+  #nextBlockDisplay.v632-goal-match #nextBlockPreview,
+  #nextBlockDisplay.v632-goal-match #nextBlockPreview::after,
+  .v606-party-goal-dot.v619-color-target.v632-next-set-target {
+    animation: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  #nextBlockDisplay.v632-goal-match #nextBlockPreview::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  /* ============================================================
+     3) Robust Party Goal start announcer
+     ============================================================ */
+  body.v635-party-goal-announcing .button-wrapper > *:not(.v606-party-goal-host) {
+    opacity: .62 !important;
+    transition: opacity 200ms ease !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v635-party-goal-announce {
+    z-index: 85 !important;
+    overflow: visible !important;
+    animation: v635GoalHostAnnounce 1100ms cubic-bezier(.18,.88,.28,1) 1 !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,245,190,.16),
+      0 0 16px rgba(244,198,68,.58) !important;
+  }
+
+  @keyframes v635GoalHostAnnounce {
+    0%   { transform: scale(1); }
+    28%  { transform: scale(1.12); }
+    78%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  #v635GoalAnnouncement {
+    position: fixed;
+    z-index: 2147480002;
+    transform: translate(-50%, -100%);
+    min-width: 150px;
+    max-width: min(80vw, 270px);
+    padding: 7px 11px 6px;
+    border: 1.5px solid #f4c644;
+    border-radius: 10px;
+    background: rgba(22,15,18,.95);
+    box-shadow: 0 0 14px rgba(244,198,68,.44);
+    color: #ffe680;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    text-align: center;
+    line-height: 1.02;
+    pointer-events: none;
+    animation: v635GoalAnnouncement 1250ms ease both;
+  }
+
+  #v635GoalAnnouncement .v635-main {
+    display: block;
+    font-size: clamp(.78rem, 3vw, .98rem);
+    font-weight: 1000;
+  }
+
+  #v635GoalAnnouncement .v635-sub {
+    display: block;
+    margin-top: 2px;
+    color: #fff4c7;
+    font-size: clamp(.56rem, 2.2vw, .70rem);
+    font-weight: 850;
+  }
+
+  #v635GoalAnnouncement .v635-reward {
+    display: block;
+    margin-top: 2px;
+    color: #50e3c2;
+    font-size: clamp(.52rem, 2vw, .66rem);
+    font-weight: 900;
+  }
+
+  @keyframes v635GoalAnnouncement {
+    0%   { opacity:0; transform:translate(-50%,-86%) scale(.90); }
+    14%  { opacity:1; transform:translate(-50%,-100%) scale(1); }
+    78%  { opacity:1; transform:translate(-50%,-100%) scale(1); }
+    100% { opacity:0; transform:translate(-50%,-112%) scale(.96); }
+  }
+</style>
+
+<script id="v635-middle-squares-and-party-goal-start-runtime">
+(() => {
+  'use strict';
+
+  /* ---------- Remove Next Set Party Goal annotation/highlight ---------- */
+  function clearNextSetGoalAnnotation() {
+    const nextSetCell = document.getElementById('nextBlockDisplay');
+    if (nextSetCell) {
+      nextSetCell.classList.remove('v632-goal-match');
+      nextSetCell.style.removeProperty('--v632-match-color');
+    }
+    document.querySelectorAll('.v632-next-set-target').forEach(node => {
+      node.classList.remove('v632-next-set-target');
+    });
+  }
+
+  if (typeof updateNextBlockDisplay === 'function') {
+    const v635BaseUpdateNextBlockDisplay = updateNextBlockDisplay;
+    updateNextBlockDisplay = function() {
+      const result = v635BaseUpdateNextBlockDisplay.apply(this, arguments);
+      requestAnimationFrame(clearNextSetGoalAnnotation);
+      return result;
+    };
+  }
+
+  /* In case older v632/v634 refresh logic still adds it later. */
+  setInterval(clearNextSetGoalAnnotation, 450);
+  requestAnimationFrame(clearNextSetGoalAnnotation);
+
+  /* ---------- Robust Party Goal start announcement ---------- */
+  let lastMode = null;
+  let lastLevel = null;
+  let initialized = false;
+  let firstAnnouncementShown = false;
+
+  function safeLevelValue() {
+    try { return Number(level) || 0; } catch (_) { return 0; }
+  }
+
+  function visibleGoalHost() {
+    const hosts = Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+    return hosts.find(host => {
+      const rect = host.getBoundingClientRect();
+      const style = getComputedStyle(host);
+      return rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+    }) || hosts[0] || null;
+  }
+
+  function missionActive() {
+    try {
+      return typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function goalMode(host) {
+    if (!host) return 'hidden';
+    const panel = host.querySelector('.v606-party-goal-panel');
+    const label = host.querySelector('.v606-party-goal-label');
+    const sub = host.querySelector('.v606-party-goal-sub');
+    const total = Number(panel?.dataset?.total || 0);
+    const labelText = String(label?.textContent || '').trim().toUpperCase();
+    const subText = String(sub?.textContent || '').trim().toUpperCase();
+
+    if (subText === 'SOON') return 'soon';
+    if (labelText === 'NEXT PARTY GOAL') return 'cooldown';
+    if (total >= 5 || labelText === 'PARTY GOAL' || labelText === 'ONE MORE!' || labelText === 'GOAL COMPLETE!') {
+      return 'active';
+    }
+    return 'hidden';
+  }
+
+  function removeAnnouncement() {
+    document.body.classList.remove('v635-party-goal-announcing');
+    document.querySelectorAll('.v635-party-goal-announce').forEach(node => {
+      node.classList.remove('v635-party-goal-announce');
+    });
+    document.getElementById('v635GoalAnnouncement')?.remove();
+  }
+
+  function showAnnouncement(host, isFirst) {
+    if (!host || missionActive()) return;
+    removeAnnouncement();
+
+    const rect = host.getBoundingClientRect();
+    const bubble = document.createElement('div');
+    bubble.id = 'v635GoalAnnouncement';
+    bubble.innerHTML = isFirst
+      ? '<span class="v635-main">NEW PARTY GOAL</span><span class="v635-sub">MATCH THESE 5 COLORS</span><span class="v635-reward">+100 POINTS</span>'
+      : '<span class="v635-main">NEW GOAL!</span><span class="v635-sub">MATCH THESE 5 COLORS</span><span class="v635-reward">+100 POINTS</span>';
+
+    bubble.style.left = `${Math.max(90, Math.min(innerWidth - 90, rect.left + rect.width / 2))}px`;
+    bubble.style.top = `${Math.max(88, rect.top - 8)}px`;
+    document.body.appendChild(bubble);
+
+    document.body.classList.add('v635-party-goal-announcing');
+    host.classList.add('v635-party-goal-announce');
+
+    setTimeout(removeAnnouncement, 1280);
+  }
+
+  function watchPartyGoalStart() {
+    const host = visibleGoalHost();
+    const levelNow = safeLevelValue();
+    const modeNow = goalMode(host);
+
+    if (!initialized) {
+      initialized = true;
+      lastMode = modeNow;
+      lastLevel = levelNow;
+      firstAnnouncementShown = modeNow === 'active';
+      return;
+    }
+
+    if (modeNow === 'active' && lastMode !== 'active' && levelNow >= 11) {
+      showAnnouncement(host, !firstAnnouncementShown);
+      firstAnnouncementShown = true;
+    }
+
+    /* If the player sits on level 11 and a fresh active Party Goal is already visible
+       but no announcement has happened on this page yet, trigger once. */
+    if (!firstAnnouncementShown && modeNow === 'active' && levelNow === 11) {
+      showAnnouncement(host, true);
+      firstAnnouncementShown = true;
+    }
+
+    lastMode = modeNow;
+    lastLevel = levelNow;
+  }
+
+  /* New player / fresh restart should allow the first Party Goal announcement again. */
+  function resetFirstAnnouncementFlag() {
+    firstAnnouncementShown = false;
+    lastMode = null;
+    lastLevel = null;
+    initialized = false;
+  }
+
+  if (typeof startFreshPartyAtLevel11 === 'function') {
+    const v635BaseFreshParty = startFreshPartyAtLevel11;
+    startFreshPartyAtLevel11 = function() {
+      resetFirstAnnouncementFlag();
+      return v635BaseFreshParty.apply(this, arguments);
+    };
+  }
+
+  if (typeof startTutorialFromBeginning === 'function') {
+    const v635BaseFreshTutorial = startTutorialFromBeginning;
+    startTutorialFromBeginning = function() {
+      resetFirstAnnouncementFlag();
+      return v635BaseFreshTutorial.apply(this, arguments);
+    };
+  }
+
+  setInterval(watchPartyGoalStart, 220);
+  requestAnimationFrame(watchPartyGoalStart);
+})();
+</script>
+
+
+<!-- v636: when a completed tutorial player starts directly at level 11,
+     the repeating Party Goal does not begin immediately. The first Party Goal
+     now starts only after 5 set starts have passed. -->
+
+
+<!-- v637:
+     - Show NEW PARTY GOAL / NEW GOAL in the same toast zone as other game texts.
+     - Use a festive toast frame.
+     - Suppress the separate v635 floating Party Goal bubble.
+     - Keep the score/repairs/level/next-set figures intact. -->
+<style id="v637-party-goal-toast-style">
+  /* Hide the standalone v635 floating bubble; use the normal toast area instead. */
+  #v635GoalAnnouncement {
+    display: none !important;
+  }
+
+  /* Neutralise the old dimming/highlight tied to that bubble. */
+  body.v635-party-goal-announcing .button-wrapper > *:not(.v606-party-goal-host) {
+    opacity: 1 !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v635-party-goal-announce {
+    animation: none !important;
+  }
+
+  /* Festive frame for Party Goal start messages in the regular toast location. */
+  #v468OnboardingToast.v637-party-goal-toast {
+    background:
+      radial-gradient(circle at 18% 20%, rgba(255,255,255,.10), transparent 22%),
+      radial-gradient(circle at 82% 24%, rgba(255,255,255,.08), transparent 18%),
+      linear-gradient(180deg, rgba(38,18,28,.96), rgba(12,14,30,.95)) !important;
+    border: 2px solid rgba(244,198,68,.95) !important;
+    box-shadow:
+      0 0 0 2px rgba(255,230,128,.12) inset,
+      0 0 18px rgba(244,198,68,.35),
+      0 8px 28px rgba(0,0,0,.42) !important;
+    border-radius: 18px !important;
+    overflow: hidden;
+  }
+
+  #v468OnboardingToast.v637-party-goal-toast::before,
+  #v468OnboardingToast.v637-party-goal-toast::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  #v468OnboardingToast.v637-party-goal-toast::before {
+    background:
+      radial-gradient(circle at 12% 30%, rgba(80,227,194,.55) 0 2px, transparent 3px),
+      radial-gradient(circle at 24% 68%, rgba(233,57,53,.55) 0 2px, transparent 3px),
+      radial-gradient(circle at 50% 16%, rgba(155,81,224,.50) 0 2px, transparent 3px),
+      radial-gradient(circle at 74% 68%, rgba(74,144,226,.55) 0 2px, transparent 3px),
+      radial-gradient(circle at 90% 26%, rgba(244,198,68,.65) 0 2px, transparent 3px);
+    opacity: .9;
+  }
+
+  #v468OnboardingToast.v637-party-goal-toast::after {
+    inset: 4px;
+    border-radius: 12px;
+    border: 1px dashed rgba(255,230,128,.34);
+  }
+</style>
+
+<script id="v637-party-goal-toast-runtime">
+(() => {
+  'use strict';
+
+  let lastMode = null;
+  let initialized = false;
+  let firstToastShown = false;
+  let toastCleanupTimer = null;
+
+  function safeLevelValue() {
+    try { return Number(level) || 0; } catch (_) { return 0; }
+  }
+
+  function missionActive() {
+    try {
+      return typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function visibleGoalHost() {
+    const hosts = Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+    return hosts.find(host => {
+      const rect = host.getBoundingClientRect();
+      const style = getComputedStyle(host);
+      return rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+    }) || hosts[0] || null;
+  }
+
+  function goalMode(host) {
+    if (!host) return 'hidden';
+    const panel = host.querySelector('.v606-party-goal-panel');
+    const label = host.querySelector('.v606-party-goal-label');
+    const sub = host.querySelector('.v606-party-goal-sub');
+    const total = Number(panel?.dataset?.total || 0);
+    const labelText = String(label?.textContent || '').trim().toUpperCase();
+    const subText = String(sub?.textContent || '').trim().toUpperCase();
+
+    if (subText === 'SOON' || subText.startsWith('STARTS IN')) return 'pending';
+    if (labelText === 'NEXT PARTY GOAL') return 'cooldown';
+    if (total >= 5 || labelText === 'PARTY GOAL' || labelText === 'ONE MORE!' || labelText === 'GOAL COMPLETE!') {
+      return 'active';
+    }
+    return 'hidden';
+  }
+
+  function suppressOldBubble() {
+    document.body.classList.remove('v635-party-goal-announcing');
+    document.querySelectorAll('.v635-party-goal-announce').forEach(node => node.classList.remove('v635-party-goal-announce'));
+    document.getElementById('v635GoalAnnouncement')?.remove();
+  }
+
+  function showPartyGoalToast(isFirst) {
+    if (missionActive()) return;
+    if (typeof v468Toast !== 'function' || typeof v468EnsureToast !== 'function') return;
+
+    suppressOldBubble();
+    v468Toast(
+      isFirst ? 'NEW PARTY GOAL' : 'NEW GOAL!',
+      'MATCH THESE 5 COLORS\n+100 POINTS',
+      1450
+    );
+
+    const toast = v468EnsureToast();
+    if (!toast) return;
+    toast.classList.add('v637-party-goal-toast');
+    if (toastCleanupTimer) clearTimeout(toastCleanupTimer);
+    toastCleanupTimer = setTimeout(() => {
+      toast.classList.remove('v637-party-goal-toast');
+      toastCleanupTimer = null;
+    }, 1550);
+  }
+
+  function watchGoalToast() {
+    suppressOldBubble();
+    const host = visibleGoalHost();
+    const modeNow = goalMode(host);
+    const levelNow = safeLevelValue();
+
+    if (!initialized) {
+      initialized = true;
+      lastMode = modeNow;
+      firstToastShown = modeNow === 'active';
+      return;
+    }
+
+    if (modeNow === 'active' && lastMode !== 'active' && levelNow >= 11) {
+      showPartyGoalToast(!firstToastShown);
+      firstToastShown = true;
+    }
+
+    lastMode = modeNow;
+  }
+
+  function resetToastWatcher() {
+    lastMode = null;
+    initialized = false;
+    firstToastShown = false;
+    suppressOldBubble();
+  }
+
+  if (typeof startFreshPartyAtLevel11 === 'function') {
+    const baseStartFreshPartyAtLevel11 = startFreshPartyAtLevel11;
+    startFreshPartyAtLevel11 = function() {
+      resetToastWatcher();
+      return baseStartFreshPartyAtLevel11.apply(this, arguments);
+    };
+  }
+
+  if (typeof startTutorialFromBeginning === 'function') {
+    const baseStartTutorialFromBeginning = startTutorialFromBeginning;
+    startTutorialFromBeginning = function() {
+      resetToastWatcher();
+      return baseStartTutorialFromBeginning.apply(this, arguments);
+    };
+  }
+
+  setInterval(watchGoalToast, 220);
+  requestAnimationFrame(watchGoalToast);
+})();
+</script>
+
+
+<!-- v638:
+     - Party Goal toast now shows the 5 target colours as bubbles.
+     - The toast stays 1.5x longer and pauses the game while visible.
+     - The level-11 pre-start countdown no longer uses 5 orange balls; it uses 5 party-themed items. -->
+<style id="v638-party-goal-bubbles-and-countdown-style">
+  #v468OnboardingToast.v638-party-goal-toast {
+    position: fixed;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast .v638-toast-title {
+    font-size: 1em;
+    font-weight: 900;
+    line-height: 1.04;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast .v638-toast-sub {
+    margin-top: 4px;
+    font-size: .72em;
+    font-weight: 700;
+    opacity: .97;
+    line-height: 1.08;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast .v638-toast-colors {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 9px;
+    min-height: 20px;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast .v638-color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.6px solid rgba(255,255,255,.92);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,.34) inset,
+      0 0 8px color-mix(in srgb, var(--v638-dot-color) 76%, white 24%);
+    background: var(--v638-dot-color);
+    flex: 0 0 auto;
+  }
+
+  /* Pending countdown: 5 party-themed items instead of orange balls. */
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v606-party-goal-dots {
+    gap: 6px !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v634-cooldown-dot,
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: 10px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.remaining {
+    background: linear-gradient(180deg, rgba(47,25,34,.96), rgba(19,16,31,.96));
+    border: 1.4px solid #f4c644;
+    color: #fff1b8;
+    box-shadow: 0 0 7px rgba(244,198,68,.38);
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.passed {
+    background: rgba(28,22,28,.60);
+    border: 1.2px solid rgba(244,198,68,.24);
+    color: rgba(255,230,128,.42);
+    box-shadow: none;
+  }
+</style>
+
+<script id="v638-party-goal-bubbles-and-countdown-runtime">
+(() => {
+  'use strict';
+
+  let v638PartyToastTimer = null;
+  let v638PausedByToast = false;
+  let v638PreviousGamePaused = false;
+
+  function visibleGoalHost() {
+    const hosts = Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+    return hosts.find(host => {
+      const rect = host.getBoundingClientRect();
+      const style = getComputedStyle(host);
+      return rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+    }) || hosts[0] || null;
+  }
+
+  function getCurrentPartyGoalColors() {
+    const host = visibleGoalHost();
+    if (!host) return [];
+    const dots = Array.from(host.querySelectorAll('.v606-party-goal-dots .v619-color-target'));
+    const colors = dots.map(dot => {
+      const cssVar = String(dot.style.getPropertyValue('--v619-goal-color') || '').trim();
+      if (cssVar) return cssVar;
+      const bg = getComputedStyle(dot).backgroundColor;
+      return bg || '';
+    }).filter(Boolean);
+    return colors.slice(0, 5);
+  }
+
+  function clearPartyToastPause() {
+    if (!v638PausedByToast) return;
+    try {
+      gamePaused = v638PreviousGamePaused;
+    } catch (_) {}
+    v638PausedByToast = false;
+  }
+
+  function hidePartyGoalToast() {
+    const toast = typeof v468EnsureToast === 'function' ? v468EnsureToast() : document.getElementById('v468OnboardingToast');
+    if (!toast) return clearPartyToastPause();
+    toast.classList.remove('v637-party-goal-toast', 'v638-party-goal-toast');
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(-5px)';
+    clearPartyToastPause();
+  }
+
+  function showPartyGoalToastWithColors(title, text, durationMs) {
+    if (typeof v468EnsureToast !== 'function') return;
+    const toast = v468EnsureToast();
+    if (!toast) return;
+
+    if (v638PartyToastTimer) clearTimeout(v638PartyToastTimer);
+    hidePartyGoalToast();
+
+    const colors = getCurrentPartyGoalColors();
+    const colorsHtml = colors.length
+      ? '<div class="v638-toast-colors">' + colors.map(color => (
+          `<span class="v638-color-dot" style="--v638-dot-color:${String(color).replace(/"/g,'&quot;')}"></span>`
+        )).join('') + '</div>'
+      : '';
+
+    toast.innerHTML =
+      `<div class="v638-toast-title">${title}</div>` +
+      `<div class="v638-toast-sub">${String(text).replace(/\n/g, '<br>')}</div>` +
+      colorsHtml;
+
+    toast.classList.add('v637-party-goal-toast', 'v638-party-goal-toast');
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+
+    try {
+      v638PreviousGamePaused = !!gamePaused;
+      gamePaused = true;
+      v638PausedByToast = true;
+    } catch (_) {}
+
+    v638PartyToastTimer = setTimeout(() => {
+      hidePartyGoalToast();
+      v638PartyToastTimer = null;
+    }, durationMs);
+  }
+
+  if (typeof v468Toast === 'function') {
+    const v638BaseToast = v468Toast;
+    v468Toast = function(title, text = '', durationMs = 1800) {
+      const upperTitle = String(title || '').trim().toUpperCase();
+      const upperText = String(text || '').trim().toUpperCase();
+      const isPartyGoalStart =
+        (upperTitle === 'NEW PARTY GOAL' || upperTitle === 'NEW GOAL!') &&
+        upperText.includes('MATCH THESE 5 COLORS');
+
+      if (isPartyGoalStart) {
+        const longDuration = Math.round((Number(durationMs) || 1800) * 1.5);
+        showPartyGoalToastWithColors(String(title), String(text), longDuration);
+        return;
+      }
+
+      hidePartyGoalToast();
+      return v638BaseToast.apply(this, arguments);
+    };
+  }
+
+  function decoratePendingCountdown() {
+    const host = visibleGoalHost();
+    if (!host) return;
+
+    const sub = host.querySelector('.v606-party-goal-sub');
+    const subText = String(sub?.textContent || '').trim().toUpperCase();
+    const pending = subText.startsWith('STARTS IN');
+
+    host.classList.toggle('v638-pending-start', pending);
+    if (!pending) return;
+
+    const symbols = ['♪', '★', '♫', '✦', '♬'];
+    const dots = Array.from(host.querySelectorAll('.v606-party-goal-dots > span'));
+    dots.forEach((dot, index) => {
+      dot.classList.add('v638-party-countdown-item');
+      dot.textContent = symbols[index % symbols.length];
+      dot.setAttribute('aria-hidden', 'true');
+      if (dot.classList.contains('remaining')) {
+        dot.classList.remove('passed');
+      } else if (dot.classList.contains('passed')) {
+        dot.classList.remove('remaining');
+      }
+    });
+  }
+
+  /* v641: disabled. Pending countdown is rendered directly as static stars. */
+})();
+</script>
+
+
+<!-- v639:
+     - Pending countdown uses 5 stars (filled / unfilled), not music symbols.
+     - Party Goal start toast becomes a card visually close to the bottom Party Goal:
+       title + subtitle + left/right figures + 5 coloured circles in the middle. -->
+<style id="v639-party-goal-stars-and-matching-card-style">
+
+  /* ============================================================
+     1) Countdown to first Party Goal = 5 stars
+     ============================================================ */
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v606-party-goal-dots {
+    gap: 5px !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item {
+    width: 17px !important;
+    height: 17px !important;
+    min-width: 17px !important;
+    border-radius: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.remaining {
+    color: #f4c644 !important;
+    text-shadow: 0 0 6px rgba(244,198,68,.48);
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.passed {
+    color: rgba(255,230,128,.30) !important;
+    text-shadow: none !important;
+  }
+
+  /* ============================================================
+     2) Toast/card = visually close to bottom Party Goal
+     ============================================================ */
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card {
+    max-width: min(88vw, 390px) !important;
+    padding: 8px 12px 9px !important;
+    border-radius: 14px !important;
+    background:
+      linear-gradient(180deg, rgba(43,27,20,.96), rgba(20,15,23,.96)) !important;
+    border: 1.8px solid rgba(232,138,45,.94) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,231,156,.10),
+      0 0 10px rgba(232,138,45,.34),
+      0 8px 28px rgba(0,0,0,.44) !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 3px !important;
+    border-radius: 11px !important;
+    border: 1px solid rgba(255,214,120,.24) !important;
+    pointer-events: none !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card::after {
+    display: none !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-toast-title {
+    font-size: clamp(17px, 4.4vw, 24px) !important;
+    font-weight: 900 !important;
+    letter-spacing: .02em !important;
+    color: #ffe680 !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-toast-sub {
+    margin-top: 2px !important;
+    font-size: clamp(11px, 3vw, 14px) !important;
+    font-weight: 800 !important;
+    color: #fff4c7 !important;
+    opacity: 1 !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-card-row {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: 42px 1fr 42px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-side-figure {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.45));
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-mid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-mid-label {
+    font-size: 11px;
+    line-height: 1.05;
+    font-weight: 900;
+    color: #ffe680;
+    margin-bottom: 4px;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-toast-colors {
+    margin-top: 0 !important;
+    gap: 7px !important;
+    min-height: 18px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-color-dot {
+    width: 15px !important;
+    height: 15px !important;
+    border-radius: 50% !important;
+    border: 1.4px solid rgba(255,255,255,.92) !important;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,.34) inset,
+      0 0 6px rgba(255,230,128,.16) !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-reward {
+    margin-top: 5px;
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 900;
+    color: #50e3c2;
+    text-align: center;
+  }
+</style>
+
+<script id="v639-party-goal-stars-and-matching-card-runtime">
+(() => {
+  'use strict';
+
+  const V639_PARTY_GOAL_IMAGE = 'images/party_goal_state_0.png';
+
+  function v639ApplyStarCountdown() {
+    const host = document.querySelector('.button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start');
+    if (!host) return;
+
+    const dots = Array.from(host.querySelectorAll('.v606-party-goal-dots > span'));
+    dots.forEach(dot => {
+      dot.classList.add('v638-party-countdown-item');
+      const remaining = dot.classList.contains('remaining');
+      const passed = dot.classList.contains('passed');
+
+      if (remaining) {
+        dot.textContent = '★';
+      } else if (passed) {
+        dot.textContent = '☆';
+      } else {
+        dot.textContent = '☆';
+      }
+      dot.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  function v639BuildPartyGoalCard(title, text, colors) {
+    const safeTitle = String(title || '');
+    const safeText = String(text || '').replace(/\n/g, '<br>');
+    const colorDots = colors.length
+      ? '<div class="v638-toast-colors">' + colors.map(color => (
+          `<span class="v638-color-dot" style="--v638-dot-color:${String(color).replace(/"/g,'&quot;')}"></span>`
+        )).join('') + '</div>'
+      : '';
+
+    return (
+      `<div class="v638-toast-title">${safeTitle}</div>` +
+      `<div class="v638-toast-sub">${safeText}</div>` +
+      `<div class="v639-card-row">` +
+        `<img class="v639-side-figure" src="${V639_PARTY_GOAL_IMAGE}" alt="">` +
+        `<div class="v639-mid">` +
+          `<div class="v639-mid-label">MATCH THE COLORS</div>` +
+          colorDots +
+          `<div class="v639-reward">+100 POINTS</div>` +
+        `</div>` +
+        `<img class="v639-side-figure" src="${V639_PARTY_GOAL_IMAGE}" alt="">` +
+      `</div>`
+    );
+  }
+
+  if (typeof showPartyGoalToastWithColors === 'function') {
+    const v639BaseShowPartyGoalToastWithColors = showPartyGoalToastWithColors;
+    showPartyGoalToastWithColors = function(title, text, durationMs) {
+      /* Call base first so pause/duration handling remains identical. */
+      const result = v639BaseShowPartyGoalToastWithColors.apply(this, arguments);
+
+      const toast = typeof v468EnsureToast === 'function'
+        ? v468EnsureToast()
+        : document.getElementById('v468OnboardingToast');
+      if (!toast) return result;
+
+      const host = (function() {
+        const hosts = Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+        return hosts.find(h => {
+          const rect = h.getBoundingClientRect();
+          const style = getComputedStyle(h);
+          return rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+        }) || hosts[0] || null;
+      })();
+
+      const colors = host
+        ? Array.from(host.querySelectorAll('.v606-party-goal-dots .v619-color-target')).map(dot => {
+            const cssVar = String(dot.style.getPropertyValue('--v619-goal-color') || '').trim();
+            return cssVar || getComputedStyle(dot).backgroundColor || '';
+          }).filter(Boolean).slice(0, 5)
+        : [];
+
+      toast.classList.add('v639-party-goal-card');
+      toast.innerHTML = v639BuildPartyGoalCard(title, text, colors);
+      return result;
+    };
+  }
+
+  /* Because v638 used a local-scoped function, also patch the visible toast
+     after it appears, so the card styling/content is guaranteed. */
+  function v639UpgradeVisibleToast() {
+    const toast = document.getElementById('v468OnboardingToast');
+    if (!toast || !toast.classList.contains('v638-party-goal-toast')) return;
+
+    const titleNode = toast.querySelector('.v638-toast-title');
+    if (!titleNode) return;
+
+    const title = titleNode.textContent || 'NEW PARTY GOAL';
+    const subNode = toast.querySelector('.v638-toast-sub');
+    const text = (subNode?.innerHTML || '').replace(/<br\s*\/?>/gi, '\n');
+
+    const host = (function() {
+      const hosts = Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+      return hosts.find(h => {
+        const rect = h.getBoundingClientRect();
+        const style = getComputedStyle(h);
+        return rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+      }) || hosts[0] || null;
+    })();
+
+    const colors = host
+      ? Array.from(host.querySelectorAll('.v606-party-goal-dots .v619-color-target')).map(dot => {
+          const cssVar = String(dot.style.getPropertyValue('--v619-goal-color') || '').trim();
+          return cssVar || getComputedStyle(dot).backgroundColor || '';
+        }).filter(Boolean).slice(0, 5)
+      : [];
+
+    toast.classList.add('v639-party-goal-card');
+    toast.innerHTML = v639BuildPartyGoalCard(title, text, colors);
+  }
+
+  setInterval(() => {
+    v639UpgradeVisibleToast();
+  }, 220);
+
+  requestAnimationFrame(() => {
+    v639UpgradeVisibleToast();
+  });
+})();
+</script>
+
+
+<!-- v640:
+     Remove the permanent animated Party Goal background.
+     Keep a static decorative background that fills the full width of the cell. -->
+<style id="v640-static-fullwidth-party-goal-bg">
+  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel {
+    animation: none !important;
+    background:
+      radial-gradient(circle at 14% 24%, rgba(255,220,103,.15) 0 3px, transparent 4px),
+      radial-gradient(circle at 72% 18%, rgba(80,227,194,.09) 0 2px, transparent 3px),
+      radial-gradient(circle at 88% 74%, rgba(155,81,224,.09) 0 3px, transparent 4px),
+      radial-gradient(circle at 24% 78%, rgba(232,138,45,.12) 0 3px, transparent 4px),
+      linear-gradient(90deg, rgba(37,25,23,.96) 0%, rgba(73,45,29,.94) 50%, rgba(40,27,27,.96) 100%) !important;
+    background-repeat: no-repeat !important;
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100% !important;
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0 !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    opacity: .14 !important;
+    animation: none !important;
+    transform: none !important;
+    background:
+      linear-gradient(120deg,
+        transparent 0%,
+        rgba(255,218,92,.07) 18%,
+        transparent 34%,
+        rgba(80,227,194,.05) 52%,
+        transparent 68%,
+        rgba(232,138,45,.06) 84%,
+        transparent 100%) !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+  }
+</style>
+
+
+<!-- v641:
+     Countdown stars are now rendered statically at source level.
+     The Party Goal start card is approximately 1.5x wider and taller. -->
+<style id="v641-static-stars-larger-goal-card">
+
+  /* Static countdown: no animation, no transitions, fixed geometry. */
+  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v606-party-goal-dots {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    min-height: 18px !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v641-pending-star {
+    display: inline-flex !important;
+    width: 17px !important;
+    height: 17px !important;
+    min-width: 17px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    line-height: 17px !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v641-pending-star.filled {
+    color: #f4c644 !important;
+    text-shadow: 0 0 5px rgba(244,198,68,.42) !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v641-pending-star.empty {
+    color: rgba(244,198,68,.40) !important;
+    text-shadow: none !important;
+  }
+
+  /* Kill every older pending countdown visual in this state. */
+  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v634-cooldown-dot,
+  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v638-party-countdown-item {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Start card: ~1.5x larger than v639. */
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card {
+    width: min(94vw, 585px) !important;
+    max-width: min(94vw, 585px) !important;
+    min-height: 132px !important;
+    padding: 13px 18px 14px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-toast-title {
+    font-size: clamp(20px, 5.1vw, 30px) !important;
+    line-height: 1.02 !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-toast-sub {
+    margin-top: 4px !important;
+    font-size: clamp(13px, 3.4vw, 17px) !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-card-row {
+    margin-top: 10px !important;
+    grid-template-columns: 58px 1fr 58px !important;
+    gap: 12px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-side-figure {
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-mid-label {
+    margin-bottom: 6px !important;
+    font-size: 13px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-toast-colors {
+    gap: 9px !important;
+    min-height: 22px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v638-color-dot {
+    width: 19px !important;
+    height: 19px !important;
+  }
+
+  #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card .v639-reward {
+    margin-top: 7px !important;
+    font-size: 13px !important;
+  }
+</style>
 
 </body>
 </html>

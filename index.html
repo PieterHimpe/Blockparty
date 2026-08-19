@@ -63813,6 +63813,376 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v685: rebuild the 4 center cells from scratch.
+     - no figures visible
+     - top 50% = title
+     - bottom 50% = number or next-set preview
+     - all 4 cells use the same border thickness
+     - LEVEL progress is shown in the same 8-part border, aligned correctly -->
+<style id="v685-rebuilt-four-cells-style">
+  :root {
+    --v685-title-size: 1rem;
+    --v685-title-top: 6px;
+    --v685-number-size: 2.35rem;
+    --v685-next-block-size: 18px;
+    --v685-border-orange: #e88a2d;
+    --v685-border-yellow: #ffe600;
+    --v685-border-stroke: 4;
+  }
+
+  /* Hide the old v684 border overlay entirely. */
+  #v684LevelBorderProgress {
+    display: none !important;
+  }
+
+  /* The 4 rebuilt cells share the same base shell and border behavior. */
+  #livesDisplay.info-cell,
+  #scoreDisplay.info-cell,
+  #extraCell1.info-cell,
+  #nextBlockDisplay.info-cell {
+    position: relative !important;
+    border-color: transparent !important;
+    overflow: visible !important;
+  }
+
+  #livesDisplay.info-cell > .v685-shell,
+  #scoreDisplay.info-cell > .v685-shell,
+  #extraCell1.info-cell > .v685-shell,
+  #nextBlockDisplay.info-cell > .v685-shell {
+    position: relative !important;
+    display: grid !important;
+    grid-template-rows: 50% 50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    z-index: 1 !important;
+  }
+
+  .v685-top,
+  .v685-bottom {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .v685-top {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding-top: var(--v685-title-top) !important;
+  }
+
+  .v685-title {
+    width: 100% !important;
+    text-align: center !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: var(--v685-title-size) !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+    color: #f4c644 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .v685-bottom {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 3px 2px !important;
+  }
+
+  #livesText,
+  #scoreValue,
+  #levelDisplayExtra {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: var(--v685-number-size) !important;
+    font-weight: 900 !important;
+    line-height: .92 !important;
+    letter-spacing: -.02em !important;
+    color: #f4c644 !important;
+    text-align: center !important;
+    background: transparent !important;
+    text-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* All old figure images inside these 4 cells are hidden / effectively commented out. */
+  #livesDisplay img,
+  #scoreDisplay img,
+  #extraCell1 img,
+  #nextBlockDisplay img {
+    display: none !important;
+  }
+
+  /* Hidden legacy sub-elements kept only because some existing game functions still expect them. */
+  #extraCell1 #levelStatusLabels,
+  #extraCell1 #bpmLabel,
+  #extraCell1 #bpmDisplay,
+  #extraCell1 #levelProgressBar,
+  #extraCell1 #v632LevelProgress,
+  #extraCell1 #v632LevelProgressText,
+  #extraCell1 #v632LevelSegments {
+    display: none !important;
+  }
+
+  #extraCell1 #levelStatusValues {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #extraCell1 #levelStatusValues > div:first-child {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: static !important;
+  }
+
+  /* Next Set preview: same block size for 1, 2 or 3 blocks. */
+  #nextBlockPreview {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #nextBlockPreview > div {
+    width: var(--v685-next-block-size) !important;
+    height: var(--v685-next-block-size) !important;
+    min-width: var(--v685-next-block-size) !important;
+    min-height: var(--v685-next-block-size) !important;
+    max-width: var(--v685-next-block-size) !important;
+    max-height: var(--v685-next-block-size) !important;
+    flex: 0 0 var(--v685-next-block-size) !important;
+    border-radius: 5px !important;
+    margin: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Same thicker border overlay for all 4 cells. */
+  .v685-border-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 6 !important;
+    pointer-events: none !important;
+    overflow: visible !important;
+  }
+</style>
+
+<script id="v685-rebuilt-four-cells-runtime">
+(() => {
+  'use strict';
+
+  const V685_TOTAL = 8;
+  const V685_ORANGE = '#e88a2d';
+  const V685_YELLOW = '#ffe600';
+
+  function v685CurrentLevelProgress() {
+    try {
+      const n = Number(bigGroupCount);
+      return Number.isFinite(n) ? Math.max(0, Math.min(V685_TOTAL, Math.round(n))) : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function v685BuildCell(cellId, title, kind) {
+    const cell = document.getElementById(cellId);
+    if (!cell) return;
+
+    if (!cell.querySelector(':scope > .v685-shell')) {
+      let valueMarkup = '';
+      if (kind === 'repairs') {
+        const current = document.getElementById('livesText')?.textContent || '0';
+        valueMarkup = `<div id="livesText">${current}</div>`;
+      } else if (kind === 'score') {
+        const current = document.getElementById('scoreValue')?.textContent || '0';
+        valueMarkup = `<div id="scoreValue">${current}</div>`;
+      } else if (kind === 'level') {
+        let current = '0';
+        try { current = String(level || 0); } catch (_) {}
+        const levelNode = document.getElementById('levelDisplayExtra');
+        if (levelNode && levelNode.textContent) current = levelNode.textContent;
+        valueMarkup = `
+          <div id="levelStatusValues">
+            <div>
+              <div id="levelProgressBar"></div>
+              <span id="levelDisplayExtra">${current}</span>
+            </div>
+            <span id="bpmDisplay">0</span>
+          </div>`;
+      } else if (kind === 'nextset') {
+        const oldPreview = document.getElementById('nextBlockPreview');
+        const existingPreviewHtml = oldPreview ? oldPreview.innerHTML : '';
+        valueMarkup = `<div id="nextBlockPreview">${existingPreviewHtml}</div>`;
+      }
+
+      cell.innerHTML = `
+        <section class="v685-shell" data-v685-kind="${kind}">
+          <div class="v685-top">
+            <div class="v685-title">${title}</div>
+          </div>
+          <div class="v685-bottom">${valueMarkup}</div>
+          ${kind === 'level' ? '<div id="levelStatusLabels"><span id="levelLabel">LEVEL</span><span id="bpmLabel">BPM</span></div>' : ''}
+        </section>
+      `;
+    } else {
+      const titleNode = cell.querySelector(':scope > .v685-shell .v685-title');
+      if (titleNode) titleNode.textContent = title;
+    }
+  }
+
+  function v685EnsureAllFourCells() {
+    v685BuildCell('livesDisplay', 'REPAIRS', 'repairs');
+    v685BuildCell('scoreDisplay', 'SCORE', 'score');
+    v685BuildCell('extraCell1', 'LEVEL', 'level');
+    v685BuildCell('nextBlockDisplay', 'NEXT SET', 'nextset');
+  }
+
+  function v685EnsureBorder(cellId, overlayId) {
+    const cell = document.getElementById(cellId);
+    if (!cell) return null;
+
+    let svg = document.getElementById(overlayId);
+    if (svg) return svg;
+
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = overlayId;
+    svg.classList.add('v685-border-overlay');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    for (let i = 0; i < V685_TOTAL; i++) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', '2');
+      rect.setAttribute('y', '2');
+      rect.setAttribute('width', '96');
+      rect.setAttribute('height', '96');
+      rect.setAttribute('rx', '9');
+      rect.setAttribute('ry', '9');
+      rect.setAttribute('fill', 'none');
+      rect.setAttribute('pathLength', '800');
+      rect.setAttribute('stroke-width', '4');
+      rect.setAttribute('vector-effect', 'non-scaling-stroke');
+      rect.setAttribute('stroke-dasharray', '92 708');
+      rect.setAttribute('stroke-dashoffset', String(-i * 100));
+      rect.dataset.segmentIndex = String(i);
+      svg.appendChild(rect);
+    }
+
+    cell.appendChild(svg);
+    return svg;
+  }
+
+  function v685UpdateBorder(cellId, overlayId, filledCount) {
+    const svg = v685EnsureBorder(cellId, overlayId);
+    if (!svg) return;
+    const segments = svg.querySelectorAll('rect[data-segment-index]');
+    segments.forEach((seg, idx) => {
+      seg.setAttribute('stroke', idx < filledCount ? V685_YELLOW : V685_ORANGE);
+    });
+  }
+
+  function v685RefreshBorders() {
+    /* old v684 overlay must stay invisible and out of the way */
+    const old = document.getElementById('v684LevelBorderProgress');
+    if (old) old.style.display = 'none';
+
+    v685UpdateBorder('livesDisplay', 'v685RepairBorder', 0);
+    v685UpdateBorder('scoreDisplay', 'v685ScoreBorder', 0);
+    v685UpdateBorder('nextBlockDisplay', 'v685NextBorder', 0);
+    v685UpdateBorder('extraCell1', 'v685LevelBorder', v685CurrentLevelProgress());
+  }
+
+  function v685RefreshNextSetLayout() {
+    const preview = document.getElementById('nextBlockPreview');
+    if (!preview) return;
+
+    Array.from(preview.children).forEach(block => {
+      block.style.width = '18px';
+      block.style.height = '18px';
+      block.style.minWidth = '18px';
+      block.style.minHeight = '18px';
+      block.style.maxWidth = '18px';
+      block.style.maxHeight = '18px';
+      block.style.margin = '0';
+      block.style.borderRadius = '5px';
+
+      Array.from(block.children).forEach(mark => {
+        mark.style.transform = 'none';
+        if (mark.textContent === '9') {
+          mark.style.fontSize = '11px';
+          mark.style.lineHeight = '18px';
+        }
+      });
+    });
+  }
+
+  function v685Refresh() {
+    v685EnsureAllFourCells();
+    v685RefreshNextSetLayout();
+    v685RefreshBorders();
+  }
+
+  [
+    'updateLivesDisplay',
+    'updateScoreDisplay',
+    'updateLevelDisplay',
+    'updateLevelAndBpmDisplay',
+    'updateNextBlockDisplay',
+    'updateFeatureAvailability',
+    'pulseBarrierWallImpact',
+    'resetBarrierWallStates',
+    'v418RestoreBarrierStates'
+  ].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      requestAnimationFrame(v685Refresh);
+      return result;
+    };
+  });
+
+  requestAnimationFrame(v685Refresh);
+  setTimeout(v685Refresh, 60);
+})();
+</script>
+
 </body>
 </html>
 

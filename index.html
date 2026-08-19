@@ -62333,7 +62333,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
     toast.innerHTML =
       `<div class="v649-toast-title">${String(title)}</div>` +
-      `<div class="v649-toast-sub">${String(text).replace(/\n/g, '<br>')}</div>` +
+      `<div class="v649-toast-sub">${String(text).replace(/\n?\s*REWARD\s*\+?100\s*POINTS/ig,'').replace(/\n?\s*\+?100\s*POINTS/ig,'').replace(/\n/g, '<br>').trim()}</div>` +
       `<div class="v649-card-row">` +
         `<img class="v649-side-figure" src="${imgs.left}" alt="">` +
         `<div class="v649-mid">` +
@@ -63330,13 +63330,13 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
     const slices = [];
     for (let i = 0; i < total; i++) {
-      const start = -90 + i * segmentSize;
+      const start = i * segmentSize;
       const end = start + fillPart;
       const color = i < current ? strong : light;
       slices.push(`${color} ${start}deg ${end}deg`);
       slices.push(`transparent ${end}deg ${start + segmentSize}deg`);
     }
-    return `conic-gradient(${slices.join(', ')})`;
+    return `conic-gradient(from -90deg, ${slices.join(', ')})`;
   }
 
   function v666UpdateLevelRing() {
@@ -63386,6 +63386,128 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   setTimeout(v666UpdateLevelRing, 60);
 })();
 </script>
+
+
+<!-- v667:
+     - NEW PARTY GOAL card shows +100 POINTS only once
+     - card border is thicker and festive with a rotating 7-color ring -->
+<style id="v667-party-goal-rainbow-border-style">
+  @keyframes v667PartyGoalRainbowSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  #v468OnboardingToast.v649-party-goal-start-card {
+    border: 0 !important;
+    padding: 15px 20px 16px !important;
+    overflow: hidden !important;
+  }
+
+  /* Outer rotating 7-color festive ring */
+  #v468OnboardingToast.v649-party-goal-start-card::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: -18px !important;
+    border-radius: 18px !important;
+    background:
+      conic-gradient(
+        #f4c644 0deg 51deg,
+        #ff8a3d 51deg 102deg,
+        #ff5c7a 102deg 153deg,
+        #b26cff 153deg 204deg,
+        #4d8dff 204deg 255deg,
+        #50e3c2 255deg 306deg,
+        #9be15d 306deg 360deg
+      ) !important;
+    animation: v667PartyGoalRainbowSpin 4.8s linear infinite !important;
+    z-index: 0 !important;
+    filter: saturate(1.1) brightness(1.06) !important;
+  }
+
+  /* Inner panel that creates the thick bordered card look */
+  #v468OnboardingToast.v649-party-goal-start-card::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 5px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(180deg, rgba(43,27,20,.98), rgba(20,15,23,.98)) !important;
+    border: 2px solid rgba(255,240,180,.26) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,231,156,.08),
+      0 0 10px rgba(232,138,45,.18) !important;
+    z-index: 1 !important;
+  }
+
+  /* Ensure all card content stays above the decorative layers */
+  #v468OnboardingToast.v649-party-goal-start-card > * {
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  #v468OnboardingToast.v649-party-goal-start-card .v649-toast-title {
+    text-shadow: 0 2px 4px rgba(0,0,0,.42) !important;
+  }
+
+  #v468OnboardingToast.v649-party-goal-start-card .v649-toast-sub {
+    color: #fff1bf !important;
+  }
+</style>
+
+<script id="v667-party-goal-single-reward-runtime">
+(() => {
+  'use strict';
+
+  if (typeof v649ShowPartyGoalCard === 'function') {
+    const v667BaseShowPartyGoalCard = v649ShowPartyGoalCard;
+    window.v649ShowPartyGoalCard = function(title, text) {
+      let cleanedText = String(text || '')
+        .replace(/\n?\s*\+?\s*100\s*POINTS\s*/ig, '')
+        .replace(/\n?\s*REWARD\s*\+?\s*100\s*POINTS\s*/ig, '')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+
+      if (!cleanedText) cleanedText = 'MATCH THESE 5 COLORS';
+      return v667BaseShowPartyGoalCard.call(this, title, cleanedText);
+    };
+  }
+})();
+</script>
+
+
+<!-- v669: make ONLY the non-active, non-tutorial mission preview use the same left-image/right-text logic as Shop. -->
+<style id="v669-mission-preview-like-shop-style">
+  /* Apply only to the preview state created for no active mission.
+     Do NOT affect tutorial or active mission states. */
+  #levelDisplay.v662-party-preview #levelImage {
+    width: 50% !important;
+    height: 90% !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    align-self: center !important;
+    justify-self: start !important;
+    opacity: 1 !important;
+  }
+
+  #levelDisplay.v662-party-preview #challengeInfoText {
+    width: 50% !important;
+    height: 100% !important;
+    padding: 0 4px 0 0 !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 1px !important;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-main,
+  #levelDisplay.v662-party-preview .v662-party-sub {
+    width: 100% !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+</style>
 
 </body>
 </html>

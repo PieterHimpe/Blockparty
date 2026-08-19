@@ -63057,6 +63057,336 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v664: replace 0/8 text with a segmented circular ring around the level number. -->
+<style id="v664-level-ring-progress-style">
+  /* Hide old text and old horizontal segment tracker */
+  #v632LevelProgressText,
+  #v632LevelSegments,
+  #v632LevelProgress {
+    display: none !important;
+  }
+
+  /* Level value host for circular ring */
+  #levelStatusValues > div:first-child {
+    position: relative !important;
+    width: 100% !important;
+    min-height: 58px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #levelDisplayExtra {
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  #v664LevelRing {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 56px;
+    height: 56px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  #v664LevelRing::after {
+    content: '';
+    position: absolute;
+    inset: 7px;
+    border-radius: 50%;
+    background: rgba(61, 45, 34, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(255, 230, 128, 0.10);
+  }
+</style>
+
+<script id="v664-level-ring-progress-runtime">
+(() => {
+  'use strict';
+
+  const V664_TOTAL_SEGMENTS = 8;
+  const V664_SEGMENT_DEG = 39;
+  const V664_GAP_DEG = 6;
+  const V664_START_DEG = -90;
+
+  function v664EnsureRing() {
+    const host = document.querySelector('#levelStatusValues > div:first-child');
+    if (!host) return null;
+
+    let ring = document.getElementById('v664LevelRing');
+    if (!ring) {
+      ring = document.createElement('div');
+      ring.id = 'v664LevelRing';
+      host.insertBefore(ring, host.firstChild || null);
+    }
+    return ring;
+  }
+
+  function v664CurrentLevel() {
+    try { return Number(level) || 1; } catch (_) { return 1; }
+  }
+
+  function v664FilledSegments(levelNumber) {
+    if (levelNumber < 15) return 0;
+    return Math.max(0, Math.min(V664_TOTAL_SEGMENTS, Math.floor((levelNumber - 10) / 5)));
+  }
+
+  function v664BuildGradient(filledCount) {
+    const slices = [];
+    const light = 'rgba(255, 232, 150, 0.34)';
+    const strong = '#f4c644';
+
+    for (let i = 0; i < V664_TOTAL_SEGMENTS; i++) {
+      const start = V664_START_DEG + i * (V664_SEGMENT_DEG + V664_GAP_DEG);
+      const end = start + V664_SEGMENT_DEG;
+      const color = i < filledCount ? strong : light;
+      slices.push(`${color} ${start}deg ${end}deg`);
+      slices.push(`transparent ${end}deg ${end + V664_GAP_DEG}deg`);
+    }
+
+    return `conic-gradient(${slices.join(', ')})`;
+  }
+
+  function v664UpdateLevelRing() {
+    const ring = v664EnsureRing();
+    if (!ring) return;
+
+    const currentLevel = v664CurrentLevel();
+    const filled = v664FilledSegments(currentLevel);
+
+    ring.style.background = v664BuildGradient(filled);
+    ring.setAttribute(
+      'aria-label',
+      `Level ${currentLevel}; ${filled} of ${V664_TOTAL_SEGMENTS} milestone segments filled`
+    );
+  }
+
+  if (typeof updateLevelDisplay === 'function') {
+    const v664BaseUpdateLevelDisplay = updateLevelDisplay;
+    updateLevelDisplay = function() {
+      const result = v664BaseUpdateLevelDisplay.apply(this, arguments);
+      v664UpdateLevelRing();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelAndBpmDisplay === 'function') {
+    const v664BaseUpdateLevelAndBpmDisplay = updateLevelAndBpmDisplay;
+    updateLevelAndBpmDisplay = function() {
+      const result = v664BaseUpdateLevelAndBpmDisplay.apply(this, arguments);
+      v664UpdateLevelRing();
+      return result;
+    };
+  }
+
+  requestAnimationFrame(v664UpdateLevelRing);
+  setTimeout(v664UpdateLevelRing, 60);
+})();
+</script>
+
+
+<!-- v665: hard-fix Party preview text and vertical stacking.
+     - NEXT PARTY / LEVEL XX becomes NEXT MISSION / IN X LEVELS
+     - the two lines are stacked vertically with flex-direction: column -->
+<style id="v665-next-mission-vertical-fix-style">
+  #levelDisplay.v662-party-preview #challengeInfoText {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 1px !important;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-main,
+  #levelDisplay.v662-party-preview .v662-party-sub {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+</style>
+
+<script id="v665-next-mission-vertical-fix-runtime">
+(() => {
+  'use strict';
+
+  function v665FixPreviewText() {
+    const cell = document.getElementById('levelDisplay');
+    const copy = document.getElementById('challengeInfoText');
+    if (!cell || !copy || !cell.classList.contains('v662-party-preview')) return;
+
+    let currentLevel = 1;
+    try { currentLevel = Number(level) || 1; } catch (_) {}
+
+    const rawText = copy.textContent || '';
+    const m = rawText.match(/LEVEL\s+(\d+)/i);
+    if (!m) return;
+
+    const targetLevel = Number(m[1]) || currentLevel;
+    const diff = Math.max(0, targetLevel - currentLevel);
+    const unit = diff === 1 ? 'LEVEL' : 'LEVELS';
+
+    copy.innerHTML =
+      '<span class="v662-party-main">NEXT MISSION</span>' +
+      `<span class="v662-party-sub">IN ${diff} ${unit}</span>`;
+  }
+
+  if (typeof updateChallengeInfoText === 'function') {
+    const v665BaseUpdateChallengeInfoText = updateChallengeInfoText;
+    updateChallengeInfoText = function() {
+      const result = v665BaseUpdateChallengeInfoText.apply(this, arguments);
+      v665FixPreviewText();
+      return result;
+    };
+  }
+
+  if (typeof updateFeatureAvailability === 'function') {
+    const v665BaseUpdateFeatureAvailability = updateFeatureAvailability;
+    updateFeatureAvailability = function() {
+      const result = v665BaseUpdateFeatureAvailability.apply(this, arguments);
+      v665FixPreviewText();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelDisplay === 'function') {
+    const v665BaseUpdateLevelDisplay = updateLevelDisplay;
+    updateLevelDisplay = function() {
+      const result = v665BaseUpdateLevelDisplay.apply(this, arguments);
+      v665FixPreviewText();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelAndBpmDisplay === 'function') {
+    const v665BaseUpdateLevelAndBpmDisplay = updateLevelAndBpmDisplay;
+    updateLevelAndBpmDisplay = function() {
+      const result = v665BaseUpdateLevelAndBpmDisplay.apply(this, arguments);
+      v665FixPreviewText();
+      return result;
+    };
+  }
+
+  requestAnimationFrame(v665FixPreviewText);
+  setTimeout(v665FixPreviewText, 50);
+  setInterval(v665FixPreviewText, 150);
+})();
+</script>
+
+
+<!-- v666: correct LEVEL ring semantics.
+     The ring now shows progress WITHIN the current level:
+     each completed valid group of 5+ fills one of the levelProgressThreshold segments.
+     It resets naturally when bigGroupCount resets on level-up. -->
+<script id="v666-correct-level-ring-progress-runtime">
+(() => {
+  'use strict';
+
+  function v666EnsureRing() {
+    const host = document.querySelector('#levelStatusValues > div:first-child');
+    if (!host) return null;
+
+    let ring = document.getElementById('v664LevelRing');
+    if (!ring) {
+      ring = document.createElement('div');
+      ring.id = 'v664LevelRing';
+      host.insertBefore(ring, host.firstChild || null);
+    }
+    return ring;
+  }
+
+  function v666Threshold() {
+    try {
+      const n = Number(levelProgressThreshold);
+      return Number.isFinite(n) && n > 0 ? Math.round(n) : 8;
+    } catch (_) {
+      return 8;
+    }
+  }
+
+  function v666Progress() {
+    const total = v666Threshold();
+    try {
+      const n = Number(bigGroupCount);
+      return Number.isFinite(n)
+        ? Math.max(0, Math.min(total, Math.round(n)))
+        : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function v666BuildGradient(current, total) {
+    const segmentSize = 360 / total;
+    const gap = Math.min(5, segmentSize * 0.16);
+    const fillPart = segmentSize - gap;
+    const light = 'rgba(255, 232, 150, 0.30)';
+    const strong = '#f4c644';
+
+    const slices = [];
+    for (let i = 0; i < total; i++) {
+      const start = -90 + i * segmentSize;
+      const end = start + fillPart;
+      const color = i < current ? strong : light;
+      slices.push(`${color} ${start}deg ${end}deg`);
+      slices.push(`transparent ${end}deg ${start + segmentSize}deg`);
+    }
+    return `conic-gradient(${slices.join(', ')})`;
+  }
+
+  function v666UpdateLevelRing() {
+    const ring = v666EnsureRing();
+    if (!ring) return;
+
+    const total = v666Threshold();
+    const current = v666Progress();
+
+    ring.style.background = v666BuildGradient(current, total);
+    ring.setAttribute(
+      'aria-label',
+      `Level progress ${current} of ${total} groups`
+    );
+  }
+
+  /* Update exactly when level progress changes. */
+  if (typeof updateLevelProgressBar === 'function') {
+    const v666BaseUpdateLevelProgressBar = updateLevelProgressBar;
+    updateLevelProgressBar = function() {
+      const result = v666BaseUpdateLevelProgressBar.apply(this, arguments);
+      v666UpdateLevelRing();
+      return result;
+    };
+  }
+
+  /* Also refresh after level changes / resume. */
+  if (typeof updateLevelDisplay === 'function') {
+    const v666BaseUpdateLevelDisplay = updateLevelDisplay;
+    updateLevelDisplay = function() {
+      const result = v666BaseUpdateLevelDisplay.apply(this, arguments);
+      v666UpdateLevelRing();
+      return result;
+    };
+  }
+
+  if (typeof updateLevelAndBpmDisplay === 'function') {
+    const v666BaseUpdateLevelAndBpmDisplay = updateLevelAndBpmDisplay;
+    updateLevelAndBpmDisplay = function() {
+      const result = v666BaseUpdateLevelAndBpmDisplay.apply(this, arguments);
+      v666UpdateLevelRing();
+      return result;
+    };
+  }
+
+  requestAnimationFrame(v666UpdateLevelRing);
+  setTimeout(v666UpdateLevelRing, 60);
+})();
+</script>
+
 </body>
 </html>
 

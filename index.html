@@ -64528,5 +64528,165 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v689: hard fix for equal-looking big numbers and true square next-set preview -->
+<style id="v689-hard-fix-style">
+  :root {
+    --v689-big-number-size: 2.10rem;
+  }
+
+  /* Force the 3 big values to the same visual system. */
+  #livesText,
+  #scoreValue,
+  #levelDisplayExtra {
+    font-size: var(--v689-big-number-size) !important;
+    line-height: .88 !important;
+    font-weight: 900 !important;
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+
+  /* Level specifically should not dominate visually. */
+  #extraCell1 .v685-bottom,
+  #scoreDisplay .v685-bottom,
+  #livesDisplay .v685-bottom {
+    padding-top: 0 !important;
+    padding-bottom: 2px !important;
+  }
+
+  /* Hard square system for Next Set */
+  #nextBlockPreview {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    justify-content: center !important;
+    align-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #nextBlockPreview > div {
+    width: var(--v689-next-size, 18px) !important;
+    height: var(--v689-next-size, 18px) !important;
+    min-width: var(--v689-next-size, 18px) !important;
+    min-height: var(--v689-next-size, 18px) !important;
+    max-width: var(--v689-next-size, 18px) !important;
+    max-height: var(--v689-next-size, 18px) !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    justify-self: center !important;
+    align-self: center !important;
+  }
+</style>
+
+<script id="v689-hard-fix-runtime">
+(() => {
+  'use strict';
+
+  function v689NormalizeNumbers() {
+    ['livesText', 'scoreValue', 'levelDisplayExtra'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.fontSize = 'var(--v689-big-number-size)';
+      el.style.lineHeight = '.88';
+      el.style.fontWeight = '900';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.width = '100%';
+      el.style.height = '100%';
+      el.style.padding = '0';
+      el.style.margin = '0';
+      el.style.transform = 'none';
+    });
+  }
+
+  function v689ResizeNextSet() {
+    const preview = document.getElementById('nextBlockPreview');
+    if (!preview) return;
+
+    const blocks = Array.from(preview.children).filter(el => el instanceof HTMLElement);
+    if (!blocks.length) return;
+
+    const count = blocks.length;
+    const styles = window.getComputedStyle(preview);
+    const gap = parseFloat(styles.columnGap || styles.gap || '4') || 4;
+    const width = preview.clientWidth;
+    const height = preview.clientHeight;
+    if (!width || !height) return;
+
+    const squareByWidth = Math.floor((width - gap * (count - 1)) / count);
+    const squareByHeight = Math.floor(height * 0.72);
+    const size = Math.max(10, Math.min(squareByWidth, squareByHeight));
+
+    preview.style.setProperty('--v689-next-size', size + 'px');
+
+    blocks.forEach(block => {
+      block.style.width = size + 'px';
+      block.style.height = size + 'px';
+      block.style.minWidth = size + 'px';
+      block.style.minHeight = size + 'px';
+      block.style.maxWidth = size + 'px';
+      block.style.maxHeight = size + 'px';
+      block.style.borderRadius = '4px';
+      block.style.margin = '0';
+      block.style.aspectRatio = '1 / 1';
+      block.style.justifySelf = 'center';
+      block.style.alignSelf = 'center';
+    });
+  }
+
+  function v689Refresh() {
+    requestAnimationFrame(() => {
+      v689NormalizeNumbers();
+      v689ResizeNextSet();
+    });
+  }
+
+  [
+    'updateLivesDisplay',
+    'updateScoreDisplay',
+    'updateLevelDisplay',
+    'updateLevelAndBpmDisplay',
+    'updateNextBlockDisplay',
+    'updateFeatureAvailability'
+  ].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      v689Refresh();
+      return result;
+    };
+  });
+
+  const preview = document.getElementById('nextBlockPreview');
+  if (preview && window.MutationObserver) {
+    new MutationObserver(() => v689Refresh()).observe(preview, { childList: true, subtree: false });
+  }
+  if (preview && window.ResizeObserver) {
+    new ResizeObserver(() => v689ResizeNextSet()).observe(preview);
+  }
+
+  requestAnimationFrame(v689Refresh);
+  setTimeout(v689Refresh, 80);
+  setTimeout(v689Refresh, 240);
+})();
+</script>
+
 </body>
 </html>

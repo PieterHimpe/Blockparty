@@ -20515,29 +20515,45 @@ function resolveFreePictureLanding(block) {
   if (!block || !block.isFreePicture) return false;
 
   const center = getFreePictureLandingCell(block);
-  const blocksToRemove = [];
+  const removed = [];
 
+  // Free Picture affects only the eight surrounding cells of its landing point.
+  // Snapshot them first so rewards/hooks still receive the original block data.
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
       if (dx === 0 && dy === 0) continue;
 
-      const nx = center.x + dx;
-      const ny = center.y + dy;
-
+      const c = center.x + dx;
+      const r = center.y + dy;
       if (
-        nx >= 0 && nx < gridCols &&
-        ny >= 0 && ny < gridRows &&
-        field[ny][nx]
+        r >= 0 && r < gridRows &&
+        c >= 0 && c < gridCols &&
+        field[r] && field[r][c]
       ) {
-        blocksToRemove.push([ny, nx]);
+        removed.push({ r, c, blockRef: field[r][c] });
       }
     }
   }
 
-  for (const [r, c] of blocksToRemove) {
-    const removedBlock = field[r][c];
+  // V714: clear the cells LOGICALLY before the next formation is spawned.
+  // The old implementation kept them in field while a grow-animation was running,
+  // so the new formation could collide with blocks that were already disappearing.
+  for (const item of removed) {
+    field[item.r][item.c] = null;
+  }
 
-    if (typeof registerTutorialDivaCleared === "function") {
+  // Remove any stale canvas-disappear state for these coordinates. Free Picture is
+  // intentionally instant/clean; normal group-flight animations remain unchanged.
+  if (Array.isArray(disappearingBlocks) && removed.length) {
+    const removedKeys = new Set(removed.map(item => `${item.r}:${item.c}`));
+    disappearingBlocks = disappearingBlocks.filter(item => !removedKeys.has(`${item.r}:${item.c}`));
+  }
+
+  // Preserve the existing resource/tutorial bookkeeping for blocks caught by the picture.
+  for (const { r, c, blockRef: removedBlock } of removed) {
+    if (!removedBlock) continue;
+
+    if (typeof registerTutorialDivaCleared === 'function') {
       registerTutorialDivaCleared(r, c);
     }
 
@@ -20551,10 +20567,7 @@ function resolveFreePictureLanding(block) {
         repairCount += activeRewards.heartLifeValue;
         updateLivesDisplay();
         registerFirstBarrierRepairTutorialReward();
-        // Free Picture verwijdert omliggende blokken zonder de normale groepsvlucht.
-        // Als het begeleide Repair-blok zo wordt verzameld, open de herstelstap
-        // daarom zelf kort na de tellerupdate.
-        if (firstBarrierRepairTutorialStage === "repair_flying") {
+        if (firstBarrierRepairTutorialStage === 'repair_flying') {
           setTimeout(openFirstBarrierRepairTutorialAfterCounterArrival, 260);
         }
         showLevel5LifeRestored(repairsBefore, repairCount);
@@ -20567,27 +20580,50 @@ function resolveFreePictureLanding(block) {
       } else {
         multicolorCount += activeRewards.multicolorRewardValue;
         updateMulticolorDisplay();
-
-        if (typeof handleLevel7MulticolorFreed === "function") {
+        if (typeof handleLevel7MulticolorFreed === 'function') {
           handleLevel7MulticolorFreed();
         }
       }
     }
-
-    disappearingBlocks.push({ r, c, scale: 1, opacity: 1 });
   }
 
-  const removedCount = blocksToRemove.length;
+  const removedCount = removed.length;
   score += removedCount * removedCount;
   updateScoreDisplay();
   updateHighStats();
 
+  if (typeof rebuildGroupSizeCache === 'function') rebuildGroupSizeCache();
+
   const landedDirection = block.direction;
-  handleLevel8FreePictureUsed();
-  fallingBlock = null;
+
+  // Tutorial bookkeeping belongs ONLY to the real level-8 onboarding Free Picture.
+  if (
+    typeof level !== 'undefined' && level === 8 &&
+    typeof level8FreePictureTutorialActive !== 'undefined' && level8FreePictureTutorialActive &&
+    typeof handleLevel8FreePictureUsed === 'function'
+  ) {
+    handleLevel8FreePictureUsed();
+  }
+
+  if (fallingBlock === block) fallingBlock = null;
   drawGrid();
+
+  // Spawn only after field[] already reflects the Free Picture result.
   spawnNextBlockAfterFreePicture(landedDirection);
 
+  if (typeof checkLevelProgression === 'function') checkLevelProgression();
+  if (typeof updateChallengeStatusCell === 'function') updateChallengeStatusCell();
+  if (typeof updateChallenge2StatusCell === 'function') updateChallenge2StatusCell();
+  if (typeof updateChallenge3StatusCell === 'function') updateChallenge3StatusCell();
+  if (typeof updateChallenge4StatusCell === 'function') updateChallenge4StatusCell();
+  if (typeof updateChallenge5StatusCell === 'function') updateChallenge5StatusCell();
+  if (typeof updateChallenge6StatusCell === 'function') updateChallenge6StatusCell();
+  if (typeof updateChallenge7StatusCell === 'function') updateChallenge7StatusCell();
+  if (typeof updateLevelDisplay === 'function') updateLevelDisplay();
+  if (typeof updateLevelAndBpmDisplay === 'function') updateLevelAndBpmDisplay();
+
+  drawGrid();
+  if (fallingBlock && typeof drawFallingBlock === 'function') drawFallingBlock();
   return true;
 }
 
@@ -21403,6 +21439,10 @@ if (practiceModech39) {
 }
             updateLivesDisplay();
           } else {
+            if (resolveFreePictureLanding(fallingBlock)) {
+              return;
+            }
+
             for (let i = 0; i < fallingBlock.length; i++) {
               const col = fallingBlock.x + i;
               if (col >= 0 && col < gridCols) {
@@ -22356,6 +22396,10 @@ if (practiceModech39) {
 }
         updateLivesDisplay();
       } else {
+        if (resolveFreePictureLanding(fallingBlock)) {
+          return;
+        }
+
         for (let i = 0; i < fallingBlock.length; i++) {
           const row = fallingBlock.y + i;
           if (row >= 0 && row < gridRows) {
@@ -26503,7 +26547,20 @@ function showColorChoice(callback) {
   const options = document.getElementById("colorOptions");
   options.innerHTML = "";
 
-  colors.forEach(color => {
+  let selectableColors = Array.isArray(colors) ? colors.slice() : [];
+  if (
+    typeof level !== 'undefined' &&
+    Number(level) >= 1 && Number(level) <= 9 &&
+    typeof getTutorialColorsForLevel === 'function'
+  ) {
+    const activeTutorialColors = getTutorialColorsForLevel(Number(level));
+    if (Array.isArray(activeTutorialColors) && activeTutorialColors.length) {
+      selectableColors = activeTutorialColors.slice();
+    }
+  }
+  selectableColors = [...new Set(selectableColors)];
+
+  selectableColors.forEach(color => {
     const btn = document.createElement("button");
     btn.style.backgroundColor = color;
     btn.style.border = "2px solid white";
@@ -47103,7 +47160,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     if(overlay){overlay.style.display='none';overlay.onclick=null;overlay.classList.remove('tutorial-popup-clickable');}
   }
 
-  function v473ShowHint(title,text='',icon=V473_ICONS.multi,duration=1700,{sticky=false,onClose=null}={}){
+  function v473ShowHint(title,text='',icon=V473_ICONS.multi,duration=1700,{sticky=false,onClose=null,placement='top'}={}){
     v473StopOldSmallTutorial();
     if(v473HintTimer){clearTimeout(v473HintTimer);v473HintTimer=null;}
     const actualDuration=sticky?0:(typeof window.v501ScaledTutorialDuration==='function'?window.v501ScaledTutorialDuration(duration):Math.round(Math.max(650,Number(duration)||1700)*1.5));
@@ -47118,7 +47175,30 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     if(titleEl)titleEl.textContent=String(title||'');
     if(textEl)textEl.innerHTML=String(text||'').replace(/\n/g,'<br>');
     if(image){image.src=icon;image.alt='';image.style.display='block';image.style.visibility='visible';}
-    if(overlay){overlay.style.display='block';overlay.style.opacity='1';overlay.style.top='';overlay.onclick=null;overlay.classList.remove('tutorial-popup-clickable');}
+    if(overlay){
+      overlay.style.removeProperty('top');
+      overlay.style.removeProperty('visibility');
+      if(placement==='below') overlay.style.setProperty('visibility','hidden','important');
+      overlay.style.display='block';overlay.style.opacity='1';overlay.onclick=null;overlay.classList.remove('tutorial-popup-clickable');
+
+      if(placement==='below'){
+        const canvas=document.getElementById('gameCanvas');
+        if(canvas && canvas.width>0 && canvas.height>0 && typeof getCurrentDanceFloorRect==='function'){
+          const canvasRect=canvas.getBoundingClientRect();
+          const floor=getCurrentDanceFloorRect();
+          const scaleY=canvasRect.height/canvas.height;
+          const floorBottom=canvasRect.top+(floor.y+floor.height)*scaleY;
+          const gap=Math.max(6,(typeof blockSize!=='undefined'?blockSize:40)*scaleY*0.38);
+          const cardHeight=Math.max(1,overlay.getBoundingClientRect().height);
+          const bounds=typeof getTutorialThirtyByThirtyTrackBounds==='function'
+            ? getTutorialThirtyByThirtyTrackBounds()
+            : {top:canvasRect.top,bottom:canvasRect.bottom};
+          const targetTop=Math.max(bounds.top,Math.min(bounds.bottom-cardHeight,floorBottom+gap));
+          overlay.style.setProperty('top',`${targetTop}px`,'important');
+        }
+        overlay.style.removeProperty('visibility');
+      }
+    }
     ['v451TutorialCountdown'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     const finishHint=()=>{v473ClearHint();if(typeof onClose==='function')onClose();};
     if(sticky){
@@ -47187,8 +47267,8 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     v473ReadyTimer=setTimeout(()=>{
       v473ReadyTimer=null;if(level!==7||!level7MulticolorTutorialActive||level7MulticolorStage!=='reward_flying')return;
       level7MulticolorStage='awaiting_joker_click';gamePaused=true;v625StopFallLoop();
-      v473ShowHint('MULTICOLOR UNLOCKED!','+1',V473_ICONS.multi,1300,{onClose:()=>{
-        if(level===7&&level7MulticolorStage==='awaiting_joker_click')v473ShowHint('TAP TO USE','',V473_ICONS.multi,0,{sticky:true});
+      v473ShowHint('MULTICOLOR UNLOCKED!','+1',V473_ICONS.multi,1300,{placement:'below',onClose:()=>{
+        if(level===7&&level7MulticolorStage==='awaiting_joker_click')v473ShowHint('TAP TO USE','',V473_ICONS.multi,0,{sticky:true,placement:'below'});
       }});
       v468ScheduleAutosave(0);
     },720);
@@ -47236,6 +47316,13 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
       if(v473RepairExclusive()||v473BlockedByScore())return;
       level7PurpleUnlocked=true;updateTutorialColorTracker({animate:true});
       forcedNextBlock=v473Plain('#9B51E0',1+Math.floor(Math.random()*3));
+      updateNextBlockDisplay(
+        forcedNextBlock.color,
+        forcedNextBlock.length,
+        forcedNextBlock.isDiva,
+        forcedNextBlock.isSpecial,
+        forcedNextBlock.isMulticolor
+      );
       v473ShowHint('PURPLE JOINS!','',V473_ICONS.purple,1650);v468ScheduleAutosave(0);return;
     }
     if(level7BlocksAfterMastery>=7){
@@ -65777,6 +65864,77 @@ triggerPromoGroupCelebration = function(group, groupColor) {
      The next set is created after the first R is earned but frozen immediately;
      it resumes only after BARRIER REPAIRED! closes. EARN YOUR FIRST REPAIR uses
      the same source image as the REPAIRS counter cell. -->
+
+
+<!-- v712:
+     - PURPLE JOINS refreshes NEXT SET immediately from the real forced purple formation
+     - first earned Multicolor messages sit below the live 10x10 floor
+     - Multicolor choice only offers colors already active/unlocked in the current tutorial level -->
+
+
+<!-- v713: Free Picture tutorial landing may leave the onboarding UI in a hybrid paused/locked state.
+     Normalize the level-8 -> level-9 handoff: after the white Free Picture lands,
+     clear any stale automatic arrow-lock, refresh the Party Goal/controls UI and
+     explicitly restart gameplay unless a newer sticky tutorial really requires a pause. -->
+<script id="v713-free-picture-landing-fix">
+(function(){
+  'use strict';
+
+  function v713RestartIfAllowed(){
+    try {
+      const awaitingFreeClick = (typeof level8FreePictureTutorialActive !== 'undefined' && level8FreePictureTutorialActive && typeof level8FreePictureStage !== 'undefined' && level8FreePictureStage === 'awaiting_free_picture_click');
+      const awaitingSkipClick = (typeof level9SkipTutorialActive !== 'undefined' && level9SkipTutorialActive && typeof level9SkipStage !== 'undefined' && level9SkipStage === 'awaiting_skip_click');
+      const awaitingRepair = (typeof firstBarrierRepairTutorialActive !== 'undefined' && firstBarrierRepairTutorialActive && typeof firstBarrierRepairTutorialStage !== 'undefined' && firstBarrierRepairTutorialStage === 'awaiting_lives_click');
+      const awaitingMulti = (typeof level7MulticolorTutorialActive !== 'undefined' && level7MulticolorTutorialActive && typeof level7MulticolorStage !== 'undefined' && level7MulticolorStage === 'awaiting_joker_click');
+      const mustStayPaused = awaitingFreeClick || awaitingSkipClick || awaitingRepair || awaitingMulti;
+
+      if (!mustStayPaused) {
+        if (typeof isPaused !== 'undefined') isPaused = false;
+        if (typeof gamePaused !== 'undefined') gamePaused = false;
+        if (typeof updatePauseDisplay === 'function') updatePauseDisplay();
+        if (typeof v473RestartLoop === 'function') {
+          v473RestartLoop();
+        } else if (typeof v625StopFallLoop === 'function' && typeof v625StartFallLoop === 'function') {
+          v625StopFallLoop();
+          fallInterval = v625StartFallLoop(fallSpeed);
+        }
+      }
+
+      if (typeof updateControls === 'function') updateControls();
+      if (typeof v448SyncControlLocks === 'function') v448SyncControlLocks();
+      if (typeof drawGrid === 'function') drawGrid();
+      if (typeof drawFallingBlock === 'function' && typeof fallingBlock !== 'undefined' && fallingBlock) drawFallingBlock();
+    } catch (_) {}
+  }
+
+  if (typeof handleLevel8FreePictureUsed === 'function') {
+    const v713BaseHandleLevel8FreePictureUsed = handleLevel8FreePictureUsed;
+    handleLevel8FreePictureUsed = function(){
+      const result = v713BaseHandleLevel8FreePictureUsed.apply(this, arguments);
+      setTimeout(v713RestartIfAllowed, 0);
+      setTimeout(v713RestartIfAllowed, 80);
+      return result;
+    };
+  }
+
+  if (typeof startLevel9SkipTutorial === 'function') {
+    const v713BaseStartLevel9SkipTutorial = startLevel9SkipTutorial;
+    startLevel9SkipTutorial = function(){
+      const result = v713BaseStartLevel9SkipTutorial.apply(this, arguments);
+      setTimeout(v713RestartIfAllowed, 0);
+      setTimeout(v713RestartIfAllowed, 80);
+      return result;
+    };
+  }
+})();
+</script>
+
+
+<!-- v714: General Free Picture landing repair.
+     A Free Picture now clears its surrounding 3x3 cells from field[] BEFORE the next
+     formation is spawned, avoids the old grow/disappear logical-collision window,
+     resolves identically from all four directions, and keeps level-8 tutorial hooks
+     scoped to level 8 instead of leaking into Full Party levels. -->
 
 </body>
 </html>

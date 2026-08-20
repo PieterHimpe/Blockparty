@@ -55211,16 +55211,13 @@ body.v546-onboarding-levels #levelProgressBar {
     return Array.from(document.querySelectorAll('.button-wrapper .reset-btn'));
   }
 
-  /* v708 TEMP TEST: use a known tutorial image for every permanent Party Goal state.
-     If tut1c renders in-app, the Party Goal rendering path is fine and the
-     problem is specific to the party_goal_state_* assets/deployment. */
   const V614_PARTY_GOAL_IMAGES = [
-    'images/tut1c.png',
-    'images/tut1c.png',
-    'images/tut1c.png',
-    'images/tut1c.png',
-    'images/tut1c.png',
-    'images/tut1c.png'
+    'images/party_goal_state_0.png',
+    'images/party_goal_state_1.png',
+    'images/party_goal_state_2.png',
+    'images/party_goal_state_3.png',
+    'images/party_goal_state_4.png',
+    'images/party_goal_state_5.png'
   ];
 
   function v614PartyGoalImageState(current, total){
@@ -55229,42 +55226,9 @@ body.v546-onboarding-levels #levelProgressBar {
     return Math.max(0, Math.min(4, Math.round((current / total) * 5)));
   }
 
-  // v706: preload Party Goal state images before changing the visible <img>.
-  // The previous implementation marked the slot as image-missing before load,
-  // which could leave the Android/WebView cell dark even though the PNG exists.
-  const V706_PARTY_GOAL_PRELOADS = new Map();
-
-  function v706PreloadPartyGoalImage(src){
-    const url = String(src || '');
-    if (!url) return Promise.reject(new Error('Missing Party Goal image URL'));
-    if (V706_PARTY_GOAL_PRELOADS.has(url)) return V706_PARTY_GOAL_PRELOADS.get(url);
-
-    const promise = new Promise((resolve, reject) => {
-      const loader = new Image();
-      loader.decoding = 'async';
-      loader.onload = async () => {
-        try {
-          if (typeof loader.decode === 'function') await loader.decode();
-        } catch (_) {
-          // A successful load is enough; decode() is only an extra readiness hint.
-        }
-        resolve(url);
-      };
-      loader.onerror = () => reject(new Error('Could not load Party Goal image: ' + url));
-      loader.src = url;
-    });
-
-    // Failed attempts are not cached permanently, so a later retry can recover.
-    V706_PARTY_GOAL_PRELOADS.set(url, promise);
-    promise.catch(() => V706_PARTY_GOAL_PRELOADS.delete(url));
-    return promise;
-  }
-
-  // Warm all six images early; this also makes state changes instant on mobile.
-  V614_PARTY_GOAL_IMAGES.forEach(src => {
-    v706PreloadPartyGoalImage(src).catch(() => {});
-  });
-
+  // v709: permanent Party Goal images render directly.
+  // No preload/decode/switching state: Android WebView could leave the image
+  // at opacity:0 indefinitely even when the asset itself loaded correctly.
   function v614EnsurePartyGoalImage(panel){
     if (!panel) return [];
     let wraps = Array.from(panel.querySelectorAll('.v614-party-goal-image'));
@@ -55280,15 +55244,13 @@ body.v546-onboarding-levels #levelProgressBar {
         wrap.className = cfg.className;
         const img = document.createElement('img');
         img.alt = '';
-        img.decoding = 'async';
         img.loading = 'eager';
         wrap.appendChild(img);
         panel.appendChild(wrap);
       }
     });
 
-    wraps = Array.from(panel.querySelectorAll('.v614-party-goal-image'));
-    return wraps;
+    return Array.from(panel.querySelectorAll('.v614-party-goal-image'));
   }
 
   function v614SetPartyGoalImage(panel, current, total){
@@ -55301,36 +55263,30 @@ body.v546-onboarding-levels #levelProgressBar {
       const img = wrap.querySelector('img');
       if (!img) return;
 
-      const alreadyReady =
-        wrap.dataset.state === String(state) &&
-        wrap.dataset.loadedSrc === wantedSrc &&
-        img.complete && img.naturalWidth > 0;
-      if (alreadyReady) return;
-
       wrap.dataset.state = String(state);
-      const requestId = String((Number(wrap.dataset.v706RequestId || 0) + 1));
-      wrap.dataset.v706RequestId = requestId;
+      wrap.classList.remove('switching', 'image-missing');
 
-      // Keep the previous valid image visible while the next one preloads.
-      // Only use the missing fallback when there has never been a valid image.
-      if (!wrap.dataset.loadedSrc) wrap.classList.add('switching');
+      // Force the actual image visible; do not let old transition classes hide it.
+      img.style.setProperty('display', 'block', 'important');
+      img.style.setProperty('visibility', 'visible', 'important');
+      img.style.setProperty('opacity', '1', 'important');
+      img.style.setProperty('transform', 'none', 'important');
 
-      v706PreloadPartyGoalImage(wantedSrc).then(() => {
-        if (wrap.dataset.v706RequestId !== requestId) return;
+      if (img.getAttribute('src') !== wantedSrc) {
         img.src = wantedSrc;
-        wrap.dataset.loadedSrc = wantedSrc;
-        wrap.classList.remove('image-missing');
-        requestAnimationFrame(() => wrap.classList.remove('switching'));
-      }).catch(() => {
-        if (wrap.dataset.v706RequestId !== requestId) return;
+      }
+
+      // Never turn a failed load into an unexplained black box.
+      img.onerror = () => {
         wrap.classList.remove('switching');
-        if (!wrap.dataset.loadedSrc || !img.complete || img.naturalWidth < 1) {
-          wrap.classList.add('image-missing');
-        } else {
-          // Never replace a previously working Party Goal image with a black slot.
-          wrap.classList.remove('image-missing');
-        }
-      });
+        wrap.classList.add('image-missing');
+      };
+      img.onload = () => {
+        wrap.classList.remove('switching', 'image-missing');
+        img.style.setProperty('display', 'block', 'important');
+        img.style.setProperty('visibility', 'visible', 'important');
+        img.style.setProperty('opacity', '1', 'important');
+      };
     });
   }
 
@@ -65728,6 +65684,24 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     0%   { transform: scale(.88); }
     45%  { transform: scale(1.12); box-shadow: 0 0 10px rgba(255,220,120,.42); }
     100% { transform: scale(1); box-shadow: 0 1px 4px rgba(0,0,0,.42); }
+  }
+</style>
+
+
+<!-- v709: authoritative visibility guard for permanent Party Goal side images. -->
+<style id="v709-party-goal-direct-image-visibility-style">
+  .button-wrapper .reset-btn.v606-party-goal-host .v614-party-goal-image img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+  .button-wrapper .reset-btn.v606-party-goal-host .v614-party-goal-image.switching img {
+    opacity: 1 !important;
+    transform: none !important;
   }
 </style>
 

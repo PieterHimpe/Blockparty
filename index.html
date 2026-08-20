@@ -47277,7 +47277,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
   onLevel7MulticolorClicked=function(){
     if(!level7MulticolorTutorialActive||level!==7||level7MulticolorStage!=='awaiting_joker_click')return;
     level7JokerClicked=true;level7MulticolorStage='choosing_color';
-    v473ClearHint();v473ShowHint('CHOOSE A COLOR','',V473_ICONS.multi,0,{sticky:true});
+    v473ClearHint();v473ShowHint('CHOOSE A COLOR','',V473_ICONS.multi,0,{sticky:true,placement:'below'});
   };
 
   onLevel7ColorSelected=function(color){
@@ -65935,6 +65935,85 @@ triggerPromoGroupCelebration = function(group, groupColor) {
      formation is spawned, avoids the old grow/disappear logical-collision window,
      resolves identically from all four directions, and keeps level-8 tutorial hooks
      scoped to level 8 instead of leaking into Full Party levels. -->
+
+
+<!-- v715: CHOOSE A COLOR in the Multicolor tutorial is positioned below the live 10x10 dance floor. -->
+
+<!-- v716: required Skip tutorial must remain clickable while gamePaused.
+     The central v448 lock previously blocked #renewCell during awaiting_skip_click,
+     leaving the sticky DON'T WANT IT? SKIP IT card impossible to dismiss. -->
+<script id="v716-skip-tutorial-click-unlock-fix">
+(function(){
+  'use strict';
+
+  function v716SkipIsRequired(){
+    try {
+      return !!(
+        typeof level9SkipTutorialActive !== 'undefined' && level9SkipTutorialActive &&
+        typeof level !== 'undefined' && Number(level) === 9 &&
+        typeof level9SkipStage !== 'undefined' && level9SkipStage === 'awaiting_skip_click'
+      );
+    } catch (_) { return false; }
+  }
+
+  function v716SyncSkipRequiredClass(){
+    const cell=document.getElementById('renewCell');
+    if(!cell) return;
+    const required=v716SkipIsRequired();
+    cell.classList.toggle('tutorial-required-action', required);
+    if(required){
+      cell.classList.remove('v448-auto-input-locked');
+      cell.setAttribute('aria-disabled','false');
+    }
+  }
+
+  /* Make the central input-lock explicitly recognize required Skip. */
+  if(typeof v448IsExplicitTutorialAction === 'function'){
+    const baseExplicit=v448IsExplicitTutorialAction;
+    v448IsExplicitTutorialAction=function(control){
+      if(control && control.id==='renewCell' && v716SkipIsRequired()) return true;
+      return baseExplicit.apply(this,arguments);
+    };
+  }
+
+  /* Any path that arms the Skip tutorial receives the required-action marker. */
+  if(typeof showLevel9RequiredSkipTutorial === 'function'){
+    const baseShowRequired=showLevel9RequiredSkipTutorial;
+    showLevel9RequiredSkipTutorial=function(){
+      const result=baseShowRequired.apply(this,arguments);
+      v716SyncSkipRequiredClass();
+      if(typeof v448SyncControlLocks==='function') v448SyncControlLocks();
+      return result;
+    };
+  }
+
+  /* The v527 long Party Goal can arm Skip through its own delayed path. */
+  const syncTimer=setInterval(()=>{
+    v716SyncSkipRequiredClass();
+  },180);
+
+  /* Once Skip succeeds, guarantee cleanup of the sticky card + lock state. */
+  if(typeof onLevel9SkipClicked === 'function'){
+    const baseSkipClicked=onLevel9SkipClicked;
+    onLevel9SkipClicked=function(){
+      const result=baseSkipClicked.apply(this,arguments);
+      if(result){
+        const cell=document.getElementById('renewCell');
+        if(cell) cell.classList.remove('tutorial-required-action','tutorial-info-highlight','v448-auto-input-locked');
+        try {
+          if(typeof v473ClearHint==='function') v473ClearHint();
+          else if(typeof window.v501HideCurrentOnboardingCard==='function') window.v501HideCurrentOnboardingCard();
+        } catch(_) {}
+        if(typeof v448SyncControlLocks==='function') v448SyncControlLocks();
+      }
+      return result;
+    };
+  }
+
+  window.addEventListener('beforeunload',()=>clearInterval(syncTimer),{once:true});
+  requestAnimationFrame(v716SyncSkipRequiredClass);
+})();
+</script>
 
 </body>
 </html>

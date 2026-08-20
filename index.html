@@ -64183,6 +64183,212 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v686: refine rebuilt 4 center cells.
+     - remove duplicate LEVEL label
+     - REPAIRS/SCORE numbers larger
+     - LEVEL number smaller
+     - titles vertically centered lower in top half
+     - all 4 borders closed, not jagged
+     - Party Goal lower text positioning -->
+<style id="v686-center-cells-refine-style">
+  :root {
+    --v686-title-size: 1rem;
+    --v686-number-size: 3rem;
+    --v686-level-number-size: 2.4rem;
+    --v686-next-block-size: 18px;
+    --v686-border-stroke: 4;
+  }
+
+  /* Hide the older v685 overlays; v686 owns the borders now. */
+  .v685-border-overlay {
+    display: none !important;
+  }
+
+  .v685-top {
+    align-items: center !important;
+    justify-content: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .v685-title {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    font-size: var(--v686-title-size) !important;
+    line-height: 1 !important;
+    transform: translateY(2px) !important;
+  }
+
+  #livesText,
+  #scoreValue {
+    font-size: var(--v686-number-size) !important;
+    line-height: .9 !important;
+    transform: translateY(-1px) !important;
+  }
+
+  #levelDisplayExtra {
+    font-size: var(--v686-level-number-size) !important;
+    line-height: .92 !important;
+    transform: translateY(-1px) !important;
+  }
+
+  /* Extra hard-kill for the legacy duplicate LEVEL support labels. */
+  #extraCell1 #levelStatusLabels,
+  #extraCell1 #levelLabel,
+  #extraCell1 #bpmLabel {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #nextBlockPreview {
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #nextBlockPreview > div {
+    width: var(--v686-next-block-size) !important;
+    height: var(--v686-next-block-size) !important;
+    min-width: var(--v686-next-block-size) !important;
+    min-height: var(--v686-next-block-size) !important;
+    max-width: var(--v686-next-block-size) !important;
+    max-height: var(--v686-next-block-size) !important;
+  }
+
+  .v686-border-overlay {
+    position: absolute !important;
+    inset: 1px !important;
+    width: calc(100% - 2px) !important;
+    height: calc(100% - 2px) !important;
+    z-index: 7 !important;
+    pointer-events: none !important;
+    overflow: visible !important;
+  }
+
+  /* Lower the lower Party Goal copy a little bit. */
+  .v606-party-goal-panel {
+    justify-content: center !important;
+    padding: 5px 4px 0 !important;
+    gap: 1px !important;
+  }
+
+  .v606-party-goal-label,
+  .v606-party-goal-sub,
+  .v606-party-goal-dots {
+    transform: translateY(2px) !important;
+  }
+</style>
+
+<script id="v686-center-cells-refine-runtime">
+(() => {
+  'use strict';
+
+  const V686_TOTAL = 8;
+  const V686_ORANGE = '#e88a2d';
+  const V686_YELLOW = '#ffe600';
+
+  function v686CurrentLevelProgress() {
+    try {
+      const n = Number(bigGroupCount);
+      return Number.isFinite(n) ? Math.max(0, Math.min(V686_TOTAL, Math.round(n))) : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function v686RemoveDuplicateLevelStuff() {
+    document.querySelectorAll('#extraCell1 #levelStatusLabels').forEach(el => el.remove());
+    document.querySelectorAll('#extraCell1 #levelLabel').forEach(el => el.remove());
+    document.querySelectorAll('#extraCell1 #bpmLabel').forEach(el => el.remove());
+  }
+
+  function v686EnsureBorder(cellId, overlayId) {
+    const cell = document.getElementById(cellId);
+    if (!cell) return null;
+
+    let svg = document.getElementById(overlayId);
+    if (svg) return svg;
+
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = overlayId;
+    svg.classList.add('v686-border-overlay');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+
+    for (let i = 0; i < V686_TOTAL; i++) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', '2.2');
+      rect.setAttribute('y', '2.2');
+      rect.setAttribute('width', '95.6');
+      rect.setAttribute('height', '95.6');
+      rect.setAttribute('rx', '9');
+      rect.setAttribute('ry', '9');
+      rect.setAttribute('fill', 'none');
+      rect.setAttribute('pathLength', '800');
+      rect.setAttribute('stroke-width', '4');
+      rect.setAttribute('vector-effect', 'non-scaling-stroke');
+      /* closed/continuous perimeter: 8 touching 1/8ths, no gaps */
+      rect.setAttribute('stroke-dasharray', '100 700');
+      rect.setAttribute('stroke-dashoffset', String(-i * 100));
+      rect.dataset.segmentIndex = String(i);
+      svg.appendChild(rect);
+    }
+
+    cell.appendChild(svg);
+    return svg;
+  }
+
+  function v686UpdateBorder(cellId, overlayId, filledCount) {
+    const svg = v686EnsureBorder(cellId, overlayId);
+    if (!svg) return;
+    const segments = Array.from(svg.querySelectorAll('rect[data-segment-index]'));
+    segments.forEach((seg, idx) => {
+      seg.setAttribute('stroke', idx < filledCount ? V686_YELLOW : V686_ORANGE);
+    });
+  }
+
+  function v686RefreshBorders() {
+    v686UpdateBorder('livesDisplay', 'v686RepairBorder', 0);
+    v686UpdateBorder('scoreDisplay', 'v686ScoreBorder', 0);
+    v686UpdateBorder('nextBlockDisplay', 'v686NextBorder', 0);
+    v686UpdateBorder('extraCell1', 'v686LevelBorder', v686CurrentLevelProgress());
+  }
+
+  function v686Refresh() {
+    v686RemoveDuplicateLevelStuff();
+    v686RefreshBorders();
+  }
+
+  [
+    'updateLivesDisplay',
+    'updateScoreDisplay',
+    'updateLevelDisplay',
+    'updateLevelAndBpmDisplay',
+    'updateNextBlockDisplay',
+    'updateFeatureAvailability'
+  ].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      requestAnimationFrame(v686Refresh);
+      return result;
+    };
+  });
+
+  requestAnimationFrame(v686Refresh);
+  setTimeout(v686Refresh, 60);
+})();
+</script>
+
 </body>
 </html>
 

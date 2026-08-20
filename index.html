@@ -18395,9 +18395,10 @@ function updateNextBlockDisplay(color, length = 1, isDiva = false, isSpecial = f
     } else if (isMulticolor) {
       // Next Block toont de kleine zesdelige taart, zonder buitenrand.
       const pie = document.createElement("div");
+      pie.className = "v699-nextset-multicolor-pie";
       pie.style.position = "absolute";
-      pie.style.width = "6px";
-      pie.style.height = "6px";
+      pie.style.width = "78%";
+      pie.style.height = "78%";
       pie.style.left = "50%";
       pie.style.top = "50%";
       pie.style.transform = "translate(-50%, -50%)";
@@ -26119,7 +26120,9 @@ document.getElementById("freePictureDisplay").addEventListener("click", () => {
     level8FreePictureStage === "awaiting_free_picture_click";
 
   const freePictureAlreadyQueued =
-    nextBlockIsFreePicture || !!(nextBlock && nextBlock.isFreePicture);
+    !!(forcedNextBlock && forcedNextBlock.isFreePicture) ||
+    !!(nextBlock && nextBlock.isFreePicture) ||
+    (!tutorialRequiresFreePictureClick && nextBlockIsFreePicture);
 
   if (
     freePictureCount > 0 &&
@@ -26131,8 +26134,7 @@ document.getElementById("freePictureDisplay").addEventListener("click", () => {
     freePictureCount--;
     updateFreePictureDisplay();
 
-    nextBlockIsFreePicture = true;
-    nextBlock = {
+    const selectedFreePictureBlock = {
       color: "#FFFFFF",
       length: 1,
       isSpecial: false,
@@ -26141,6 +26143,21 @@ document.getElementById("freePictureDisplay").addEventListener("click", () => {
       isDiva: false,
       divaCountdown: null
     };
+
+    if (tutorialFreePictureClick) {
+      // V696: during the required level-8 tutorial click, Free Picture must be
+      // the very next formation. createBlock() prioritizes forcedNextBlock over
+      // nextBlock, so put it in both places and clear the legacy queue flag.
+      // This prevents a still-pending tutorial forced block from replacing the
+      // player's Free Picture selection before it can fall.
+      forcedNextBlock = { ...selectedFreePictureBlock };
+      nextBlock = { ...selectedFreePictureBlock };
+      nextBlockIsFreePicture = false;
+    } else {
+      nextBlockIsFreePicture = true;
+      nextBlock = selectedFreePictureBlock;
+    }
+
   updateNextBlockDisplay(nextBlock.color, nextBlock.length, nextBlock.isDiva, nextBlock.isSpecial, nextBlock.isMulticolor);
 
     if (tutorialFreePictureClick) {
@@ -56984,7 +57001,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   // V624 mix: de vorige SFX stonden te zacht tegenover de partytrack.
   // Frequent UI blijft bescheiden; spelacties en waarschuwingen krijgen duidelijk meer presence.
   const BP_SFX_VOLUME = {
-    ui:.34, start:.72, drop:.70, skip:.62, barrierHit:.82, barrierOpen:.90,
+    ui:.34, start:.72, drop:.78, skip:.62, barrierHit:.58, barrierOpen:.62,
     repair:.82, resource:.58, multicolor:.72, freePicture:.76, divaNormal:.68, partyDown:.82
   };
   const BP_SFX_DUCK = {
@@ -59981,7 +59998,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     if (firstIntro) {
       document.body.classList.add('v634-first-goal-intro-active');
       host.classList.add('v634-first-goal-intro');
-      showFirstAnnouncement(host);
+      /* v695: small v634 text balloon removed; the large Party Goal card is the sole instruction card. */
 
       setTimeout(() => {
         document.body.classList.remove('v634-first-goal-intro-active');
@@ -62301,11 +62318,11 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
     toast.innerHTML =
       `<div class="v649-toast-title">${String(title)}</div>` +
-      `<div class="v649-toast-sub">${String(text).replace(/\n?\s*REWARD\s*\+?100\s*POINTS/ig,'').replace(/\n?\s*\+?100\s*POINTS/ig,'').replace(/\n/g, '<br>').trim()}</div>` +
+      `<div class="v649-toast-sub">MAKE 5 GROUPS OF 5+</div>` +
       `<div class="v649-card-row">` +
         `<img class="v649-side-figure" src="${imgs.left}" alt="">` +
         `<div class="v649-mid">` +
-          `<div class="v649-mid-label">MATCH THE COLORS</div>` +
+          `<div class="v649-mid-label">USING THE COLORS BELOW</div>` +
           colorsHtml +
           `<div class="v649-reward">+100 POINTS</div>` +
         `</div>` +
@@ -65090,6 +65107,336 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     width: calc(100% - 2px) !important;
     height: calc(100% - 2px) !important;
     overflow: visible !important;
+  }
+</style>
+
+
+
+<!-- v694: only unify border color and thickness for the 8 small top cells -->
+<style id="v694-small-top-cells-uniform-border-only">
+  #multicolorDisplay,
+  #pauseCell,
+  #renewCell,
+  #shopCell,
+  #freePictureDisplay,
+  #levelDisplay,
+  #saveScoreCell,
+  #dropCell {
+    border: 2px solid #e88a2d !important;
+    box-shadow: 0 0 6px #e88a2d !important;
+  }
+
+  #multicolorDisplay.feature-locked,
+  #pauseCell.feature-locked,
+  #renewCell.feature-locked,
+  #shopCell.feature-locked,
+  #freePictureDisplay.feature-locked,
+  #levelDisplay.feature-locked,
+  #saveScoreCell.feature-locked,
+  #dropCell.feature-locked {
+    border: 2px solid #e88a2d !important;
+    box-shadow: 0 0 6px #e88a2d !important;
+  }
+</style>
+
+
+<!-- v695: Party Goal start instruction cleanup only.
+     - removed the small v634 first-goal text balloon
+     - large card now says MAKE 5 GROUPS OF 5+ / USING THE COLORS BELOW
+     - color targets, duplicate colors, unordered completion and +100 reward logic unchanged -->
+
+
+<!-- v696: Level-8 tutorial Free Picture selection is now authoritative.
+     The required click queues the white Free Picture as forcedNextBlock so no
+     pending tutorial forced block can consume priority and overwrite it. -->
+
+
+<!-- v697: practical HUD cleanup
+     - SCORE now auto-shrinks when it reaches 4+ digits
+     - Party Goal start toast is guaranteed to pause gameplay while visible
+     - white lock icons on locked side cells are smaller so they fit cleanly
+     - tutorial 7-color preview is now solid circles without faces and with much less blur/dulling -->
+<style id="v697-practical-hud-cleanup-style">
+  :root {
+    --v697-score-size-3: 2.22rem;
+    --v697-score-size-4: 1.84rem;
+    --v697-score-size-5: 1.52rem;
+    --v697-score-size-6: 1.28rem;
+  }
+
+  /* SCORE: keep the same visual style, but let the value scale down once it gets longer. */
+  #scoreDisplay.info-cell #scoreValue {
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+
+  /* Smaller white lock overlay so it sits nicely inside the 8 small outer cells. */
+  .info-cell.feature-locked::after,
+  .drop-block-button.feature-locked::after {
+    background-size: clamp(18px, 5.1vw, 24px) clamp(18px, 5.1vw, 24px) !important;
+    background-position: center center !important;
+    inset: 3px !important;
+  }
+
+  /* Tutorial / right-side 7-colour preview: use full circles, no faces, and much less blur. */
+  .tutorial-color-slot {
+    border-radius: 50% !important;
+    transform: scale(1) !important;
+    opacity: .72 !important;
+    filter: saturate(.88) brightness(.80) !important;
+    border-width: 2px !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.10),
+      0 1px 4px rgba(0,0,0,.45) !important;
+  }
+
+  .tutorial-color-slot.unlocked {
+    opacity: 1 !important;
+    filter: none !important;
+    border-color: rgba(255, 235, 168, .94) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.18),
+      0 1px 5px rgba(0,0,0,.34),
+      0 0 5px color-mix(in srgb, var(--tutorial-slot-color, #FFE680) 30%, transparent) !important;
+  }
+
+  .tutorial-color-face {
+    display: none !important;
+  }
+
+  .tutorial-color-lock {
+    background: rgba(10, 8, 12, .26) !important;
+  }
+
+  .tutorial-color-lock svg {
+    width: 50% !important;
+    height: 50% !important;
+    opacity: .94 !important;
+  }
+
+  @keyframes v697TutorialColorUnlock {
+    0%   { transform: scale(.92); opacity: .60; filter: saturate(.78) brightness(.78); }
+    45%  { transform: scale(1.12); opacity: 1; filter: none; box-shadow: 0 0 10px rgba(255,230,128,.45); }
+    100% { transform: scale(1); opacity: 1; filter: none; box-shadow: 0 0 5px rgba(255,230,128,.34); }
+  }
+
+  .tutorial-color-slot.just-unlocked {
+    animation: v697TutorialColorUnlock 900ms ease-out both !important;
+  }
+</style>
+
+<script id="v697-practical-hud-cleanup-runtime">
+(() => {
+  'use strict';
+
+  function v697ChooseScoreSize(digitCount) {
+    if (digitCount <= 3) return 'var(--v697-score-size-3)';
+    if (digitCount === 4) return 'var(--v697-score-size-4)';
+    if (digitCount === 5) return 'var(--v697-score-size-5)';
+    return 'var(--v697-score-size-6)';
+  }
+
+  function v697FitScoreValue() {
+    const scoreCell = document.getElementById('scoreDisplay');
+    const scoreValue = document.getElementById('scoreValue');
+    if (!scoreCell || !scoreValue) return;
+
+    const rawText = String(scoreValue.textContent || '').trim();
+    const digitCount = rawText.replace(/[^0-9]/g, '').length || rawText.length || 1;
+    scoreValue.style.setProperty('font-size', v697ChooseScoreSize(digitCount), 'important');
+
+    requestAnimationFrame(() => {
+      let px = parseFloat(getComputedStyle(scoreValue).fontSize || '16');
+      const maxWidth = Math.max(10, Math.floor(scoreCell.clientWidth * 0.74));
+      const maxHeight = Math.max(10, Math.floor(scoreCell.clientHeight * 0.43));
+      while ((scoreValue.scrollWidth > maxWidth || scoreValue.scrollHeight > maxHeight) && px > 16) {
+        px -= 1;
+        scoreValue.style.setProperty('font-size', px + 'px', 'important');
+      }
+    });
+  }
+
+  ['updateScoreDisplay', 'updateFeatureAvailability', 'updateLevelDisplay', 'updateLevelAndBpmDisplay'].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      v697FitScoreValue();
+      return result;
+    };
+  });
+
+  if (window.ResizeObserver) {
+    const scoreCell = document.getElementById('scoreDisplay');
+    if (scoreCell) new ResizeObserver(v697FitScoreValue).observe(scoreCell);
+  }
+
+  /* Safety net: Party Goal start copy must really pause the game while visible. */
+  if (typeof window.v468Toast === 'function') {
+    const baseToast = window.v468Toast;
+    let pauseTimer = null;
+    let pausedByV697 = false;
+    let previousPauseState = false;
+
+    window.v468Toast = function(title, text = '', durationMs = 1800) {
+      const upperTitle = String(title || '').trim().toUpperCase();
+      const upperText = String(text || '').trim().toUpperCase();
+      const isPartyGoalStart =
+        (upperTitle === 'NEW PARTY GOAL' || upperTitle === 'NEW GOAL!') &&
+        upperText.includes('MATCH THESE 5 COLORS');
+
+      if (isPartyGoalStart) {
+        if (pauseTimer) {
+          clearTimeout(pauseTimer);
+          pauseTimer = null;
+        }
+        try {
+          previousPauseState = !!gamePaused;
+          gamePaused = true;
+          pausedByV697 = true;
+        } catch (_) {}
+
+        const result = baseToast.apply(this, arguments);
+        const visibleFor = Math.max(2400, Math.round((Number(durationMs) || 1800) * 1.5));
+        pauseTimer = setTimeout(() => {
+          if (!pausedByV697) return;
+          try { gamePaused = previousPauseState; } catch (_) {}
+          pausedByV697 = false;
+          pauseTimer = null;
+        }, visibleFor + 40);
+        return result;
+      }
+
+      return baseToast.apply(this, arguments);
+    };
+  }
+
+  requestAnimationFrame(v697FitScoreValue);
+  setTimeout(v697FitScoreValue, 80);
+  setTimeout(v697FitScoreValue, 250);
+})();
+</script>
+
+
+
+<!-- v698:
+     - no Repair (R) blocks are generated before the Party Barrier has taken its first real damage
+     - the first forced tutorial Repair remains available immediately AFTER that first impact
+     - first/second Barrier impact SFX are softer; Drop Block SFX is slightly louder -->
+<script id="v698-repair-gate-after-first-barrier-damage">
+(() => {
+  'use strict';
+
+  let v698BarrierDamageSeen = false;
+
+  function v698BarrierCurrentlyDamaged() {
+    try {
+      if (!barrierWallStates) return false;
+      return ['top','right','bottom','left'].some(side =>
+        Array.isArray(barrierWallStates[side]) &&
+        barrierWallStates[side].some(state => Number(state) < Number(BARRIER_STATE_INTACT))
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function v698RepairMaySpawn() {
+    if (v698BarrierDamageSeen) return true;
+    if (v698BarrierCurrentlyDamaged()) {
+      v698BarrierDamageSeen = true;
+      return true;
+    }
+    return false;
+  }
+
+  function v698IsRepairBlock(block) {
+    return !!(
+      block &&
+      block.isSpecial === true &&
+      block.isMulticolor !== true &&
+      block.isFreePicture !== true &&
+      block.isDiva !== true
+    );
+  }
+
+  /* Mark the first real Barrier impact BEFORE the existing resolver runs.
+     This is important because that resolver can immediately queue the mandatory first R block. */
+  if (typeof window.resolveOuterBarrierImpact === 'function') {
+    const v698BaseBarrierImpact = window.resolveOuterBarrierImpact;
+    window.resolveOuterBarrierImpact = function(block) {
+      try {
+        const side = getOuterWallSideForDirection(block && block.direction);
+        const indices = getBarrierIndicesForOuterImpact(block) || [];
+        const states = side && barrierWallStates && barrierWallStates[side]
+          ? indices.map(index => barrierWallStates[side][index])
+          : [];
+
+        /* A formation reaching a closed/damaged Barrier is a real impact.
+           A formation entering an already open gap is Game Over, not a new first hit. */
+        if (states.length && !states.some(state => state === BARRIER_STATE_OPEN)) {
+          v698BarrierDamageSeen = true;
+        } else if (v698BarrierCurrentlyDamaged()) {
+          v698BarrierDamageSeen = true;
+        }
+      } catch (_) {}
+
+      return v698BaseBarrierImpact.apply(this, arguments);
+    };
+  }
+
+  /* Final generation gate. It catches random, DJ-driven and stale forced R blocks.
+     Before first Barrier damage they become an ordinary block of the same color/length. */
+  if (typeof window.generateNextBlock === 'function') {
+    const v698BaseGenerateNextBlock = window.generateNextBlock;
+    window.generateNextBlock = function() {
+      const block = v698BaseGenerateNextBlock.apply(this, arguments);
+      if (!v698RepairMaySpawn() && v698IsRepairBlock(block)) {
+        return {
+          ...block,
+          isSpecial: false
+        };
+      }
+      return block;
+    };
+  }
+
+  /* A complete Barrier reset starts a new undamaged Barrier lifecycle. */
+  if (typeof window.resetBarrierWallStates === 'function') {
+    const v698BaseResetBarrier = window.resetBarrierWallStates;
+    window.resetBarrierWallStates = function() {
+      const result = v698BaseResetBarrier.apply(this, arguments);
+      v698BarrierDamageSeen = false;
+      return result;
+    };
+  }
+})();
+</script>
+
+
+
+<!-- v699: NEXT SET Multicolor preview only.
+     The old v685 child cleanup removes transforms from inner preview marks,
+     which displaced the Multicolor pie. Keep this one centered and scale it
+     relative to the dynamically resized preview square. -->
+<style id="v699-nextset-multicolor-preview-fix">
+  #nextBlockDisplay.info-cell #nextBlockPreview > div > .v699-nextset-multicolor-pie {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    width: 78% !important;
+    height: 78% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    transform: translate(-50%, -50%) !important;
+    transform-origin: center center !important;
+    border-radius: 50% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
   }
 </style>
 

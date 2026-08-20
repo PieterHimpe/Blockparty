@@ -56341,9 +56341,11 @@ body.v546-onboarding-levels #levelProgressBar {
    - smaller text
    - smaller true circles that fit comfortably inside the cell */
 .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel {
-  padding-top: 3px !important;
+  padding-top: 6px !important;
+  padding-bottom: 0 !important;
   padding-left: 33px !important;
   padding-right: 33px !important;
+  justify-content: center !important;
 }
 .v614-party-goal-image {
   top: 8px !important;
@@ -64272,18 +64274,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     overflow: visible !important;
   }
 
-  /* Lower the lower Party Goal copy a little bit. */
-  .v606-party-goal-panel {
-    justify-content: center !important;
-    padding: 5px 4px 0 !important;
-    gap: 1px !important;
-  }
-
-  .v606-party-goal-label,
-  .v606-party-goal-sub,
-  .v606-party-goal-dots {
-    transform: translateY(2px) !important;
-  }
 </style>
 
 <script id="v686-center-cells-refine-runtime">
@@ -64790,7 +64780,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const availableHeight = Math.max(0, preview.clientHeight);
     if (!availableWidth || !availableHeight) return;
 
-    const sizeByWidth = Math.floor((availableWidth - gap * (count - 1)) / count);
+    const sizeByWidth = Math.floor((availableWidth - gap * 2) / 3);
     const sizeByHeight = Math.floor(availableHeight * 0.76);
     const size = Math.max(10, Math.min(sizeByWidth, sizeByHeight));
 
@@ -64848,6 +64838,192 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   setTimeout(v690Refresh, 240);
 })();
 </script>
+
+
+
+<!-- v692: HUD visual polish
+     Implements requested practical improvements:
+     1) central titles gold + central values softer light yellow
+     2) side-cell typography made much more uniform
+     3) border/label/value/background colors normalized via variables
+     5) NEXT MISSION preview made more readable
+     6) locked cells remain locked but feel less dead -->
+<style id="v692-hud-visual-polish-style">
+  :root {
+    --v692-hud-border: #e88a2d;
+    --v692-hud-label: #f4c644;
+    --v692-hud-value: #FFE680;
+    --v692-hud-bg: rgba(0, 0, 0, 0.68);
+
+    --v692-side-label-single: clamp(.72rem, 2.1vw, .84rem);
+    --v692-side-label-double: clamp(.56rem, 1.7vw, .66rem);
+    --v692-side-label-mission: clamp(.50rem, 1.55vw, .60rem);
+    --v692-side-value: 1rem;
+  }
+
+  /* 3) Normalize the core HUD palette on the practical surfaces. */
+  .info-cell {
+    background: var(--v692-hud-bg) !important;
+    border-color: var(--v692-hud-border) !important;
+    box-shadow: 0 0 6px var(--v692-hud-border) !important;
+    color: var(--v692-hud-label) !important;
+  }
+
+  .button-wrapper .text-button,
+  .button-wrapper button {
+    border-color: var(--v692-hud-border) !important;
+  }
+
+  .button-wrapper .text-button {
+    background-color: var(--v692-hud-bg) !important;
+    color: var(--v692-hud-label) !important;
+    box-shadow: 0 0 6px var(--v692-hud-border) !important;
+  }
+
+  .record-stat-label {
+    color: rgba(244,198,68,.84) !important;
+  }
+
+  .record-stat-value {
+    color: var(--v692-hud-value) !important;
+  }
+
+  /* 1) Titles gold, values softer light yellow in the 4 large center cells. */
+  #livesDisplay .v685-title,
+  #scoreDisplay .v685-title,
+  #extraCell1 .v685-title,
+  #nextBlockDisplay .v685-title {
+    color: var(--v692-hud-label) !important;
+  }
+
+  #livesDisplay.info-cell #livesText,
+  #scoreDisplay.info-cell #scoreValue,
+  #extraCell1.info-cell #levelStatusValues #levelDisplayExtra {
+    color: var(--v692-hud-value) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.58) !important;
+  }
+
+  /* Also normalize small-cell counters to the same value color. */
+  #multicolorCount,
+  #renewCounter,
+  #freePictureCount,
+  #saveBlockCounter {
+    color: var(--v692-hud-value) !important;
+    font-size: var(--v692-side-value) !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* 2) Side-cell typography: consistent line-height, vertical centering, sizing. */
+  #pauseCell #pauseButton > div > div:nth-child(2) > div,
+  #shopCell #shopButton > div > div:nth-child(2),
+  #levelDisplay:not(.v662-party-preview) #challengeInfoText {
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-weight: 900 !important;
+    font-size: var(--v692-side-label-single) !important;
+    color: var(--v692-hud-label) !important;
+    text-transform: uppercase !important;
+    line-height: 1.02 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #multicolorDisplay > div > div:nth-child(2) > div,
+  #renewCell > div > div:nth-child(2),
+  #freePictureDisplay > div > div:nth-child(2) > div,
+  #saveWrapper > div:nth-child(2),
+  #dropCell button > div > div:nth-child(2) {
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-weight: 900 !important;
+    font-size: var(--v692-side-label-double) !important;
+    color: var(--v692-hud-label) !important;
+    text-transform: uppercase !important;
+    line-height: 1.02 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Make the text containers themselves consistently centered. */
+  #pauseCell #pauseButton > div > div:nth-child(2),
+  #shopCell #shopButton > div > div:nth-child(2),
+  #multicolorDisplay > div > div:nth-child(2),
+  #freePictureDisplay > div > div:nth-child(2),
+  #saveWrapper > div:nth-child(2),
+  #dropCell button > div > div:nth-child(2) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+  }
+
+  /* 5) NEXT MISSION preview: improve readability in the non-active preview state only. */
+  #levelDisplay.v662-party-preview #levelImage {
+    width: 42% !important;
+    height: 92% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  #levelDisplay.v662-party-preview #challengeInfoText {
+    width: 58% !important;
+    height: 100% !important;
+    padding: 0 4px 0 2px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 2px !important;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-main {
+    color: var(--v692-hud-label) !important;
+    font-weight: 900 !important;
+    font-size: var(--v692-side-label-mission) !important;
+    line-height: 1 !important;
+    letter-spacing: .01em !important;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-sub {
+    color: var(--v692-hud-value) !important;
+    font-weight: 900 !important;
+    font-size: clamp(.42rem, 1.35vw, .50rem) !important;
+    line-height: 1 !important;
+    margin-top: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  /* 6) Locked cells: still clearly unavailable, but less lifeless. */
+  .info-cell.feature-locked > *,
+  .drop-block-button.feature-locked > * {
+    filter: grayscale(1) brightness(.52) saturate(.72) !important;
+    opacity: .56 !important;
+  }
+
+  .info-cell.feature-locked::after,
+  .drop-block-button.feature-locked::after {
+    background-color: rgba(12,10,14,.52) !important;
+  }
+</style>
 
 </body>
 </html>

@@ -55211,13 +55211,16 @@ body.v546-onboarding-levels #levelProgressBar {
     return Array.from(document.querySelectorAll('.button-wrapper .reset-btn'));
   }
 
+  /* v708 TEMP TEST: use a known tutorial image for every permanent Party Goal state.
+     If tut1c renders in-app, the Party Goal rendering path is fine and the
+     problem is specific to the party_goal_state_* assets/deployment. */
   const V614_PARTY_GOAL_IMAGES = [
-    'images/party_goal_state_0.png',
-    'images/party_goal_state_1.png',
-    'images/party_goal_state_2.png',
-    'images/party_goal_state_3.png',
-    'images/party_goal_state_4.png',
-    'images/party_goal_state_5.png'
+    'images/tut1c.png',
+    'images/tut1c.png',
+    'images/tut1c.png',
+    'images/tut1c.png',
+    'images/tut1c.png',
+    'images/tut1c.png'
   ];
 
   function v614PartyGoalImageState(current, total){
@@ -65670,6 +65673,63 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 <!-- v706: Permanent Party Goal state images are preloaded before display.
      The old valid image remains visible during a state change; image-missing is
      now used only after a genuine load failure, preventing black WebView slots. -->
+
+
+<!-- v707: Tutorial color tracker discs are now truly hidden until unlocked.
+     Locked state = solid black disc, uniform yellow ring, small white lock.
+     Unlocked state = flat solid color disc with the same ring. -->
+<style id="v707-tutorial-color-discs-solid-style">
+  .tutorial-color-slot {
+    border-radius: 50% !important;
+    background: #060608 !important;
+    opacity: 1 !important;
+    filter: none !important;
+    border: 2px solid #f0b04c !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.42) !important;
+    overflow: hidden !important;
+  }
+
+  .tutorial-color-slot.unlocked {
+    background: var(--tutorial-slot-color, #888) !important;
+    opacity: 1 !important;
+    filter: none !important;
+    border: 2px solid #f0b04c !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.42) !important;
+  }
+
+  .tutorial-color-face {
+    display: none !important;
+  }
+
+  .tutorial-color-lock {
+    inset: 0 !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .tutorial-color-lock svg {
+    width: 40% !important;
+    height: 40% !important;
+    opacity: .96 !important;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.72)) !important;
+  }
+
+  .tutorial-color-slot.unlocked .tutorial-color-lock {
+    display: none !important;
+  }
+
+  .tutorial-color-slot.just-unlocked {
+    animation: v707TutorialColorUnlock 700ms ease-out both !important;
+  }
+
+  @keyframes v707TutorialColorUnlock {
+    0%   { transform: scale(.88); }
+    45%  { transform: scale(1.12); box-shadow: 0 0 10px rgba(255,220,120,.42); }
+    100% { transform: scale(1); box-shadow: 0 1px 4px rgba(0,0,0,.42); }
+  }
+</style>
 
 </body>
 </html>

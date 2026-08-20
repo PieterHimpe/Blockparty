@@ -28151,7 +28151,7 @@ function startMovementTutorial() {
               setMovementTutorialMessage(
                 "MOVE THE DANCE FLOOR ALL THE WAY LEFT",
                 "",
-                "images/tut1b.png",
+                "images/tut1l.png",
                 { durationMs: 16800 }
               );
               styleMovementTutorialArrow(-1);
@@ -28189,7 +28189,7 @@ function movementTutorialHandleArrow(direction) {
         setMovementTutorialMessage(
           "TRY AGAIN",
           "",
-          expectedDirection < 0 ? "images/tut1b.png" : "images/tut1c.png",
+          expectedDirection < 0 ? "images/tut1l.png" : "images/tut1r.png",
           { durationMs: 4900 }
         );
         return;
@@ -28212,7 +28212,7 @@ function movementTutorialHandleArrow(direction) {
       setMovementTutorialMessage(
         "MOVE THE DANCE FLOOR ALL THE WAY RIGHT",
         "",
-        "images/tut1c.png",
+        "images/tut1r.png",
         { durationMs: 16800 }
       );
       styleMovementTutorialArrow(1);
@@ -45378,9 +45378,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function v470HintImageForTitle(title) {
     const t = String(title || '').toUpperCase();
-    if (t === 'MOVE LEFT') return 'images/tut1b.png';
-    if (t === 'MOVE THE DANCE FLOOR ALL THE WAY LEFT') return 'images/tut1b.png';
-    if (t === 'NOW RIGHT' || t === 'NOW MOVE IT RIGHT') return 'images/tut1c.png';
+    if (t === 'MOVE LEFT') return 'images/tut1l.png';
+    if (t === 'MOVE THE DANCE FLOOR ALL THE WAY LEFT') return 'images/tut1l.png';
+    if (t === 'NOW RIGHT' || t === 'NOW MOVE IT RIGHT') return 'images/tut1r.png';
     if (t.includes('YOU MOVE THE DANCE FLOOR')) return 'images/tut1c.png';
     if (t === 'DID YOU NOTICE?') return 'images/tut1c.png';
     if (t === 'GREAT!' || t.includes('ONE MORE') || t.includes("YOU'VE GOT IT")) return 'images/tut1d.png';
@@ -55226,6 +55226,42 @@ body.v546-onboarding-levels #levelProgressBar {
     return Math.max(0, Math.min(4, Math.round((current / total) * 5)));
   }
 
+  // v706: preload Party Goal state images before changing the visible <img>.
+  // The previous implementation marked the slot as image-missing before load,
+  // which could leave the Android/WebView cell dark even though the PNG exists.
+  const V706_PARTY_GOAL_PRELOADS = new Map();
+
+  function v706PreloadPartyGoalImage(src){
+    const url = String(src || '');
+    if (!url) return Promise.reject(new Error('Missing Party Goal image URL'));
+    if (V706_PARTY_GOAL_PRELOADS.has(url)) return V706_PARTY_GOAL_PRELOADS.get(url);
+
+    const promise = new Promise((resolve, reject) => {
+      const loader = new Image();
+      loader.decoding = 'async';
+      loader.onload = async () => {
+        try {
+          if (typeof loader.decode === 'function') await loader.decode();
+        } catch (_) {
+          // A successful load is enough; decode() is only an extra readiness hint.
+        }
+        resolve(url);
+      };
+      loader.onerror = () => reject(new Error('Could not load Party Goal image: ' + url));
+      loader.src = url;
+    });
+
+    // Failed attempts are not cached permanently, so a later retry can recover.
+    V706_PARTY_GOAL_PRELOADS.set(url, promise);
+    promise.catch(() => V706_PARTY_GOAL_PRELOADS.delete(url));
+    return promise;
+  }
+
+  // Warm all six images early; this also makes state changes instant on mobile.
+  V614_PARTY_GOAL_IMAGES.forEach(src => {
+    v706PreloadPartyGoalImage(src).catch(() => {});
+  });
+
   function v614EnsurePartyGoalImage(panel){
     if (!panel) return [];
     let wraps = Array.from(panel.querySelectorAll('.v614-party-goal-image'));
@@ -55242,8 +55278,7 @@ body.v546-onboarding-levels #levelProgressBar {
         const img = document.createElement('img');
         img.alt = '';
         img.decoding = 'async';
-        img.addEventListener('load', () => wrap.classList.remove('image-missing'));
-        img.addEventListener('error', () => wrap.classList.add('image-missing'));
+        img.loading = 'eager';
         wrap.appendChild(img);
         panel.appendChild(wrap);
       }
@@ -55257,18 +55292,42 @@ body.v546-onboarding-levels #levelProgressBar {
     const wraps = v614EnsurePartyGoalImage(panel);
     if (!wraps.length) return;
     const state = v614PartyGoalImageState(current, total);
+    const wantedSrc = V614_PARTY_GOAL_IMAGES[state];
 
     wraps.forEach((wrap) => {
-      if (wrap.dataset.state === String(state)) return;
-      wrap.dataset.state = String(state);
       const img = wrap.querySelector('img');
       if (!img) return;
-      wrap.classList.add('switching');
-      setTimeout(() => {
-        wrap.classList.add('image-missing');
-        img.src = V614_PARTY_GOAL_IMAGES[state];
-        setTimeout(() => wrap.classList.remove('switching'), 170);
-      }, 80);
+
+      const alreadyReady =
+        wrap.dataset.state === String(state) &&
+        wrap.dataset.loadedSrc === wantedSrc &&
+        img.complete && img.naturalWidth > 0;
+      if (alreadyReady) return;
+
+      wrap.dataset.state = String(state);
+      const requestId = String((Number(wrap.dataset.v706RequestId || 0) + 1));
+      wrap.dataset.v706RequestId = requestId;
+
+      // Keep the previous valid image visible while the next one preloads.
+      // Only use the missing fallback when there has never been a valid image.
+      if (!wrap.dataset.loadedSrc) wrap.classList.add('switching');
+
+      v706PreloadPartyGoalImage(wantedSrc).then(() => {
+        if (wrap.dataset.v706RequestId !== requestId) return;
+        img.src = wantedSrc;
+        wrap.dataset.loadedSrc = wantedSrc;
+        wrap.classList.remove('image-missing');
+        requestAnimationFrame(() => wrap.classList.remove('switching'));
+      }).catch(() => {
+        if (wrap.dataset.v706RequestId !== requestId) return;
+        wrap.classList.remove('switching');
+        if (!wrap.dataset.loadedSrc || !img.complete || img.naturalWidth < 1) {
+          wrap.classList.add('image-missing');
+        } else {
+          // Never replace a previously working Party Goal image with a black slot.
+          wrap.classList.remove('image-missing');
+        }
+      });
     });
   }
 
@@ -65247,11 +65306,14 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const digitCount = rawText.replace(/[^0-9]/g, '').length || rawText.length || 1;
     scoreValue.style.setProperty('font-size', v697ChooseScoreSize(digitCount), 'important');
 
+    /* v704: 0-999 must stay exactly the same size as LEVEL (2.22rem).
+       Only 4+ digit scores are allowed to shrink further to fit the cell. */
+    if (digitCount <= 3) return;
+
     requestAnimationFrame(() => {
       let px = parseFloat(getComputedStyle(scoreValue).fontSize || '16');
-      const maxWidth = Math.max(10, Math.floor(scoreCell.clientWidth * 0.74));
-      const maxHeight = Math.max(10, Math.floor(scoreCell.clientHeight * 0.43));
-      while ((scoreValue.scrollWidth > maxWidth || scoreValue.scrollHeight > maxHeight) && px > 16) {
+      const maxWidth = Math.max(10, Math.floor(scoreCell.clientWidth * 0.90));
+      while (scoreValue.scrollWidth > maxWidth && px > 16) {
         px -= 1;
         scoreValue.style.setProperty('font-size', px + 'px', 'important');
       }
@@ -65592,6 +65654,22 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   domObserver.observe(document.documentElement, { childList: true, subtree: true });
 })();
 </script>
+
+
+<!-- v703: Level-1 tutorial artwork mapping only.
+     LEFT -> images/tut1l.png; RIGHT -> images/tut1r.png; DID YOU NOTICE -> images/tut1c.png. -->
+
+
+<!-- v704: SCORE 0-999 stays exactly 2.22rem like LEVEL; only 1000+ may shrink to fit width. -->
+
+<!-- v705: authoritative Level-1 movement artwork fix.
+     Legacy Level-1 handlers no longer overwrite RIGHT with tut1c.
+     LEFT=tut1l, DID YOU NOTICE=tut1c, RIGHT=tut1r. -->
+
+
+<!-- v706: Permanent Party Goal state images are preloaded before display.
+     The old valid image remains visible during a state change; image-missing is
+     now used only after a genuine load failure, preventing black WebView slots. -->
 
 </body>
 </html>

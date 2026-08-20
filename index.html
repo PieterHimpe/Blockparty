@@ -65440,5 +65440,158 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 </style>
 
+
+
+<!-- v700: Party Goal start text balloon uses its own separate figure,
+     instead of copying the current Party Goal cell figure. -->
+<script id="v700-party-goal-toast-separate-figure-runtime">
+(() => {
+  'use strict';
+
+  const V700_PARTY_GOAL_TOAST_IMAGE = 'images/challenge5_start.png';
+
+  function v700ApplySeparateToastFigures() {
+    if (typeof window.v649GoalImages !== 'function') return false;
+
+    window.v649GoalImages = function(host) {
+      return {
+        left: V700_PARTY_GOAL_TOAST_IMAGE,
+        right: V700_PARTY_GOAL_TOAST_IMAGE,
+      };
+    };
+    return true;
+  }
+
+  if (!v700ApplySeparateToastFigures()) {
+    requestAnimationFrame(v700ApplySeparateToastFigures);
+    setTimeout(v700ApplySeparateToastFigures, 80);
+    setTimeout(v700ApplySeparateToastFigures, 220);
+  }
+})();
+</script>
+
+
+
+<!-- v702: central anti-flash guard for reused tutorial images.
+     Several tutorial flows (including Repair via v471) reuse the same IMG node.
+     Browsers/WebViews may keep painting the previous decoded bitmap after src changes
+     until the new bitmap is decoded. Hide that reused node immediately on every src
+     change and reveal it only after the new image has loaded. Large level banners are
+     already safe because they preload and replace the entire IMG element, so their
+     existing logic is left untouched. -->
+<style id="v702-tutorial-image-antiflash-style">
+  #movementTutorialDjImage.v702-tutorial-image-loading,
+  #tutorialImage.v702-tutorial-image-loading {
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+</style>
+
+<script id="v702-tutorial-image-antiflash-runtime">
+(() => {
+  'use strict';
+
+  const guardedIds = new Set(['movementTutorialDjImage', 'tutorialImage']);
+  const srcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  if (!srcDescriptor || typeof srcDescriptor.get !== 'function' || typeof srcDescriptor.set !== 'function') return;
+
+  function normalizeUrl(value) {
+    try { return new URL(String(value || ''), document.baseURI).href; }
+    catch (_) { return String(value || ''); }
+  }
+
+  function installGuard(img) {
+    if (!img || img.dataset.v702AntiFlash === '1') return;
+    img.dataset.v702AntiFlash = '1';
+
+    let loadToken = 0;
+
+    const hideForNextBitmap = () => {
+      img.classList.add('v702-tutorial-image-loading');
+    };
+
+    const revealCurrentBitmap = (token) => {
+      if (token !== loadToken) return;
+      img.classList.remove('v702-tutorial-image-loading');
+    };
+
+    Object.defineProperty(img, 'src', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return srcDescriptor.get.call(img);
+      },
+      set(value) {
+        const nextRaw = String(value ?? '');
+        const nextUrl = normalizeUrl(nextRaw);
+        const currentUrl = normalizeUrl(srcDescriptor.get.call(img));
+
+        // Reusing an already fully decoded identical image needs no hide/reveal cycle.
+        if (nextRaw && nextUrl === currentUrl && img.complete && img.naturalWidth > 0) {
+          srcDescriptor.set.call(img, nextRaw);
+          img.classList.remove('v702-tutorial-image-loading');
+          return;
+        }
+
+        const token = ++loadToken;
+        if (nextRaw) hideForNextBitmap();
+        else img.classList.remove('v702-tutorial-image-loading');
+
+        const onLoad = () => revealCurrentBitmap(token);
+        const onError = () => {
+          if (token !== loadToken) return;
+          // Never reveal a stale/broken previous bitmap when the replacement failed.
+          img.classList.add('v702-tutorial-image-loading');
+        };
+
+        img.addEventListener('load', onLoad, { once: true });
+        img.addEventListener('error', onError, { once: true });
+        srcDescriptor.set.call(img, nextRaw);
+
+        // Cached images can be complete synchronously without a later paint delay.
+        if (img.complete && img.naturalWidth > 0) {
+          queueMicrotask(() => revealCurrentBitmap(token));
+        }
+      }
+    });
+
+    // removeAttribute('src') is used by several no-image tutorial cards.
+    // Keep the loading class in sync in that path too.
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.type !== 'attributes' || record.attributeName !== 'src') continue;
+        if (!img.hasAttribute('src') || !img.getAttribute('src')) {
+          loadToken += 1;
+          img.classList.remove('v702-tutorial-image-loading');
+        }
+      }
+    });
+    observer.observe(img, { attributes: true, attributeFilter: ['src'] });
+  }
+
+  function installExisting() {
+    guardedIds.forEach(id => installGuard(document.getElementById(id)));
+  }
+
+  installExisting();
+
+  // Defensive: if an older tutorial routine ever replaces one of these reused
+  // image elements, automatically protect the replacement as well.
+  const domObserver = new MutationObserver((records) => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (node instanceof HTMLImageElement && guardedIds.has(node.id)) installGuard(node);
+        guardedIds.forEach(id => {
+          const nested = node.querySelector?.('#' + id);
+          if (nested instanceof HTMLImageElement) installGuard(nested);
+        });
+      }
+    }
+  });
+  domObserver.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
 </body>
 </html>

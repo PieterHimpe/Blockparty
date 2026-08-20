@@ -64296,6 +64296,14 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
   function v686CurrentLevelProgress() {
     try {
+      const currentLevel = Number(level);
+      /* During the tutorial (levels 1–10), the LEVEL cell must always show
+         the normal full orange border, because tutorial progression is not
+         based on 8 groups of 5+ like the real game. */
+      if (Number.isFinite(currentLevel) && currentLevel <= 10) {
+        return 0;
+      }
+
       const n = Number(bigGroupCount);
       return Number.isFinite(n) ? Math.max(0, Math.min(V686_TOTAL, Math.round(n))) : 0;
     } catch (_) {
@@ -64389,7 +64397,136 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v688: reposition the 4 main center cells, unify number sizing, and make Next Set true squares -->
+<style id="v688-center-cells-layout-and-sizing-style">
+  /* Reposition the 2x2 main block */
+  #scoreDisplay     { grid-column: 2 !important; grid-row: 1 / span 2 !important; }
+  #extraCell1       { grid-column: 3 !important; grid-row: 1 / span 2 !important; }
+  #livesDisplay     { grid-column: 2 !important; grid-row: 3 / span 2 !important; }
+  #nextBlockDisplay { grid-column: 3 !important; grid-row: 3 / span 2 !important; }
+
+  /* Same number size for the 3 big value cells */
+  :root {
+    --v688-big-number-size: 2.55rem;
+  }
+
+  #livesText,
+  #scoreValue,
+  #levelDisplayExtra {
+    font-size: var(--v688-big-number-size) !important;
+    line-height: .92 !important;
+    letter-spacing: -.02em !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Keep bottom areas centered and clean */
+  .v685-bottom {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 5px 3px !important;
+  }
+
+  /* Next Set preview base styling; runtime computes exact square size */
+  #nextBlockPreview {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #nextBlockPreview > div {
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 4px !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+  }
+</style>
+
+<script id="v688-center-cells-layout-and-sizing-runtime">
+(() => {
+  'use strict';
+
+  function v688ResizeNextSetSquares() {
+    const preview = document.getElementById('nextBlockPreview');
+    if (!preview) return;
+
+    const blocks = Array.from(preview.children).filter(el => el instanceof HTMLElement);
+    if (!blocks.length) return;
+
+    const count = blocks.length;
+    const previewStyles = window.getComputedStyle(preview);
+    const gap = parseFloat(previewStyles.columnGap || previewStyles.gap || '4') || 4;
+    const availableWidth = Math.max(0, preview.clientWidth);
+    const availableHeight = Math.max(0, preview.clientHeight);
+
+    /* Choose the largest possible square that still fits for 1, 2 or 3 blocks. */
+    const sizeByWidth = Math.floor((availableWidth - gap * (count - 1)) / count);
+    const sizeByHeight = Math.floor(availableHeight * 0.78);
+    const squareSize = Math.max(10, Math.min(sizeByWidth, sizeByHeight));
+
+    blocks.forEach(block => {
+      block.style.width = squareSize + 'px';
+      block.style.height = squareSize + 'px';
+      block.style.minWidth = squareSize + 'px';
+      block.style.minHeight = squareSize + 'px';
+      block.style.maxWidth = squareSize + 'px';
+      block.style.maxHeight = squareSize + 'px';
+      block.style.flex = '0 0 ' + squareSize + 'px';
+      block.style.aspectRatio = '1 / 1';
+      block.style.borderRadius = '4px';
+    });
+  }
+
+  function v688Refresh() {
+    requestAnimationFrame(v688ResizeNextSetSquares);
+  }
+
+  [
+    'updateNextBlockDisplay',
+    'updateLevelDisplay',
+    'updateLevelAndBpmDisplay',
+    'updateLivesDisplay',
+    'updateScoreDisplay',
+    'updateFeatureAvailability'
+  ].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      v688Refresh();
+      return result;
+    };
+  });
+
+  if (window.ResizeObserver) {
+    const preview = document.getElementById('nextBlockPreview');
+    if (preview) {
+      new ResizeObserver(() => v688ResizeNextSetSquares()).observe(preview);
+    }
+  }
+
+  requestAnimationFrame(v688ResizeNextSetSquares);
+  setTimeout(v688ResizeNextSetSquares, 80);
+  setTimeout(v688ResizeNextSetSquares, 240);
+})();
+</script>
+
 </body>
 </html>
-
-

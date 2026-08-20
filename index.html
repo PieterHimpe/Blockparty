@@ -65025,5 +65025,73 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 </style>
 
+
+
+<!-- v693: compact mission preview, rebalance Party Goal, and make the 4 main-cell borders uniform -->
+<style id="v693-mission-partygoal-border-refine-style">
+  /* 1) Normal NEXT MISSION preview only: slightly smaller and give copy more room. */
+  #levelDisplay.v662-party-preview #levelImage {
+    width: 38% !important;
+    height: 84% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  #levelDisplay.v662-party-preview #challengeInfoText {
+    width: 62% !important;
+    height: 100% !important;
+    padding: 0 4px 0 1px !important;
+    gap: 1px !important;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-main {
+    font-size: clamp(.44rem, 1.35vw, .54rem) !important;
+    line-height: .95 !important;
+  }
+
+  #levelDisplay.v662-party-preview .v662-party-sub {
+    font-size: clamp(.38rem, 1.15vw, .46rem) !important;
+    line-height: .95 !important;
+    margin-top: 0 !important;
+  }
+
+  /* 2) Party Goal: copy a touch lower, dots/circles a touch higher. */
+  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel {
+    padding-top: 8px !important;
+    padding-bottom: 0 !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-label,
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-sub {
+    transform: translateY(1px) !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-dots {
+    transform: translateY(-2px) !important;
+  }
+
+  /* 3) The 4 central priority cells use one border system only.
+        Their normal HTML border/shadow is removed; v686 SVG owns the visible border.
+        This keeps SCORE / LEVEL / REPAIRS / NEXT SET geometrically identical. */
+  #scoreDisplay.info-cell,
+  #extraCell1.info-cell,
+  #livesDisplay.info-cell,
+  #nextBlockDisplay.info-cell {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Keep the definitive v686 overlay identical on all four cells. */
+  #scoreDisplay.info-cell > .v686-border-overlay,
+  #extraCell1.info-cell > .v686-border-overlay,
+  #livesDisplay.info-cell > .v686-border-overlay,
+  #nextBlockDisplay.info-cell > .v686-border-overlay {
+    inset: 1px !important;
+    width: calc(100% - 2px) !important;
+    height: calc(100% - 2px) !important;
+    overflow: visible !important;
+  }
+</style>
+
 </body>
 </html>

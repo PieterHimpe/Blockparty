@@ -64688,5 +64688,166 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v690: explicit cleanup of the old conflicting HUD rules.
+     This version fixes the exact causes found in code:
+     - old #scoreDisplay #scoreValue and #livesDisplay #livesText rules
+     - old #extraCell1.info-cell #levelStatusValues #levelDisplayExtra rule
+     - old #nextBlockDisplay.info-cell #nextBlockPreview > div rule
+-->
+<style id="v690-clean-hud-overrides-style">
+  :root {
+    --v690-big-number-size: 2.22rem;
+  }
+
+  /* Use selectors that are at least as specific as the old conflicting rules. */
+  #scoreDisplay.info-cell #scoreValue,
+  #livesDisplay.info-cell #livesText,
+  #extraCell1.info-cell #levelStatusValues #levelDisplayExtra {
+    font-size: var(--v690-big-number-size) !important;
+    line-height: 0.9 !important;
+    font-weight: 900 !important;
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+    letter-spacing: -0.02em !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    transform: none !important;
+  }
+
+  /* Next Set preview shell. Blocks themselves are still sized in JS with important priority. */
+  #nextBlockDisplay.info-cell #nextBlockPreview {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #nextBlockDisplay.info-cell #nextBlockPreview > div {
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+  }
+</style>
+
+<script id="v690-clean-hud-overrides-runtime">
+(() => {
+  'use strict';
+
+  const V690_NUMBER_SIZE = '2.22rem';
+
+  function v690NormalizeNumbers() {
+    const map = [
+      ['livesText', '#livesDisplay.info-cell #livesText'],
+      ['scoreValue', '#scoreDisplay.info-cell #scoreValue'],
+      ['levelDisplayExtra', '#extraCell1.info-cell #levelStatusValues #levelDisplayExtra']
+    ];
+
+    map.forEach(([id]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.setProperty('font-size', V690_NUMBER_SIZE, 'important');
+      el.style.setProperty('line-height', '0.9', 'important');
+      el.style.setProperty('font-weight', '900', 'important');
+      el.style.setProperty('letter-spacing', '-0.02em', 'important');
+      el.style.setProperty('display', 'flex', 'important');
+      el.style.setProperty('align-items', 'center', 'important');
+      el.style.setProperty('justify-content', 'center', 'important');
+      el.style.setProperty('width', '100%', 'important');
+      el.style.setProperty('height', '100%', 'important');
+      el.style.setProperty('margin', '0', 'important');
+      el.style.setProperty('padding', '0', 'important');
+      el.style.setProperty('text-align', 'center', 'important');
+      el.style.setProperty('transform', 'none', 'important');
+    });
+  }
+
+  function v690ResizeNextSetSquares() {
+    const preview = document.getElementById('nextBlockPreview');
+    if (!preview) return;
+
+    const blocks = Array.from(preview.children).filter(el => el instanceof HTMLElement);
+    if (!blocks.length) return;
+
+    const count = blocks.length;
+    const styles = window.getComputedStyle(preview);
+    const gap = parseFloat(styles.columnGap || styles.gap || '4') || 4;
+    const availableWidth = Math.max(0, preview.clientWidth);
+    const availableHeight = Math.max(0, preview.clientHeight);
+    if (!availableWidth || !availableHeight) return;
+
+    const sizeByWidth = Math.floor((availableWidth - gap * (count - 1)) / count);
+    const sizeByHeight = Math.floor(availableHeight * 0.76);
+    const size = Math.max(10, Math.min(sizeByWidth, sizeByHeight));
+
+    blocks.forEach(block => {
+      block.style.setProperty('width', size + 'px', 'important');
+      block.style.setProperty('height', size + 'px', 'important');
+      block.style.setProperty('min-width', size + 'px', 'important');
+      block.style.setProperty('min-height', size + 'px', 'important');
+      block.style.setProperty('max-width', size + 'px', 'important');
+      block.style.setProperty('max-height', size + 'px', 'important');
+      block.style.setProperty('flex', '0 0 ' + size + 'px', 'important');
+      block.style.setProperty('aspect-ratio', '1 / 1', 'important');
+      block.style.setProperty('border-radius', '4px', 'important');
+      block.style.setProperty('margin', '0', 'important');
+      block.style.setProperty('transform', 'none', 'important');
+      block.style.setProperty('justify-self', 'center', 'important');
+      block.style.setProperty('align-self', 'center', 'important');
+    });
+  }
+
+  function v690Refresh() {
+    requestAnimationFrame(() => {
+      v690NormalizeNumbers();
+      v690ResizeNextSetSquares();
+    });
+  }
+
+  [
+    'updateLivesDisplay',
+    'updateScoreDisplay',
+    'updateLevelDisplay',
+    'updateLevelAndBpmDisplay',
+    'updateNextBlockDisplay',
+    'updateFeatureAvailability'
+  ].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      v690Refresh();
+      return result;
+    };
+  });
+
+  const preview = document.getElementById('nextBlockPreview');
+  if (preview && window.MutationObserver) {
+    new MutationObserver(() => v690Refresh()).observe(preview, { childList: true, subtree: false });
+  }
+  if (preview && window.ResizeObserver) {
+    new ResizeObserver(() => v690ResizeNextSetSquares()).observe(preview);
+  }
+
+  requestAnimationFrame(v690Refresh);
+  setTimeout(v690Refresh, 80);
+  setTimeout(v690Refresh, 240);
+})();
+</script>
+
 </body>
 </html>

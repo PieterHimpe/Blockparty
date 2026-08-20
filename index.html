@@ -44984,10 +44984,15 @@ function v469HandleLevel1FloorMove(direction, beforeOffset) {
     v468Level1MovementPhase = "right";
     v468Toast("DID YOU NOTICE?", "YOU MOVE THE DANCE FLOOR — NOT THE BLOCKS.", 1800);
 
-    // Tijdens de korte bevestiging geen extra LEFT/RIGHT-input toelaten.
+    // Tijdens DID YOU NOTICE zijn BEIDE horizontale pijlen volledig inactief en grijs.
+    // Verwijder de actieve pulse onmiddellijk; alleen disabled zetten liet de LEFT-pulse nog even doorlopen.
     const buttons = getMovementArrowButtons();
-    if (buttons.left) buttons.left.disabled = true;
-    if (buttons.right) buttons.right.disabled = true;
+    [buttons.left, buttons.right].forEach((btn) => {
+      if (!btn) return;
+      btn.disabled = true;
+      btn.classList.remove('tutorial-arrow-active', 'tutorial-required-action');
+      btn.classList.add('tutorial-arrow-dimmed', 'v448-auto-input-locked');
+    });
     setMovementTutorialDancefloorCue(0);
 
     const showNowRight = () => {
@@ -45309,7 +45314,23 @@ v425StartDropUnlock = function() {
 const v468BaseCheckMatches = checkMatches;
 checkMatches = function() {
   const levelBefore = Math.floor(Number(level) || 1);
+  const level1GroupsBeforeLanding = levelBefore === 1
+    ? Math.max(0, Number(objectiveTutorialGroupsCleared) || 0)
+    : -1;
   const result = v468BaseCheckMatches.apply(this, arguments);
+
+  // V710: zodra de 2e gele groep al gemaakt was, wacht precies één volgende
+  // gelande set. Als die landing zelf geen 3e groep maakt, introduceer Drop Block nu.
+  if (
+    levelBefore === 1 &&
+    level === 1 &&
+    objectiveTutorialActive &&
+    level1GroupsBeforeLanding === 2 &&
+    Math.max(0, Number(objectiveTutorialGroupsCleared) || 0) === 2 &&
+    !v468Level2DropIntroduced
+  ) {
+    setTimeout(v468IntroduceDropBlock, 0);
+  }
 
   if (
     levelBefore === 2 &&
@@ -46128,7 +46149,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
       gamePaused=true;v625StopFallLoop();
       // V552: do not make the R Block appear unexplained. First tell the player
       // exactly what it earns and what action frees it.
-      v471ShowHint('EARN YOUR FIRST REPAIR','CLEAR THE R BLOCK IN A GROUP OF 5+\nTO EARN A REPAIR',V471_ICONS.repair,4300,()=>{
+      v471ShowHint('EARN YOUR FIRST REPAIR','CLEAR THE R BLOCK IN A GROUP OF 5+\nTO EARN A REPAIR',(document.querySelector('#livesDisplay img')?.getAttribute('src')||'images/fig4.png'),4300,()=>{
         if(!firstBarrierRepairTutorialActive)return;
         firstBarrierRepairTutorialStage='waiting_for_repair';
         v453SpawnDeferredBarrierSet();gamePaused=false;v408RestartFallLoop();v468ScheduleAutosave(0);
@@ -46140,8 +46161,22 @@ body.v471-block-b-card .tutorial-tap-to-continue {
   registerFirstBarrierRepairTutorialReward=function(){
     if(!firstBarrierRepairTutorialActive||firstBarrierRepairTutorialStage!=='waiting_for_repair'||firstBarrierRepairTutorialRewardRegistered)return;
     firstBarrierRepairTutorialRewardRegistered=true;firstBarrierRepairTutorialStage='repair_flying';firstRepairTutorialExclusive=true;
-    // Let score/resource flight finish; pause is applied at counter arrival.
-    gamePaused=false;updateLivesDisplay();v468ScheduleAutosave(0);
+
+    // V711: keep this synchronous turn unpaused so the normal landing code may
+    // construct the next set. Before any interval/timer can move that new set,
+    // pause it and keep it waiting throughout the complete Repair tutorial.
+    gamePaused=false;
+    updateLivesDisplay();
+    queueMicrotask(()=>{
+      if(!firstBarrierRepairTutorialActive||firstBarrierRepairTutorialStage!=='repair_flying')return;
+      gamePaused=true;
+      isPaused=false;
+      v625StopFallLoop();
+      if(typeof updatePauseDisplay==='function')updatePauseDisplay();
+      drawGrid();
+      if(fallingBlock)drawFallingBlock();
+    });
+    v468ScheduleAutosave(0);
   };
 
   openFirstBarrierRepairTutorialAfterCounterArrival=function(){
@@ -48544,7 +48579,15 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
             window.closeBarrierRepairMode();
           }
           if (typeof v471ShowHint === 'function') {
-            setTimeout(() => v471ShowHint('BARRIER REPAIRED!','',V471_ICONS.repair,1400), 80);
+            setTimeout(() => v471ShowHint('BARRIER REPAIRED!','',V471_ICONS.repair,1400,()=>{
+              // V711: the already-created next set may move only after the
+              // BARRIER REPAIRED! card has actually disappeared.
+              gamePaused=false;
+              isPaused=false;
+              if(typeof updatePauseDisplay==='function')updatePauseDisplay();
+              v498RestartFallLoopIfNeeded();
+              if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);
+            }), 80);
           }
           if (typeof v468ScheduleAutosave === 'function') v468ScheduleAutosave(0);
         }
@@ -48612,8 +48655,21 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
 
   const v498BaseCompleteFirstBarrierRepairTutorial = completeFirstBarrierRepairTutorial;
   completeFirstBarrierRepairTutorial = function(){
+    const completingFirstRepair = !!firstBarrierRepairTutorialActive;
     const result = v498BaseCompleteFirstBarrierRepairTutorial.apply(this, arguments);
-    setTimeout(v498RestartFallLoopIfNeeded, 0);
+
+    if(completingFirstRepair){
+      // V711: closing the Repair modal is NOT the resume point anymore.
+      // Keep gameplay frozen until BARRIER REPAIRED! itself closes.
+      gamePaused=true;
+      isPaused=false;
+      v625StopFallLoop();
+      if(typeof updatePauseDisplay==='function')updatePauseDisplay();
+      drawGrid();
+      if(fallingBlock)drawFallingBlock();
+    }else{
+      setTimeout(v498RestartFallLoopIfNeeded, 0);
+    }
     return result;
   };
 
@@ -48631,8 +48687,11 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
   };
 
   // Geen pulse meer bij het tonen van Drop Block.
+  // V710: de uitleg kan nu al in level 1 starten, na de 2e gele groep + 1 volgende landing.
   v468IntroduceDropBlock = function() {
-    if (level !== 2 || !level3TutorialActive || v468Level2DropIntroduced) return;
+    const inLevel1Goal = level === 1 && objectiveTutorialActive;
+    const inLevel2Flow = level === 2 && level3TutorialActive;
+    if ((!inLevel1Goal && !inLevel2Flow) || v468Level2DropIntroduced) return;
     v468Level2DropIntroduced = true;
     v425DropIntroduced = true;
     v408Level2DropTutorialCompleted = true;
@@ -48641,7 +48700,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     updateFeatureAvailability({ animate: false });
     v468Toast('DROP BLOCK', 'LAND IT NOW', 1900);
     v468ScheduleAutosave(0);
-    v468MaybeFinishLevel2();
+    if (inLevel2Flow) v468MaybeFinishLevel2();
   };
 
   // Als de modal later handmatig wordt geopend, toon de gewone knoppen weer correct.
@@ -55368,7 +55427,9 @@ body.v546-onboarding-levels #levelProgressBar {
         for (let i = 0; i < safeTotal; i++) {
           const dot = document.createElement('span');
           dot.className = 'v606-party-goal-dot' + (i < safeCurrent ? ' done' : '');
-          if (i === safeCurrent && safeCurrent < safeTotal) dot.classList.add('v614-next-dot');
+          // V710: tijdens onboarding zijn alle nog vrije cirkels visueel identiek.
+          // Alleen post-tutorial Party Goals mogen de volgende vrije cirkel accentueren.
+          if (Number(level) >= 11 && i === safeCurrent && safeCurrent < safeTotal) dot.classList.add('v614-next-dot');
           if (i === safeCurrent - 1 && hadPrevious && previousTotal === safeTotal && safeCurrent > previousCurrent) {
             dot.classList.add('v614-new-dot');
           }
@@ -65704,6 +65765,18 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     transform: none !important;
   }
 </style>
+
+
+<!-- v710: three scoped onboarding fixes.
+     - DID YOU NOTICE: both LEFT/RIGHT arrows are immediately gray and non-pulsing.
+     - DROP BLOCK moves to level 1: after the second yellow group, then one clean landed set.
+     - onboarding Party Goal: the next free progress circle no longer gets a different border. -->
+
+
+<!-- v711: First Repair tutorial timing and artwork.
+     The next set is created after the first R is earned but frozen immediately;
+     it resumes only after BARRIER REPAIRED! closes. EARN YOUR FIRST REPAIR uses
+     the same source image as the REPAIRS counter cell. -->
 
 </body>
 </html>

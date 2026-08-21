@@ -67079,5 +67079,119 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+
+<!-- v738: manual arrow movement is rendered on the next animation frame without
+     advancing gameplay animations. Rapid taps coalesce to one visual refresh. -->
+<script id="v738-instant-safe-arrow-render">
+(function(){
+  'use strict';
+
+  let v738FramePending = false;
+
+  function v738MakeFrozenDisappearingCopies(list) {
+    if (!Array.isArray(list) || !list.length) return list;
+
+    return list.map((item) => {
+      if (!item || typeof item !== 'object') return item;
+
+      const copy = Object.assign({}, item);
+      const rawScale = Number(item.scale);
+      const frozenScale = Number.isFinite(rawScale)
+        ? Math.min(rawScale, 2.99)
+        : 1;
+
+      // drawGrid historically advances `disappearing.scale` and may then remove
+      // a field cell. For this purely visual manual-input frame the setter is a
+      // deliberate no-op, so the real gameplay state cannot advance.
+      try {
+        Object.defineProperty(copy, 'scale', {
+          configurable: true,
+          enumerable: true,
+          get: function(){ return frozenScale; },
+          set: function(){ /* visual-only frame: do not advance */ }
+        });
+      } catch (_) {
+        copy.scale = frozenScale;
+      }
+
+      return copy;
+    });
+  }
+
+  function v738PaintManualMovementFrame() {
+    v738FramePending = false;
+
+    if (typeof drawGrid !== 'function') return;
+
+    const realDisappearingBlocks = (typeof disappearingBlocks !== 'undefined')
+      ? disappearingBlocks
+      : null;
+
+    try {
+      // drawGrid is not a pure renderer in the legacy code. Give it frozen
+      // visual copies so this extra frame cannot age/remove disappearing cells.
+      if (realDisappearingBlocks) {
+        disappearingBlocks = v738MakeFrozenDisappearingCopies(realDisappearingBlocks);
+      }
+
+      drawGrid();
+
+      if (
+        typeof drawFallingBlock === 'function' &&
+        typeof fallingBlock !== 'undefined' &&
+        fallingBlock
+      ) {
+        drawFallingBlock();
+      }
+    } finally {
+      if (realDisappearingBlocks) {
+        disappearingBlocks = realDisappearingBlocks;
+      }
+    }
+  }
+
+  function v738RequestManualMovementFrame() {
+    if (v738FramePending) return;
+    v738FramePending = true;
+    requestAnimationFrame(v738PaintManualMovementFrame);
+  }
+
+  if (typeof moveGrid === 'function') {
+    const v738BaseMoveGrid = moveGrid;
+    moveGrid = function(dir) {
+      const beforeOffset = (typeof gridOffsetX !== 'undefined') ? gridOffsetX : null;
+      const beforeBlock = (typeof fallingBlock !== 'undefined') ? fallingBlock : null;
+      const result = v738BaseMoveGrid.apply(this, arguments);
+
+      const moved =
+        beforeBlock &&
+        typeof fallingBlock !== 'undefined' && fallingBlock === beforeBlock &&
+        typeof gridOffsetX !== 'undefined' && gridOffsetX !== beforeOffset;
+
+      if (moved) v738RequestManualMovementFrame();
+      return result;
+    };
+  }
+
+  if (typeof moveGridH === 'function') {
+    const v738BaseMoveGridH = moveGridH;
+    moveGridH = function(dir) {
+      const beforeOffset = (typeof gridOffsetY !== 'undefined') ? gridOffsetY : null;
+      const beforeBlock = (typeof fallingBlock !== 'undefined') ? fallingBlock : null;
+      const result = v738BaseMoveGridH.apply(this, arguments);
+
+      const moved =
+        beforeBlock &&
+        typeof fallingBlock !== 'undefined' && fallingBlock === beforeBlock &&
+        typeof gridOffsetY !== 'undefined' && gridOffsetY !== beforeOffset;
+
+      if (moved) v738RequestManualMovementFrame();
+      return result;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>

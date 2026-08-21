@@ -20535,15 +20535,20 @@ function resolveFreePictureLanding(block) {
     }
   }
 
-  // V714: clear the cells LOGICALLY before the next formation is spawned.
-  // The old implementation kept them in field while a grow-animation was running,
-  // so the new formation could collide with blocks that were already disappearing.
+  // V718: create the same spinning DOM flyers used by a normal cleared group BEFORE
+  // the logical field clear. The field still becomes empty immediately for collision
+  // purposes, while the visual copies continue their flight to SCORE.
+  if (removed.length && typeof startFreePictureFlightToScore === 'function') {
+    startFreePictureFlightToScore(removed);
+  }
+
+  // Keep V714's collision fix: the cells are logically empty before the next
+  // formation is spawned, even though their visual copies are still flying.
   for (const item of removed) {
     field[item.r][item.c] = null;
   }
 
-  // Remove any stale canvas-disappear state for these coordinates. Free Picture is
-  // intentionally instant/clean; normal group-flight animations remain unchanged.
+  // The DOM flyers now own the disappearance animation. Remove stale canvas state.
   if (Array.isArray(disappearingBlocks) && removed.length) {
     const removedKeys = new Set(removed.map(item => `${item.r}:${item.c}`));
     disappearingBlocks = disappearingBlocks.filter(item => !removedKeys.has(`${item.r}:${item.c}`));
@@ -20587,11 +20592,8 @@ function resolveFreePictureLanding(block) {
     }
   }
 
-  const removedCount = removed.length;
-  score += removedCount * removedCount;
-  updateScoreDisplay();
-  updateHighStats();
-
+  // V718: do not award N² instantly. animateGroupFlightToScore gives each arriving
+  // block N points, exactly preserving the previous Free Picture total of N².
   if (typeof rebuildGroupSizeCache === 'function') rebuildGroupSizeCache();
 
   const landedDirection = block.direction;
@@ -23227,10 +23229,15 @@ function triggerV334ResourceCounterGlow(destination) {
   }, 620);
 }
 
-async function animateGroupFlightToScore(cells, color, flightId) {
+async function animateGroupFlightToScore(cells, color, flightId, options = {}) {
   if (!cells.length) return;
 
-  const containsRepairForTutorial = cells.some(
+  const forceScoreDestination = options.forceScoreDestination === true;
+  const preserveCellColors = options.preserveCellColors === true;
+  const scorePartyColor = options.scorePartyColor || color;
+  const suppressRepairTutorialCompletion = options.suppressRepairTutorialCompletion === true;
+
+  const containsRepairForTutorial = !suppressRepairTutorialCompletion && cells.some(
     cell => cell && cell.blockRef && cell.blockRef.isSpecial
   );
 
@@ -23243,11 +23250,17 @@ async function animateGroupFlightToScore(cells, color, flightId) {
   const groupSize = cells.length;
   const groupSpinDirection = flightId % 2 === 0 ? 1 : -1;
   const flyers = cells.map(cell => {
-    const flyer = createV230FlyingBlock(cell, color, groupSize);
+    const flyerColor = preserveCellColors && cell && cell.blockRef && cell.blockRef.color
+      ? cell.blockRef.color
+      : color;
+    const flyer = createV230FlyingBlock(cell, flyerColor, groupSize);
     return {
       ...flyer,
       cell,
-      destination: getV334FlightDestination(cell.blockRef, scoreCell)
+      flyerColor,
+      destination: forceScoreDestination
+        ? { type: 'score', targetElement: scoreCell, pulseElement: scoreCell, glowColor: null }
+        : getV334FlightDestination(cell.blockRef, scoreCell)
     };
   });
   flyers.forEach(({ el }) => {
@@ -23258,8 +23271,8 @@ async function animateGroupFlightToScore(cells, color, flightId) {
   const hasScoreFlyers = flyers.some(flyer => flyer.destination.type === 'score');
   if (hasScoreFlyers) {
     activeScoreFlightGroups++;
-    scoreCell.style.setProperty('--score-party-color', color);
-    applyPromoTintVariables(scoreCell, color);
+    scoreCell.style.setProperty('--score-party-color', scorePartyColor);
+    applyPromoTintVariables(scoreCell, scorePartyColor);
     // SCORE blijft vast; alleen de lichte en donkere tinten van de groepskleur bewegen.
     scoreCell.classList.remove('v235-spin-reverse');
     scoreCell.classList.add('score-party-active');
@@ -23402,7 +23415,7 @@ async function animateGroupFlightToScore(cells, color, flightId) {
       plus.textContent = `+${groupSize}`;
       plus.style.left = `${targetX}px`;
       plus.style.top = `${targetY}px`;
-      plus.style.setProperty('--flight-color', color);
+      plus.style.setProperty('--flight-color', scorePartyColor);
       document.body.appendChild(plus);
       setTimeout(() => plus.remove(), 560);
     } else {
@@ -23441,6 +23454,46 @@ async function animateGroupFlightToScore(cells, color, flightId) {
   if (containsRepairForTutorial) {
     openFirstBarrierRepairTutorialAfterCounterArrival();
   }
+}
+
+
+// V718: Free Picture uses the exact same spin + flight-to-SCORE animation as a
+// normal cleared group. The removed blocks keep their own visual identity while
+// SCORE uses white as the celebration colour. The animation is started before
+// field[] is cleared so there is no one-frame disappearance.
+function startFreePictureFlightToScore(removedCells) {
+  if (!Array.isArray(removedCells) || removedCells.length === 0) return;
+
+  const cells = removedCells.map(item => ({
+    r: item.r,
+    c: item.c,
+    key: `${item.r},${item.c}`,
+    blockRef: item.blockRef || (field[item.r] ? field[item.r][item.c] : null)
+  })).filter(cell => !!cell.blockRef);
+
+  if (!cells.length) return;
+
+  const flightId = ++scoreFlightSequence;
+  cells.forEach(reserveScoreFlightCell);
+
+  // Async execution runs synchronously until its first await: the flyer DOM
+  // snapshots are therefore created before resolveFreePictureLanding clears field[].
+  animateGroupFlightToScore(cells, '#FFFFFF', flightId, {
+    forceScoreDestination: true,
+    preserveCellColors: true,
+    scorePartyColor: '#FFFFFF',
+    // Free Picture already owns the special-resource tutorial bookkeeping.
+    suppressRepairTutorialCompletion: true
+  }).catch(error => {
+    console.error('Free Picture score flight failed:', error);
+
+    // Same score total as the normal flight: N arrivals × N points = N².
+    const groupSize = cells.length;
+    score += groupSize * groupSize;
+    updateScoreDisplay();
+    updateHighStats();
+    cells.forEach(releaseScoreFlightCell);
+  });
 }
 
 // nakijken of er 5 van zelfde kleur aan elkaar plakken
@@ -66144,6 +66197,12 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 })();
 </script>
+
+
+<!-- v718: Free Picture removals now reuse the normal group spin/flight-to-SCORE animation.
+     Removed blocks retain their own visuals; SCORE celebration and +score feedback are white.
+     Score is awarded on arrival (N points per removed block, total N²), while field cells are
+     still cleared immediately before the next formation spawns. -->
 
 </body>
 </html>

@@ -66015,5 +66015,135 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v717: Skip introduction is informational, never mandatory.
+     The old v473/v527 path stopped the fall loop and waited for an awaiting_skip_click.
+     Now the intro auto-closes, marks the lesson complete, restarts the fall loop, and
+     leaves Skip available as an optional action. Any legacy resumed awaiting state is normalized. -->
+<script id="v717-skip-intro-optional-runtime">
+(function(){
+  'use strict';
+
+  function v717RestartGameplay(){
+    try {
+      if(typeof isPaused !== 'undefined') isPaused=false;
+      if(typeof gamePaused !== 'undefined') gamePaused=false;
+      if(typeof updatePauseDisplay==='function') updatePauseDisplay();
+
+      if(typeof v625StopFallLoop==='function') v625StopFallLoop();
+      if(typeof v625StartFallLoop==='function') fallInterval=v625StartFallLoop(fallSpeed);
+
+      if(typeof updateSkipAvailabilityVisual==='function') updateSkipAvailabilityVisual();
+      if(typeof v448SyncControlLocks==='function') v448SyncControlLocks();
+      if(typeof drawGrid==='function') drawGrid();
+      if(typeof fallingBlock!=='undefined' && fallingBlock && typeof drawFallingBlock==='function') drawFallingBlock();
+    }catch(_){}
+  }
+
+  function v717FinishSkipIntro(){
+    try {
+      if(typeof level9SkipTutorialActive==='undefined' || !level9SkipTutorialActive || Number(level)!==9) return;
+
+      // "Used" is the legacy progression flag. Here it means the Skip lesson is finished;
+      // the player does NOT have to consume a Skip token.
+      level9SkipStage='complete';
+      level9SkipUsed=true;
+      level9BlocksBeforeSkip=0;
+      level9ThirdBlockStepsRemaining=0;
+      level9BlocksAfterSkip=0;
+      level10TransitionStarted=false;
+
+      const cell=document.getElementById('renewCell');
+      if(cell){
+        cell.classList.remove('tutorial-required-action','tutorial-info-highlight','v448-auto-input-locked');
+        cell.setAttribute('aria-disabled','false');
+      }
+
+      if(typeof v473ClearHint==='function'){
+        try{ v473ClearHint(); }catch(_){}
+      }
+      if(typeof window.v501HideCurrentOnboardingCard==='function'){
+        try{ window.v501HideCurrentOnboardingCard(); }catch(_){}
+      }
+
+      if(typeof v468ScheduleAutosave==='function') v468ScheduleAutosave(0);
+      v717RestartGameplay();
+    }catch(_){}
+  }
+
+  // Authoritative Skip lesson: explain it, but never wait for a Skip click.
+  window.showLevel9RequiredSkipTutorial=function(){
+    try {
+      if(typeof level9SkipTutorialActive==='undefined' || !level9SkipTutorialActive || Number(level)!==9) return;
+      if(level9SkipStage==='complete') return;
+
+      if(typeof FEATURE_DISCOVERY_KEYS!=='undefined' && FEATURE_DISCOVERY_KEYS.skip){
+        localStorage.setItem(FEATURE_DISCOVERY_KEYS.skip,'true');
+      }
+      if(typeof renewTokenCount!=='undefined' && Number(renewTokenCount)<1) renewTokenCount=1;
+      if(typeof updateRenewDisplay==='function') updateRenewDisplay();
+      if(typeof updateFeatureAvailability==='function') updateFeatureAvailability({animate:false});
+
+      const cell=document.getElementById('renewCell');
+      if(cell){
+        cell.classList.remove('tutorial-required-action','v448-auto-input-locked');
+        cell.classList.add('tutorial-info-highlight');
+      }
+
+      level9SkipStage='showing_skip_popup';
+      if(typeof gamePaused!=='undefined') gamePaused=true;
+      if(typeof v625StopFallLoop==='function') v625StopFallLoop();
+
+      const close=v717FinishSkipIntro;
+      if(typeof showDismissibleTutorialPopup==='function'){
+        showDismissibleTutorialPopup(
+          "DON'T WANT IT? SKIP IT",
+          'Skip Block is now available. Use it whenever you want to replace the current set.',
+          3000,
+          close,
+          'images/tut9a.png'
+        );
+      }else{
+        setTimeout(close,3000);
+      }
+    }catch(_){
+      v717FinishSkipIntro();
+    }
+  };
+
+  // If another old wrapper still calls this after a Skip, make continuation robust.
+  window.showLevel9SkipCompleted=function(){
+    try {
+      if(typeof level9SkipTutorialActive!=='undefined' && level9SkipTutorialActive && Number(level)===9){
+        level9SkipStage='complete';
+        level9SkipUsed=true;
+      }
+      const cell=document.getElementById('renewCell');
+      if(cell) cell.classList.remove('tutorial-required-action','tutorial-info-highlight','v448-auto-input-locked');
+    }catch(_){}
+    v717RestartGameplay();
+  };
+
+  // A saved game from v716 can contain the impossible mandatory awaiting state.
+  if(typeof window.v468ResumeAutosave==='function'){
+    const baseResume=window.v468ResumeAutosave;
+    window.v468ResumeAutosave=function(){
+      const result=baseResume.apply(this,arguments);
+      setTimeout(()=>{
+        try{
+          if(
+            typeof level9SkipTutorialActive!=='undefined' && level9SkipTutorialActive && Number(level)===9 &&
+            ['awaiting_skip_click','arming_skip_click','unlocking_skip'].includes(String(level9SkipStage||''))
+          ){
+            v717FinishSkipIntro();
+          }
+        }catch(_){}
+      },0);
+      return result;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>

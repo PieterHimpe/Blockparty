@@ -3033,6 +3033,43 @@ TODO aangepast volgens feedback:
   animation: partyMissionTapBreath 2.4s ease-in-out infinite;
 }
 
+#partyMissionTextCard.feature-reward-card {
+  --mission-accent: #8DECF4;
+  --mission-accent-2: #2ED6E7;
+}
+
+#partyMissionTextCard.feature-reward-card #partyMissionTextBody {
+  margin-top: 0.95rem;
+}
+
+.feature-reward-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.feature-reward-figure-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.feature-reward-figure {
+  width: clamp(88px, 24vw, 132px);
+  height: clamp(88px, 24vw, 132px);
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(46, 214, 231, 0.28));
+}
+
+.feature-reward-copy {
+  max-width: 26ch;
+  font-size: clamp(1rem, 4vw, 1.2rem);
+  font-weight: 760;
+  line-height: 1.28;
+  color: #F8FBFF;
+}
+
 #partyMissionTextCard.party-mission-success {
   --mission-accent: #72F6A5;
   --mission-accent-2: #26C281;
@@ -17485,7 +17522,7 @@ function checkFreePicMilestone() {
   ) {
     freePictureCount += activeRewards.freePictureRewardValue;
     updateFreePictureDisplay();
-    showCelebrationOverlay("images/fig43.png");
+    showFreePictureRewardOverlay();
   }
 }
 
@@ -27351,6 +27388,103 @@ if (challengeActive && !challengeRewardGiven) {
 }
 
 // het tonen van pop ups bij chal en behaalde levels
+
+function showFreePictureRewardOverlay() {
+  if (isFirstRepairTutorialExclusiveActive()) return;
+
+  const tutorialOverlay = document.getElementById("tutorialOverlay");
+  const tutorialImage = document.getElementById("tutorialImage");
+  const tutorialNextButton = document.getElementById("tutorialNextButton");
+  const card = document.getElementById("partyMissionTextCard");
+  const eyebrowEl = document.getElementById("partyMissionEyebrow");
+  const titleEl = document.getElementById("partyMissionTextTitle");
+  const bodyEl = document.getElementById("partyMissionTextBody");
+  const footerEl = document.getElementById("partyMissionTextFooter");
+  const tapHintEl = document.getElementById("partyMissionTapHint");
+
+  if (!tutorialOverlay || !card || !eyebrowEl || !titleEl || !bodyEl || !footerEl || !tapHintEl) return;
+  if (tutorialOverlay.style.display === "flex") return;
+
+  const levelMatrixOverlay = document.getElementById("levelMatrixOverlay");
+  if (levelMatrixOverlay && levelMatrixOverlay.style.display === "flex") {
+    levelMatrixOverlay.style.display = "none";
+  }
+
+  tutorialOverlay.style.background =
+    "linear-gradient(135deg, rgba(34, 16, 70, 0.76), rgba(0, 88, 112, 0.60))";
+
+  if (tutorialImage) {
+    tutorialImage.style.display = "none";
+    tutorialImage.onload = null;
+    tutorialImage.src = "";
+  }
+
+  if (tutorialNextButton) {
+    tutorialNextButton.style.display = "none";
+  }
+
+  card.className = "feature-reward-card";
+  card.style.setProperty("--mission-accent", "#8DECF4");
+  card.style.setProperty("--mission-accent-2", "#2ED6E7");
+
+  eyebrowEl.textContent = "FREE PICTURE AWARDED";
+  titleEl.textContent = "YOU'RE DOING GREAT!";
+  bodyEl.innerHTML = `
+    <div class="feature-reward-body">
+      <div class="feature-reward-figure-wrap">
+        <img class="feature-reward-figure" src="images/fig9.png" alt="Free Picture">
+      </div>
+      <div class="feature-reward-copy">
+        You earned a <strong>Free Picture</strong>!<br>
+        Use it on the dance floor and <strong>every block around it will disappear</strong>.
+      </div>
+    </div>`;
+  footerEl.textContent = "FREE PICTURE READY";
+  footerEl.style.display = "block";
+  tapHintEl.textContent = "TAP TO CONTINUE";
+
+  card.style.display = "none";
+  void card.offsetWidth;
+  card.style.display = "block";
+
+  tutorialOverlay.style.display = "flex";
+  gamePaused = true;
+
+  let closed = false;
+
+  const close = (event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (closed) return;
+    closed = true;
+
+    tutorialOverlay.style.display = "none";
+    card.style.display = "none";
+    bodyEl.textContent = "";
+    card.className = "";
+
+    if (tutorialImage) tutorialImage.style.display = "block";
+    if (tutorialNextButton) {
+      tutorialNextButton.style.display = "block";
+      tutorialNextButton.textContent = "Next";
+    }
+
+    gamePaused = false;
+    card.removeEventListener("click", close);
+    card.removeEventListener("keydown", keyClose);
+  };
+
+  const keyClose = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      close(event);
+    }
+  };
+
+  card.addEventListener("click", close, { once: true });
+  card.addEventListener("keydown", keyClose);
+}
 
 function showCelebrationOverlay(imageUrl) {
   if (isFirstRepairTutorialExclusiveActive()) return;
@@ -65615,7 +65749,13 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const v698BaseGenerateNextBlock = window.generateNextBlock;
     window.generateNextBlock = function() {
       const block = v698BaseGenerateNextBlock.apply(this, arguments);
-      if (!v698RepairMaySpawn() && v698IsRepairBlock(block)) {
+      const v720RepairRushActive = (
+        typeof challengeActive !== 'undefined' && challengeActive === true
+      );
+
+      // v720: Party Mission 1 (REPAIR RUSH) deliberately forces 30 Repair Blocks.
+      // The normal pre-first-Barrier-damage safety gate must not strip those mission blocks.
+      if (!v720RepairRushActive && !v698RepairMaySpawn() && v698IsRepairBlock(block)) {
         return {
           ...block,
           isSpecial: false
@@ -66203,6 +66343,221 @@ triggerPromoGroupCelebration = function(group, groupColor) {
      Removed blocks retain their own visuals; SCORE celebration and +score feedback are white.
      Score is awarded on arrival (N points per removed block, total N²), while field cells are
      still cleared immediately before the next formation spawns. -->
+
+
+<!-- v720: Repair Rush mission exception. Challenge 1 forces 30 Repair Blocks in 50 sets;
+     the v698 pre-Barrier Repair suppression must never convert those mission Repairs into normal blocks. -->
+
+<style id="v721-overlay-layer-policy">
+/* V721: blocking screens must always sit above temporary gameplay animation layers.
+   Normal gameplay effects currently peak around z-index 1000400. Developer tools
+   remain above these screens at 1200000; rotatePortraitOverlay remains absolute top. */
+#startOverlay,
+#tutorialOverlay,
+#pauseModal,
+#saveConfirmOverlay,
+#gameOverOverlay,
+#rewardChoiceOverlay,
+#levelMatrixOverlay,
+#djUnlockOverlay,
+#tutorialLevelBanner,
+#movementTutorialOverlay {
+  z-index: 1100000 !important;
+}
+
+/* Countdown/confetti belong to the tutorial/mission screen, not to gameplay. */
+#tutorialOverlay #partyMissionCountdown,
+#tutorialOverlay #partyMissionConfetti {
+  z-index: 1 !important;
+}
+</style>
+
+
+<script id="v721-start-screen-animation-cleanup">
+(function(){
+  'use strict';
+
+  function v721ClearTransientGameplayVisuals(){
+    try {
+      document.querySelectorAll('.v230-flying-block, .v230-score-plus, .promo-confetti-particle, .promo-praise')
+        .forEach(el => el.remove());
+
+      const scoreCell = document.getElementById('scoreDisplay');
+      if (scoreCell) {
+        scoreCell.classList.remove('score-party-active', 'score-party-hit', 'v235-spin-reverse');
+        scoreCell.style.removeProperty('--score-party-color');
+        scoreCell.style.removeProperty('--party-dark');
+        scoreCell.style.removeProperty('--party-base');
+        scoreCell.style.removeProperty('--party-light');
+        scoreCell.style.removeProperty('--party-highlight');
+      }
+
+      ['multicolorDisplay','livesDisplay','freePictureDisplay','nextBlockDisplay','levelDisplay'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove(
+          'resource-party-hit',
+          'v221-multicolor-unlock-pulse',
+          'v223-free-picture-unlock-pulse',
+          'v223-next-picture-pulse',
+          'mission-start-pulse'
+        );
+        el.style.removeProperty('--resource-party-color');
+      });
+    } catch (_) {}
+  }
+
+  const baseShowSimpleMainMenu = window.showSimpleMainMenu;
+  if (typeof baseShowSimpleMainMenu === 'function') {
+    window.showSimpleMainMenu = function(){
+      v721ClearTransientGameplayVisuals();
+      const result = baseShowSimpleMainMenu.apply(this, arguments);
+      v721ClearTransientGameplayVisuals();
+      return result;
+    };
+  }
+
+  const startOverlay = document.getElementById('startOverlay');
+  if (startOverlay && typeof MutationObserver === 'function') {
+    const sync = () => {
+      const visible = getComputedStyle(startOverlay).display !== 'none';
+      if (visible) v721ClearTransientGameplayVisuals();
+    };
+    new MutationObserver(sync).observe(startOverlay, { attributes: true, attributeFilter: ['style','class'] });
+    sync();
+  }
+})();
+</script>
+
+
+
+<!-- v722: Party Mission start cards are queued until every earlier visual sequence is finished.
+     The pending mission holds gameplay paused while score flights, unlocks, tutorial messages,
+     blocking overlays and transient celebration effects finish. A short quiet window prevents
+     the mission card from appearing on the final frame of another animation. -->
+<script id="v722-party-mission-visual-queue">
+(function(){
+  'use strict';
+
+  if (typeof showPartyMissionStart !== 'function') return;
+
+  const v722BaseShowPartyMissionStart = showPartyMissionStart;
+  let v722RequestSerial = 0;
+
+  function v722Visible(el){
+    if (!el) return false;
+    const cs = getComputedStyle(el);
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity || 1) > 0;
+  }
+
+  function v722EarlierVisualIsBusy(){
+    try {
+      // Existing authoritative score/group-flight state.
+      if (typeof v238AreAllBlockPartiesFinished === 'function' && !v238AreAllBlockPartiesFinished()) {
+        return true;
+      }
+
+      if (document.querySelector('.v230-flying-block, .v230-score-plus, .promo-confetti-particle, .promo-praise')) {
+        return true;
+      }
+
+      if (document.querySelector(
+        '.score-party-active, .score-party-hit, .resource-party-hit, ' +
+        '.v221-multicolor-unlock-pulse, .v223-free-picture-unlock-pulse, .v223-next-picture-pulse'
+      )) {
+        return true;
+      }
+
+      const unlockOverlay = document.getElementById('level2NextUnlockOverlay');
+      if (unlockOverlay && unlockOverlay.classList.contains('active')) return true;
+
+      if (typeof featureUnlockSequenceTimerOpenV398 !== 'undefined' && featureUnlockSequenceTimerOpenV398) return true;
+      if (typeof featureUnlockSequenceTimerCloseV398 !== 'undefined' && featureUnlockSequenceTimerCloseV398) return true;
+
+      if (typeof tutorialLevelBannerActive !== 'undefined' && tutorialLevelBannerActive) return true;
+      const levelBanner = document.getElementById('tutorialLevelBanner');
+      if (v722Visible(levelBanner)) return true;
+
+      const movementTutorial = document.getElementById('movementTutorialOverlay');
+      if (v722Visible(movementTutorial)) return true;
+
+      if (typeof isMovementAreaTransitionActive === 'function' && isMovementAreaTransitionActive()) return true;
+
+      // A previous blocking card/reward must be dealt with first. These may require a tap;
+      // the queue waits without covering them with the Party Mission screen.
+      const blockingIds = [
+        'tutorialOverlay',
+        'rewardChoiceOverlay',
+        'levelMatrixOverlay',
+        'djUnlockOverlay',
+        'djLuckyEventOverlay',
+        'barrierRepairOverlay',
+        'gameOverOverlay',
+        'pauseModal',
+        'saveConfirmOverlay'
+      ];
+      for (const id of blockingIds) {
+        const el = document.getElementById(id);
+        if (!v722Visible(el)) continue;
+        // tutorialOverlay is also used by Party Mission itself, but before the base
+        // start call there cannot yet be a v722 mission card on it.
+        return true;
+      }
+    } catch (_) {}
+
+    return false;
+  }
+
+  function v722WaitForQuiet(requestId, onReady){
+    let quietSince = 0;
+
+    const check = () => {
+      if (requestId !== v722RequestSerial) return;
+
+      // The challenge state is already armed by the normal mission trigger. Keep the
+      // falling game from advancing while we wait for the previous visuals to finish.
+      try {
+        if (typeof gamePaused !== 'undefined') gamePaused = true;
+        if (typeof v448SyncControlLocks === 'function') v448SyncControlLocks();
+      } catch (_) {}
+
+      if (v722EarlierVisualIsBusy()) {
+        quietSince = 0;
+        setTimeout(check, 60);
+        return;
+      }
+
+      const now = performance.now();
+      if (!quietSince) quietSince = now;
+
+      // Require a genuinely quiet quarter-second so trailing glow/DOM cleanup cannot
+      // overlap the first frame of the mission card.
+      if (now - quietSince < 260) {
+        setTimeout(check, 60);
+        return;
+      }
+
+      onReady();
+    };
+
+    check();
+  }
+
+  showPartyMissionStart = function(id, unlockAlreadyShown = false){
+    const requestId = ++v722RequestSerial;
+
+    try {
+      if (typeof gamePaused !== 'undefined') gamePaused = true;
+      if (typeof v448SyncControlLocks === 'function') v448SyncControlLocks();
+    } catch (_) {}
+
+    v722WaitForQuiet(requestId, () => {
+      if (requestId !== v722RequestSerial) return;
+      v722BaseShowPartyMissionStart.call(this, id, unlockAlreadyShown);
+    });
+  };
+})();
+</script>
 
 </body>
 </html>

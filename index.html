@@ -6637,19 +6637,6 @@ button.image-fallback-label,
   transform-origin: 50% 50% !important;
 }
 </style>
-
-
-<style id="v514-solid-score-celebration">
-/* V514 — SCORE celebration only: one solid group colour, no rotating light/dark wheel.
-   Party Goal / Party Missions celebration intentionally remains unchanged. */
-#scoreDisplay.score-party-active::before {
-  background: var(--score-party-color, #4A90E2) !important;
-  animation: none !important;
-}
-#scoreDisplay.score-party-active.v235-spin-reverse::before {
-  animation: none !important;
-}
-</style>
 </head>
 <!-- versie 288: de bewegingsachtergrond blijft per actief blok onveranderd; de zijdelingse stop geldt alleen terwijl de formatie werkelijk naast de 10x10 passeert. Zodra ze voorbij de vloer is, kan de vloer opnieuw vrij binnen haar oorspronkelijke bereik bewegen om de terugkerende formatie op te vangen. Een expliciete buiten-transitstatus voorkomt dat het blok tijdens die herpositionering verdwijnt of in de oude landingslogica terechtkomt. -->
 <!-- V306: fuchsiapoorten gebruiken alleen aaneengesloten vrije randvakken; diepte bepaalt de poort niet. -->
@@ -68401,6 +68388,37 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v771:
+     Party Goal ring motion corrected after detailed audit.
+     Two concrete issues were found:
+     1) the progress CSS had been doubled to 1360ms, but its JS cleanup still removed
+        the class after only 720ms;
+     2) Party Goal used a newer custom --v767-ring-angle mechanism instead of the
+        already proven SCORE light/dark ring mechanism.
+     Fix:
+     - Party Goal now reuses SCORE's exact --party-dark / --party-light tint variables
+       and the proven v235ScoreColorsForward angle animation.
+     - The Party Goal frame itself never rotates; only the light/dark colour pattern moves.
+     - Single-color progress runs the full 1360ms and is cleaned up after 1440ms.
+     - Full completion runs 2000ms and is cleaned up after 2120ms.
+     - Normal 4px Party Goal border thickness from v770 is preserved. -->
+
+<!-- v770:
+     PARTY GOAL border thickness aligned with REPAIRS and NEXT SET.
+     - The visible normal Party Goal frame now uses a 4px inner frame, matching
+       the 4px v686 SVG stroke used by REPAIRS and NEXT SET.
+     - Outer geometry does not change: the thicker frame is drawn with an inset
+       box-shadow rather than adding a thicker layout border.
+     - Rounded corners remain unchanged.
+     - Progress and complete celebration rings now also use the same 4px thickness. -->
+
+<!-- v769:
+     SCORE celebration restores the original moving light/dark colour ring.
+     - Removes the later v514 override that flattened the SCORE border to one solid colour.
+     - The SCORE cell itself does NOT rotate.
+     - Only the light/dark pattern of the cleared group colour travels around the border.
+     - Existing SCORE pulse, score-flight timing and fixed digit-size behavior remain unchanged. -->
+
 <!-- v768:
      Party Goal celebration durations doubled.
      - Single-color Party Goal celebration: ~0.7 s -> ~1.4 s
@@ -70445,17 +70463,17 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     pointer-events: none !important;
     z-index: 30 !important;
 
+    /* V771: exact SCORE ring language — same angle property and same
+       alternating light/dark slices of the earned colour. */
     background:
       conic-gradient(
-        from var(--v767-ring-angle, 0deg),
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 0deg,
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 58%, black 42%) 48deg,
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 94%, white 6%) 102deg,
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 44%, black 56%) 158deg,
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 218deg,
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 52%, black 48%) 276deg,
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 336deg,
-        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 360deg
+        from var(--v235-score-angle),
+        var(--party-dark, #245486) 0deg 60deg,
+        var(--party-light, #9BC9F2) 60deg 120deg,
+        var(--party-dark, #245486) 120deg 180deg,
+        var(--party-light, #9BC9F2) 180deg 240deg,
+        var(--party-dark, #245486) 240deg 300deg,
+        var(--party-light, #9BC9F2) 300deg 360deg
       ) !important;
 
     -webkit-mask:
@@ -70475,7 +70493,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
   #v742PartyGoalTop.v767-progress-celebrate::after {
     animation:
-      v767PartyGoalRingFlow 1360ms linear 1,
+      v235ScoreColorsForward 1360ms linear 1,
       v767PartyGoalRingProgressGlow 1360ms ease-out 1 !important;
   }
 
@@ -70488,15 +70506,10 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   #v742PartyGoalTop.v767-complete-celebrate::after {
     padding: 4px !important;
     animation:
-      v767PartyGoalRingFlowComplete 2000ms linear 1,
+      v235ScoreColorsForward 2000ms linear 1,
       v767PartyGoalRingCompleteGlow 2000ms ease-out 1 !important;
   }
 
-  @property --v767-ring-angle {
-    syntax: '<angle>';
-    inherits: false;
-    initial-value: 0deg;
-  }
 
   @keyframes v767PartyGoalProgressPulse {
     0%   { transform: scale(1); }
@@ -70512,15 +70525,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     100% { transform: scale(1); }
   }
 
-  @keyframes v767PartyGoalRingFlow {
-    from { --v767-ring-angle: 0deg; }
-    to   { --v767-ring-angle: 360deg; }
-  }
-
-  @keyframes v767PartyGoalRingFlowComplete {
-    from { --v767-ring-angle: 0deg; }
-    to   { --v767-ring-angle: 720deg; }
-  }
 
   @keyframes v767PartyGoalRingProgressGlow {
     0%   { opacity: 0; }
@@ -70576,6 +70580,35 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     return raw;
   }
 
+  function applyPartyGoalTint(host, color) {
+    if (!host) return;
+    const display = displayColor(color);
+
+    host.style.setProperty('--v767-party-color', display);
+
+    // Reuse SCORE's exact tint calculation whenever available.
+    try {
+      if (typeof applyPromoTintVariables === 'function') {
+        applyPromoTintVariables(host, display);
+        return;
+      }
+    } catch (_) {}
+
+    // Safe fallback if the shared SCORE tint helper is unavailable.
+    host.style.setProperty('--party-base', display);
+    host.style.setProperty('--party-dark', display);
+    host.style.setProperty('--party-light', display);
+  }
+
+  function clearPartyGoalTint(host) {
+    if (!host) return;
+    host.style.removeProperty('--v767-party-color');
+    host.style.removeProperty('--party-dark');
+    host.style.removeProperty('--party-base');
+    host.style.removeProperty('--party-light');
+    host.style.removeProperty('--party-highlight');
+  }
+
   function stopProgressCelebration(host) {
     if (!host) return;
     host.classList.remove('v767-progress-celebrate');
@@ -70602,7 +70635,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     stopProgressCelebration(host);
 
     v767LastWonColor = displayColor(color);
-    host.style.setProperty('--v767-party-color', v767LastWonColor);
+    applyPartyGoalTint(host, v767LastWonColor);
 
     // Force a fresh finite animation every time a requested color is earned.
     void host.offsetWidth;
@@ -70612,9 +70645,9 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       host.classList.remove('v767-progress-celebrate');
       v767ProgressTimer = null;
       if (!host.classList.contains('v767-complete-celebrate')) {
-        host.style.removeProperty('--v767-party-color');
+        clearPartyGoalTint(host);
       }
-    }, 720);
+    }, 1440);
   }
 
   function celebrateComplete() {
@@ -70624,14 +70657,14 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     stopProgressCelebration(host);
     stopCompleteCelebration(host);
 
-    host.style.setProperty('--v767-party-color', v767LastWonColor || '#ffd166');
+    applyPartyGoalTint(host, v767LastWonColor || '#ffd166');
 
     void host.offsetWidth;
     host.classList.add('v767-complete-celebrate');
 
     v767CompleteTimer = setTimeout(() => {
       host.classList.remove('v767-complete-celebrate');
-      host.style.removeProperty('--v767-party-color');
+      clearPartyGoalTint(host);
       v767CompleteTimer = null;
     }, 2120);
   }
@@ -70664,10 +70697,33 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     if (!host) return;
     stopProgressCelebration(host);
     stopCompleteCelebration(host);
-    host.style.removeProperty('--v767-party-color');
+    clearPartyGoalTint(host);
   });
 })();
 </script>
+
+
+<style id="v770-party-goal-border-match-style">
+  /*
+    REPAIRS and NEXT SET use the v686 SVG border with stroke-width="4".
+    Use the same visual thickness here without changing the Party Goal cell's size.
+  */
+  #v742PartyGoalTop {
+    border: 0 !important;
+    border-radius: 10px !important;
+    box-shadow:
+      inset 0 0 0 4px var(--v692-hud-border, #e88a2d),
+      0 0 6px var(--v692-hud-border, #e88a2d) !important;
+  }
+
+  /* Keep the animated progress border exactly as thick as the normal frame. */
+  #v742PartyGoalTop.v767-progress-celebrate::after,
+  #v742PartyGoalTop.v767-complete-celebrate::after {
+    inset: 0 !important;
+    padding: 4px !important;
+    border-radius: 10px !important;
+  }
+</style>
 
 </body>
 </html>

@@ -68011,8 +68011,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const makeEmptyTutorialField = () =>
       Array.from({ length: gridRows }, () => Array(gridCols).fill(null));
 
-    // Preferred path: use the latest onboarding autosave, but remove only
-    // the landed 10x10 field. All other saved tutorial progress is preserved.
+    // Preferred path: use the latest onboarding autosave, keep tutorial
+    // progress/resources, but clear the landed field and fully restore the Barrier.
     if (typeof v468ReadAutosave === 'function' && typeof v468ResumeAutosave === 'function') {
       const snapshot = v468ReadAutosave();
       if (snapshot) {
@@ -68027,7 +68027,42 @@ triggerPromoGroupCelebration = function(group, groupColor) {
         cleanSnapshot.gridOffsetX = 0;
         cleanSnapshot.gridOffsetY = 0;
 
-        // Make the clean state the new onboarding autosave immediately.
+        // Fully restore the saved Party Barrier as well.
+        const intactBarrierValue =
+          (typeof BARRIER_STATE_INTACT !== 'undefined')
+            ? BARRIER_STATE_INTACT
+            : 2;
+        const barrierSideLength =
+          (cleanSnapshot.barrier &&
+           Array.isArray(cleanSnapshot.barrier.top) &&
+           cleanSnapshot.barrier.top.length)
+            ? cleanSnapshot.barrier.top.length
+            : ((typeof BARRIER_SEGMENTS_PER_SIDE !== 'undefined')
+                ? BARRIER_SEGMENTS_PER_SIDE
+                : 20);
+
+        cleanSnapshot.barrier = {
+          top: Array(barrierSideLength).fill(intactBarrierValue),
+          right: Array(barrierSideLength).fill(intactBarrierValue),
+          bottom: Array(barrierSideLength).fill(intactBarrierValue),
+          left: Array(barrierSideLength).fill(intactBarrierValue)
+        };
+
+        // If PARTY OVER happened while the very first Repair lesson was still
+        // tied to damaged Barrier segments, that pending target no longer exists.
+        // Reset only that unfinished lesson; completed Repair learning remains completed.
+        if (
+          cleanSnapshot.state &&
+          cleanSnapshot.state.firstBarrierRepairTutorialActive === true &&
+          cleanSnapshot.state.firstBarrierRepairTutorialCompleted !== true
+        ) {
+          cleanSnapshot.state.firstBarrierRepairTutorialActive = false;
+          cleanSnapshot.state.firstBarrierRepairTutorialStage = 'idle';
+          cleanSnapshot.state.firstBarrierRepairTutorialRequiredTargets = [];
+          cleanSnapshot.state.firstBarrierRepairTutorialRewardRegistered = false;
+        }
+
+        // Make the clean/restored state the new onboarding autosave immediately.
         // If the app closes during the resume transition, it will not restore
         // the old crowded dance floor again.
         try {
@@ -68040,10 +68075,34 @@ triggerPromoGroupCelebration = function(group, groupColor) {
         } catch (_) {}
 
         if (v468ResumeAutosave(cleanSnapshot)) {
-          // V545 already does this on every resume; keep an explicit final
-          // safety net for this special recovery choice.
+          // V545 already centers every resume; keep explicit safety nets for
+          // both the centered floor and the fully restored Barrier.
           if (typeof gridOffsetX !== 'undefined') gridOffsetX = 0;
           if (typeof gridOffsetY !== 'undefined') gridOffsetY = 0;
+          if (typeof resetBarrierWallStates === 'function') resetBarrierWallStates();
+
+          // Do not leave the UI/runtime locked to a Repair target that was removed.
+          if (
+            typeof firstBarrierRepairTutorialActive !== 'undefined' &&
+            firstBarrierRepairTutorialActive &&
+            typeof firstBarrierRepairTutorialCompleted !== 'undefined' &&
+            !firstBarrierRepairTutorialCompleted
+          ) {
+            firstBarrierRepairTutorialActive = false;
+            if (typeof firstBarrierRepairTutorialStage !== 'undefined') {
+              firstBarrierRepairTutorialStage = 'idle';
+            }
+            if (typeof firstBarrierRepairTutorialRequiredTargets !== 'undefined') {
+              firstBarrierRepairTutorialRequiredTargets = [];
+            }
+            if (typeof firstBarrierRepairTutorialRewardRegistered !== 'undefined') {
+              firstBarrierRepairTutorialRewardRegistered = false;
+            }
+            if (typeof firstRepairTutorialExclusive !== 'undefined') {
+              firstRepairTutorialExclusive = false;
+            }
+          }
+
           if (typeof drawGrid === 'function') drawGrid();
           if (typeof drawFallingBlock === 'function' &&
               typeof fallingBlock !== 'undefined' && fallingBlock) {
@@ -68077,7 +68136,9 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       resumeTutorialCheckpoint(savedLevel);
       if (typeof gridOffsetX !== 'undefined') gridOffsetX = 0;
       if (typeof gridOffsetY !== 'undefined') gridOffsetY = 0;
+      if (typeof resetBarrierWallStates === 'function') resetBarrierWallStates();
       if (typeof drawGrid === 'function') drawGrid();
+      if (typeof v468ScheduleAutosave === 'function') v468ScheduleAutosave(0);
       return;
     }
 
@@ -68191,7 +68252,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
           ? 'YOUR PROGRESS IS SAVED.'
           : 'READY TO TRY AGAIN?';
         tutorialMessage.querySelector('span').textContent = onboardingProgress
-          ? 'Continue your saved party or restart with an empty dance floor.'
+          ? 'Continue your saved party or restart with a clear floor and fixed Barrier.'
           : 'Restart the discovery from the beginning.';
       }
 
@@ -68200,7 +68261,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
         : { label: 'START GAME', sub: 'Restart from level 1', action: restartOnboarding }
       );
       setButton(secondary, onboardingProgress
-        ? { label: 'CLEAR DANCE FLOOR', sub: 'Keep progress, empty the 10x10', action: continueOnboardingWithEmptyFloor }
+        ? { label: 'CLEAR FLOOR + FIX BARRIER', sub: 'Keep your tutorial progress', action: continueOnboardingWithEmptyFloor }
         : { hidden: true }
       );
     } else if (savedPartyAvailable) {
@@ -68247,6 +68308,32 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v760:
+     SCORE celebration enlargement restored, but numeric size is locked.
+     - The SCORE card may pulse/grow again on normal scoring, score hit and Party Goal +100.
+     - #scoreValue gets the exact inverse scale during those animations, so the SCORE digits
+       remain visually the same size throughout.
+     - LEVEL never scales and continues to mirror SCORE's actual font-size via v750.
+     - Font-size transitions remain disabled, so SCORE/LEVEL do not jump in size.
+     - This authoritative override is appended at the very end of the file. -->
+
+<!-- v759:
+     Tutorial PARTY OVER recovery option expanded.
+     CLEAR FLOOR + FIX BARRIER now:
+     - keeps tutorial progress, score and collected resources;
+     - empties the dance floor;
+     - centers the dance floor;
+     - fully restores every Party Barrier segment to intact;
+     - cancels an unfinished first-Repair lesson if one was tied to damage that
+       has now been removed, so that lesson can trigger cleanly on a later real hit.
+     Player-facing copy mentions both the clear floor and restored Barrier. -->
+
+<!-- v758:
+     Player-facing PARTY OVER copy cleanup.
+     The tutorial recovery option no longer says "10x10".
+     It now consistently says "dance floor".
+     Internal comments/code may still use 10x10 as technical terminology. -->
+
 <!-- v757:
      Critical Party Goal layout fix after v755.
      Root cause: v755 applied position:relative !important to EVERY direct child
@@ -68263,8 +68350,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 <!-- v756:
      Tutorial PARTY OVER gets a second recovery choice.
      - CONTINUE PARTY: resume the latest onboarding autosave exactly as before.
-     - CLEAR DANCE FLOOR: keep the saved tutorial progress/resources/barrier state,
-       but resume with the landed 10x10 field empty.
+     - CLEAR DANCE FLOOR: keep saved tutorial progress/resources, empty the landed field,
+       and restore the Party Barrier.
      - The dance floor is explicitly centered in the clean-floor snapshot and again
        after resume as a safety net.
      - Existing v545 resume logic already centers normal tutorial resumes too.
@@ -69713,6 +69800,95 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       width: 29px !important;
       height: 29px !important;
     }
+  }
+</style>
+
+
+<style id="v760-score-pulse-fixed-digits-final">
+  /*
+    Restore the old SCORE-card enlargement, but neutralize that scale on the
+    SCORE digits themselves. Computed font-size never changes, so v750 keeps
+    LEVEL exactly equal to SCORE.
+  */
+
+  #v742BottomCoreStats #scoreValue,
+  #v742BottomCoreStats #levelDisplayExtra {
+    transition: none !important;
+  }
+
+  /* ---- normal score celebration ---- */
+  #scoreDisplay.score-party-active {
+    transform-origin: center center !important;
+    animation: v760ScoreCardPulse 420ms ease-in-out infinite alternate !important;
+  }
+
+  #scoreDisplay.score-party-active #scoreValue {
+    transform-origin: center center !important;
+    animation: v760ScoreDigitsCounterPulse 420ms ease-in-out infinite alternate !important;
+  }
+
+  /* ---- arrival hit ---- */
+  #scoreDisplay.score-party-hit {
+    transform-origin: center center !important;
+    animation: v760ScoreCardHit 170ms ease-out !important;
+  }
+
+  #scoreDisplay.score-party-hit #scoreValue {
+    transform-origin: center center !important;
+    animation: v760ScoreDigitsCounterHit 170ms ease-out !important;
+  }
+
+  /* ---- Party Goal +100 payoff ---- */
+  #scoreDisplay.v634-score-goal-payoff {
+    transform-origin: center center !important;
+    animation: v760ScoreCardGoalPayoff 900ms cubic-bezier(.18,.88,.26,1) 1 !important;
+  }
+
+  #scoreDisplay.v634-score-goal-payoff #scoreValue {
+    transform-origin: center center !important;
+    animation: v760ScoreDigitsCounterGoalPayoff 900ms cubic-bezier(.18,.88,.26,1) 1 !important;
+  }
+
+  /* Card uses the original enlargement values. */
+  @keyframes v760ScoreCardPulse {
+    from { transform: scale(1.04); }
+    to   { transform: scale(1.13); }
+  }
+
+  /* Exact inverse: 1/1.04 and 1/1.13. */
+  @keyframes v760ScoreDigitsCounterPulse {
+    from { transform: scale(.96153846); }
+    to   { transform: scale(.88495575); }
+  }
+
+  @keyframes v760ScoreCardHit {
+    0%   { transform: scale(1.08); }
+    48%  { transform: scale(1.25); }
+    100% { transform: scale(1.10); }
+  }
+
+  /* Exact inverse: 1/1.08, 1/1.25 and 1/1.10. */
+  @keyframes v760ScoreDigitsCounterHit {
+    0%   { transform: scale(.92592593); }
+    48%  { transform: scale(.8); }
+    100% { transform: scale(.90909091); }
+  }
+
+  @keyframes v760ScoreCardGoalPayoff {
+    0%,100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 rgba(80,227,194,0);
+    }
+    32% {
+      transform: scale(1.09);
+      box-shadow: 0 0 14px rgba(80,227,194,.62);
+    }
+  }
+
+  /* Exact inverse of 1.09 at the peak. */
+  @keyframes v760ScoreDigitsCounterGoalPayoff {
+    0%,100% { transform: scale(1); }
+    32%     { transform: scale(.91743119); }
   }
 </style>
 

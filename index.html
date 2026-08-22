@@ -67769,6 +67769,15 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v793:
+     SCORE / LEVEL values moved lower for better visual balance.
+     - Removed the v792 geometry block.
+     - The labels SCORE / LEVEL stay in the lowered label band.
+     - The numeric value line for both cards is shifted further downward so it no
+       longer feels centered at half height.
+     - SCORE and LEVEL still share the exact same geometry.
+     - SCORE animation, PARTY GOAL, locks and gameplay logic stay unchanged. -->
+
 <!-- v792:
      Bottom SCORE / LEVEL cards refined.
      - SCORE and LEVEL now use one stricter shared geometry so both cards match better.
@@ -70842,13 +70851,10 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 </style>
 
-<style id="v792-score-level-shared-geometry">
+<style id="v793-score-level-values-lower">
   /*
-    Shared geometry for the two bottom stat cards.
-    Goal:
-    - SCORE and LEVEL visually identical in structure
-    - top label slightly lower than before
-    - number line shared exactly
+    Shared geometry for SCORE + LEVEL.
+    Keep labels where they are, but move the numbers visibly lower.
   */
 
   #v742BottomCoreStats > #scoreDisplay .v685-shell,
@@ -70862,7 +70868,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     box-sizing: border-box !important;
   }
 
-  /* Label band: placed a bit lower than before */
+  /* Label band remains slightly lower than original */
   #v742BottomCoreStats > #scoreDisplay .v685-top,
   #v742BottomCoreStats > #extraCell1 .v685-top {
     position: absolute !important;
@@ -70882,16 +70888,16 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
   /*
-    Value band: identical for SCORE and LEVEL.
-    Centered on one shared visual line.
+    Number line is pushed further down.
+    Center line at 67% gives a clearly lower visual anchor.
   */
   #v742BottomCoreStats > #scoreDisplay .v685-bottom,
   #v742BottomCoreStats > #extraCell1 .v685-bottom {
     position: absolute !important;
     left: 0 !important;
     right: 0 !important;
-    top: 61% !important;
-    height: 32% !important;
+    top: 67% !important;
+    height: 28% !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -70903,7 +70909,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     pointer-events: none !important;
   }
 
-  /* Make both value wrappers full-size and identical */
   #v742BottomCoreStats > #scoreDisplay #scoreValue,
   #v742BottomCoreStats > #extraCell1 #levelDisplayExtra,
   #v742BottomCoreStats > #extraCell1 #levelStatusValues,
@@ -70921,7 +70926,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     transform: none !important;
   }
 
-  /* While SCORE animates, keep exactly the same geometry */
+  /* Keep SCORE animation on the exact same lower line */
   #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-top,
   #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-top {
     top: 12% !important;
@@ -70930,8 +70935,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
   #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-bottom,
   #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-bottom {
-    top: 61% !important;
-    height: 32% !important;
+    top: 67% !important;
+    height: 28% !important;
     transform: translateY(-50%) !important;
   }
 </style>

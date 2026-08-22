@@ -68388,6 +68388,26 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v773:
+     SCORE and PARTY GOAL celebration polish.
+     - SCORE no longer gets an extra outer ring. The existing SCORE border area itself
+       now takes on the moving light/dark colour ring.
+     - PARTY GOAL keeps the same moving ring effect, but both progress and complete
+       durations are doubled again.
+     - PARTY GOAL's normal frame and animated ring now use a real 4px border so the
+       thickness matches REPAIRS and NEXT SET more faithfully. -->
+
+<!-- v772:
+     LEVEL progress border now uses eight TRUE equal-length pieces around the
+     actual rectangular LEVEL card.
+     - Gameplay threshold remains 8 cleared groups of 5+.
+     - The visible v686 LEVEL SVG is no longer treated as a stretched 100x100 square.
+     - Its viewBox is dynamically matched to the real rendered card width/height.
+     - Each of the 8 dash segments therefore represents exactly 1/8 of the real
+       rounded rectangular perimeter.
+     - 6/8 = 75%, 7/8 = 87.5%, 8/8 = fully yellow.
+     - SCORE / REPAIRS / NEXT SET borders are untouched. -->
+
 <!-- v771:
      Party Goal ring motion corrected after detailed audit.
      Two concrete issues were found:
@@ -70724,6 +70744,290 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     border-radius: 10px !important;
   }
 </style>
+
+
+<script id="v772-level-border-true-eighths-runtime">
+(() => {
+  'use strict';
+
+  const LEVEL_CELL_ID = 'extraCell1';
+  const LEVEL_BORDER_ID = 'v686LevelBorder';
+  const TOTAL = 8;
+  const STROKE = 4;
+
+  let resizeObserver = null;
+  let mutationObserver = null;
+  let rafId = 0;
+
+  function scheduleNormalize() {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      normalizeLevelBorder();
+    });
+  }
+
+  function normalizeLevelBorder() {
+    const cell = document.getElementById(LEVEL_CELL_ID);
+    const svg = document.getElementById(LEVEL_BORDER_ID);
+    if (!cell || !svg) return false;
+
+    /*
+      The overlay itself is inset 1px by the existing v686/v742 CSS.
+      Use its REAL rendered dimensions as the SVG coordinate system.
+      This removes the non-uniform 100x100 -> rectangle stretch that made
+      vertical-side eighths look much smaller than horizontal-side eighths.
+    */
+    const box = svg.getBoundingClientRect();
+    const width = box.width;
+    const height = box.height;
+
+    if (!(width > 8 && height > 8)) return false;
+
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    const inset = STROKE / 2;
+    const rectWidth = Math.max(1, width - STROKE);
+    const rectHeight = Math.max(1, height - STROKE);
+    const radius = Math.max(
+      3,
+      Math.min(9, (Math.min(rectWidth, rectHeight) / 2) - 1)
+    );
+
+    const segments = Array.from(
+      svg.querySelectorAll('rect[data-segment-index]')
+    );
+
+    segments.forEach((rect, index) => {
+      rect.setAttribute('x', String(inset));
+      rect.setAttribute('y', String(inset));
+      rect.setAttribute('width', String(rectWidth));
+      rect.setAttribute('height', String(rectHeight));
+      rect.setAttribute('rx', String(radius));
+      rect.setAttribute('ry', String(radius));
+      rect.setAttribute('fill', 'none');
+      rect.setAttribute('stroke-width', String(STROKE));
+      rect.setAttribute('vector-effect', 'non-scaling-stroke');
+
+      /*
+        pathLength normalizes the ACTUAL rectangular perimeter to 800 units.
+        Every segment occupies 100 of those 800 units = exactly 12.5%.
+      */
+      rect.setAttribute('pathLength', '800');
+      rect.setAttribute('stroke-dasharray', '100 700');
+      rect.setAttribute('stroke-dashoffset', String(-index * 100));
+      rect.dataset.segmentIndex = String(index);
+    });
+
+    svg.setAttribute(
+      'aria-label',
+      `Level progress border: ${TOTAL} equal perimeter segments`
+    );
+
+    return true;
+  }
+
+  function bindObservers() {
+    const cell = document.getElementById(LEVEL_CELL_ID);
+    if (!cell) {
+      setTimeout(bindObservers, 80);
+      return;
+    }
+
+    if (resizeObserver) resizeObserver.disconnect();
+    if (typeof ResizeObserver === 'function') {
+      resizeObserver = new ResizeObserver(scheduleNormalize);
+      resizeObserver.observe(cell);
+    }
+
+    if (mutationObserver) mutationObserver.disconnect();
+    mutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          scheduleNormalize();
+          break;
+        }
+      }
+    });
+    mutationObserver.observe(cell, { childList: true, subtree: true });
+
+    scheduleNormalize();
+    setTimeout(scheduleNormalize, 60);
+    setTimeout(scheduleNormalize, 220);
+  }
+
+  window.addEventListener('resize', scheduleNormalize, { passive: true });
+  window.addEventListener('orientationchange', scheduleNormalize, { passive: true });
+  window.addEventListener('pageshow', scheduleNormalize);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindObservers, { once: true });
+  } else {
+    bindObservers();
+  }
+
+  // Public diagnostic hook, useful if the HUD is rebuilt by a future version.
+  window.v772NormalizeLevelBorder = scheduleNormalize;
+})();
+</script>
+
+
+<style id="v773-score-and-party-goal-celebration-refine">
+  /* ---------------- SCORE ----------------
+     Use the current border area itself, not an extra outer ring.
+  */
+  #scoreDisplay.score-party-active {
+    border-color: transparent !important;
+  }
+
+  #scoreDisplay.score-party-active::before {
+    inset: 0 !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+    filter: none !important;
+  }
+
+  /* Keep the hit-state on the same geometry too. */
+  #scoreDisplay.score-party-hit.score-party-active::before,
+  #scoreDisplay.score-party-active.score-party-hit::before {
+    inset: 0 !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+  }
+
+  /* ---------------- PARTY GOAL ----------------
+     Static frame should visually match REPAIRS/NEXT SET.
+     Use a real 4px border (border-box) rather than a visually softer inset shadow.
+  */
+  #v742PartyGoalTop {
+    box-sizing: border-box !important;
+    border: 4px solid var(--v692-hud-border, #e88a2d) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 0 6px var(--v692-hud-border, #e88a2d) !important;
+  }
+
+  /* Keep the festive interior fitted inside the 4px frame. */
+  #v742PartyGoalTop > .v606-party-goal-panel {
+    border-radius: 6px !important;
+  }
+
+  /* Animated ring uses the same thickness as the normal frame. */
+  #v742PartyGoalTop.v767-progress-celebrate::after,
+  #v742PartyGoalTop.v767-complete-celebrate::after {
+    inset: 0 !important;
+    padding: 4px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Double the existing Party Goal durations once more. */
+  #v742PartyGoalTop.v767-progress-celebrate {
+    animation: v767PartyGoalProgressPulse 2720ms cubic-bezier(.2,.86,.24,1) 1 !important;
+  }
+
+  #v742PartyGoalTop.v767-progress-celebrate::after {
+    animation:
+      v235ScoreColorsForward 2720ms linear 1,
+      v767PartyGoalRingProgressGlow 2720ms ease-out 1 !important;
+  }
+
+  #v742PartyGoalTop.v767-complete-celebrate {
+    animation: v767PartyGoalCompletePulse 4000ms cubic-bezier(.16,.9,.24,1) 1 !important;
+  }
+
+  #v742PartyGoalTop.v767-complete-celebrate::after {
+    animation:
+      v235ScoreColorsForward 4000ms linear 1,
+      v767PartyGoalRingCompleteGlow 4000ms ease-out 1 !important;
+  }
+</style>
+
+<script id="v773-party-goal-longer-cleanup">
+(() => {
+  'use strict';
+
+  if (typeof window.bpPartyGoalV634 !== 'object' || !window.bpPartyGoalV634) return;
+
+  /*
+    Rewrap the existing v767/v771 callback decorations only to extend the
+    visible celebration cleanup window. Game logic remains untouched.
+  */
+
+  // Patch celebrateProgress / celebrateComplete indirectly by wrapping callbacks
+  // after the existing wrappers. The classes are removed and reapplied by the
+  // current implementation, so we only need to keep them alive longer.
+  const topGoal = () => document.getElementById('v742PartyGoalTop');
+
+  let progressCleanup = null;
+  let completeCleanup = null;
+
+  function keepProgressAliveLonger() {
+    const host = topGoal();
+    if (!host) return;
+    if (progressCleanup) clearTimeout(progressCleanup);
+    progressCleanup = setTimeout(() => {
+      host.classList.remove('v767-progress-celebrate');
+      if (!host.classList.contains('v767-complete-celebrate')) {
+        host.style.removeProperty('--v767-party-color');
+        host.style.removeProperty('--party-dark');
+        host.style.removeProperty('--party-base');
+        host.style.removeProperty('--party-light');
+        host.style.removeProperty('--party-highlight');
+      }
+      progressCleanup = null;
+    }, 2880);
+  }
+
+  function keepCompleteAliveLonger() {
+    const host = topGoal();
+    if (!host) return;
+    if (completeCleanup) clearTimeout(completeCleanup);
+    completeCleanup = setTimeout(() => {
+      host.classList.remove('v767-complete-celebrate');
+      host.style.removeProperty('--v767-party-color');
+      host.style.removeProperty('--party-dark');
+      host.style.removeProperty('--party-base');
+      host.style.removeProperty('--party-light');
+      host.style.removeProperty('--party-highlight');
+      completeCleanup = null;
+    }, 4240);
+  }
+
+  if (typeof window.bpPartyGoalV634.onProgress === 'function') {
+    const baseProgress = window.bpPartyGoalV634.onProgress;
+    window.bpPartyGoalV634.onProgress = function() {
+      const result = baseProgress.apply(this, arguments);
+      try {
+        const host = topGoal();
+        if (host) {
+          host.classList.remove('v767-progress-celebrate');
+          void host.offsetWidth;
+          host.classList.add('v767-progress-celebrate');
+        }
+        keepProgressAliveLonger();
+      } catch (_) {}
+      return result;
+    };
+  }
+
+  if (typeof window.bpPartyGoalV634.onComplete === 'function') {
+    const baseComplete = window.bpPartyGoalV634.onComplete;
+    window.bpPartyGoalV634.onComplete = function() {
+      const result = baseComplete.apply(this, arguments);
+      try {
+        const host = topGoal();
+        if (host) {
+          host.classList.remove('v767-complete-celebrate');
+          void host.offsetWidth;
+          host.classList.add('v767-complete-celebrate');
+        }
+        keepCompleteAliveLonger();
+      } catch (_) {}
+      return result;
+    };
+  }
+})();
+</script>
 
 </body>
 </html>

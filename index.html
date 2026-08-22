@@ -67868,6 +67868,18 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v782:
+     Proper geometry fix for REPAIRS / NEXT SET / SCORE / LEVEL.
+     - Removed the v777/v779 workaround that made the dark fill smaller.
+     - The dark background again fills the full rounded card, so there is no visible gap.
+     - Instead, the v686 SVG border itself is normalized to the REAL rendered width/height
+       of each of the four cards.
+     - Border stroke = 4px and is centered exactly 2px from the outer edge, so its outer
+       edge coincides with the card edge and covers the dark background boundary cleanly.
+     - All four cells now use the same border geometry.
+     - LEVEL still has eight true equal-length progress pieces.
+     - SCORE animation, PARTY GOAL, LEVEL logic and v775 movement timing are unchanged. -->
+
 <!-- v781:
      SCORE / LEVEL behavior simplified exactly as intended.
      - Removed the entire v780 Party-Goal-specific SCORE/LEVEL suppression logic.
@@ -70315,135 +70327,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     border-radius: 10px !important;
   }
 </style>
-
-
-<script id="v772-level-border-true-eighths-runtime">
-(() => {
-  'use strict';
-
-  const LEVEL_CELL_ID = 'extraCell1';
-  const LEVEL_BORDER_ID = 'v686LevelBorder';
-  const TOTAL = 8;
-  const STROKE = 4;
-
-  let resizeObserver = null;
-  let mutationObserver = null;
-  let rafId = 0;
-
-  function scheduleNormalize() {
-    if (rafId) return;
-    rafId = requestAnimationFrame(() => {
-      rafId = 0;
-      normalizeLevelBorder();
-    });
-  }
-
-  function normalizeLevelBorder() {
-    const cell = document.getElementById(LEVEL_CELL_ID);
-    const svg = document.getElementById(LEVEL_BORDER_ID);
-    if (!cell || !svg) return false;
-
-    /*
-      The overlay itself is inset 1px by the existing v686/v742 CSS.
-      Use its REAL rendered dimensions as the SVG coordinate system.
-      This removes the non-uniform 100x100 -> rectangle stretch that made
-      vertical-side eighths look much smaller than horizontal-side eighths.
-    */
-    const box = svg.getBoundingClientRect();
-    const width = box.width;
-    const height = box.height;
-
-    if (!(width > 8 && height > 8)) return false;
-
-    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
-
-    const inset = STROKE / 2;
-    const rectWidth = Math.max(1, width - STROKE);
-    const rectHeight = Math.max(1, height - STROKE);
-    const radius = Math.max(
-      3,
-      Math.min(9, (Math.min(rectWidth, rectHeight) / 2) - 1)
-    );
-
-    const segments = Array.from(
-      svg.querySelectorAll('rect[data-segment-index]')
-    );
-
-    segments.forEach((rect, index) => {
-      rect.setAttribute('x', String(inset));
-      rect.setAttribute('y', String(inset));
-      rect.setAttribute('width', String(rectWidth));
-      rect.setAttribute('height', String(rectHeight));
-      rect.setAttribute('rx', String(radius));
-      rect.setAttribute('ry', String(radius));
-      rect.setAttribute('fill', 'none');
-      rect.setAttribute('stroke-width', String(STROKE));
-      rect.setAttribute('vector-effect', 'non-scaling-stroke');
-
-      /*
-        pathLength normalizes the ACTUAL rectangular perimeter to 800 units.
-        Every segment occupies 100 of those 800 units = exactly 12.5%.
-      */
-      rect.setAttribute('pathLength', '800');
-      rect.setAttribute('stroke-dasharray', '100 700');
-      rect.setAttribute('stroke-dashoffset', String(-index * 100));
-      rect.dataset.segmentIndex = String(index);
-    });
-
-    svg.setAttribute(
-      'aria-label',
-      `Level progress border: ${TOTAL} equal perimeter segments`
-    );
-
-    return true;
-  }
-
-  function bindObservers() {
-    const cell = document.getElementById(LEVEL_CELL_ID);
-    if (!cell) {
-      setTimeout(bindObservers, 80);
-      return;
-    }
-
-    if (resizeObserver) resizeObserver.disconnect();
-    if (typeof ResizeObserver === 'function') {
-      resizeObserver = new ResizeObserver(scheduleNormalize);
-      resizeObserver.observe(cell);
-    }
-
-    if (mutationObserver) mutationObserver.disconnect();
-    mutationObserver = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === 'childList') {
-          scheduleNormalize();
-          break;
-        }
-      }
-    });
-    mutationObserver.observe(cell, { childList: true, subtree: true });
-
-    scheduleNormalize();
-    setTimeout(scheduleNormalize, 60);
-    setTimeout(scheduleNormalize, 220);
-  }
-
-  window.addEventListener('resize', scheduleNormalize, { passive: true });
-  window.addEventListener('orientationchange', scheduleNormalize, { passive: true });
-  window.addEventListener('pageshow', scheduleNormalize);
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindObservers, { once: true });
-  } else {
-    bindObservers();
-  }
-
-  // Public diagnostic hook, useful if the HUD is rebuilt by a future version.
-  window.v772NormalizeLevelBorder = scheduleNormalize;
-})();
-</script>
-
-
 <style id="v773-score-and-party-goal-celebration-refine">
   /* ---------------- SCORE ----------------
      Use the current border area itself, not an extra outer ring.
@@ -70492,55 +70375,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
 </style>
-<style id="v777-four-core-cells-inner-dark-fill">
-  /*
-    Simple fix: keep the v686 border unchanged and make only the NORMAL dark fill
-    slightly smaller. Use the already-existing .v685-shell as the paint host so
-    no box dimensions or content layout need to change.
-  */
-
-  #livesDisplay.info-cell,
-  #nextBlockDisplay.info-cell,
-  #extraCell1.info-cell,
-  #scoreDisplay.info-cell:not(.score-party-active) {
-    background: transparent !important;
-  }
-
-  #livesDisplay.info-cell > .v685-shell::before,
-  #nextBlockDisplay.info-cell > .v685-shell::before,
-  #extraCell1.info-cell > .v685-shell::before,
-  #scoreDisplay.info-cell:not(.score-party-active) > .v685-shell::before {
-    content: "" !important;
-    position: absolute !important;
-    inset: 2px !important;
-    border-radius: 8px !important;
-    background: rgba(0,0,0,.70) !important;
-    pointer-events: none !important;
-    z-index: 0 !important;
-  }
-
-  /*
-    Keep all real cell content above the inset fill.
-    This does not alter size or position.
-  */
-  #livesDisplay.info-cell > .v685-shell > *,
-  #nextBlockDisplay.info-cell > .v685-shell > *,
-  #extraCell1.info-cell > .v685-shell > *,
-  #scoreDisplay.info-cell > .v685-shell > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  /*
-    SCORE's existing celebration remains authoritative and uses its own background
-    and inner animated ring; never place the normal dark inset over it.
-  */
-  #scoreDisplay.score-party-active > .v685-shell::before {
-    display: none !important;
-  }
-</style>
-
-
 <style id="v778-score-visible-inner-moving-ring">
   /*
     Final SCORE celebration geometry.
@@ -70655,17 +70489,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     content: none !important;
   }
 </style>
-
-
-<style id="v779-repairs-nextset-fill-less-inset">
-  /* Keep the v777 fix, but make REPAIRS and NEXT SET less inset than SCORE/LEVEL. */
-  #livesDisplay.info-cell > .v685-shell::before,
-  #nextBlockDisplay.info-cell > .v685-shell::before {
-    inset: 1px !important;
-    border-radius: 9px !important;
-  }
-</style>
-
 <style id="v781-score-always-same-level-never-animate">
   /* ============================================================
      SCORE: ALWAYS THE SAME NORMAL SCORING TREATMENT
@@ -70738,6 +70561,212 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     transform: none !important;
   }
 </style>
+
+
+<style id="v782-unified-core-cell-border-geometry-style">
+  /*
+    Do NOT create a gap by shrinking the dark fill.
+    Let the dark panel fill the complete card and make the orange/yellow SVG border
+    itself line up with that exact outer geometry.
+  */
+  #livesDisplay.info-cell,
+  #nextBlockDisplay.info-cell,
+  #scoreDisplay.info-cell:not(.score-party-active),
+  #extraCell1.info-cell {
+    background: rgba(0,0,0,.70) !important;
+    border-radius: 10px !important;
+  }
+
+  /*
+    SCORE celebration keeps its own dark layer, but it also reaches the exact card
+    edge now. The fixed v686 orange outer border sits on top of it.
+  */
+  #scoreDisplay.score-party-active::after {
+    inset: 0 !important;
+    border-radius: 10px !important;
+  }
+
+  /*
+    v686 is still the sole visible normal border system.
+    Geometry is set by the v782 runtime using the actual rendered card dimensions.
+  */
+  #livesDisplay.info-cell > .v686-border-overlay,
+  #nextBlockDisplay.info-cell > .v686-border-overlay,
+  #scoreDisplay.info-cell > .v686-border-overlay,
+  #extraCell1.info-cell > .v686-border-overlay {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+  }
+</style>
+
+<script id="v782-unified-core-cell-border-geometry-runtime">
+(() => {
+  'use strict';
+
+  const CELL_BORDER_PAIRS = [
+    ['livesDisplay', 'v686RepairBorder'],
+    ['nextBlockDisplay', 'v686NextBorder'],
+    ['scoreDisplay', 'v686ScoreBorder'],
+    ['extraCell1', 'v686LevelBorder']
+  ];
+
+  const STROKE = 4;
+  const HALF_STROKE = STROKE / 2;
+  const NORMALIZED_PATH = 800;
+  const SEGMENT_LENGTH = NORMALIZED_PATH / 8;
+
+  let rafId = 0;
+  let resizeObserver = null;
+  let mutationObserver = null;
+
+  function normalizeOne(cellId, borderId) {
+    const cell = document.getElementById(cellId);
+    const svg = document.getElementById(borderId);
+    if (!cell || !svg) return false;
+
+    const box = cell.getBoundingClientRect();
+    const width = box.width;
+    const height = box.height;
+
+    if (!(width > 8 && height > 8)) return false;
+
+    /*
+      Use real CSS-pixel card dimensions as the SVG coordinate system.
+      With x/y = 2 and stroke-width = 4, the outside of the stroke lands at 0px.
+      Therefore the visible border and dark card share the exact same outer edge.
+    */
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    const rectWidth = Math.max(1, width - STROKE);
+    const rectHeight = Math.max(1, height - STROKE);
+
+    /*
+      The card's CSS radius is 10px. A 4px centered stroke sits 2px inward,
+      so radius 8px makes the stroke's outer curve line up with the 10px card curve.
+    */
+    const centerlineRadius = Math.max(
+      2,
+      Math.min(8, Math.min(rectWidth, rectHeight) / 2 - 1)
+    );
+
+    const segments = Array.from(
+      svg.querySelectorAll('rect[data-segment-index]')
+    );
+
+    segments.forEach((rect, index) => {
+      rect.setAttribute('x', String(HALF_STROKE));
+      rect.setAttribute('y', String(HALF_STROKE));
+      rect.setAttribute('width', String(rectWidth));
+      rect.setAttribute('height', String(rectHeight));
+      rect.setAttribute('rx', String(centerlineRadius));
+      rect.setAttribute('ry', String(centerlineRadius));
+      rect.setAttribute('fill', 'none');
+      rect.setAttribute('stroke-width', String(STROKE));
+      rect.setAttribute('vector-effect', 'non-scaling-stroke');
+
+      /*
+        pathLength normalizes the REAL rounded-rectangle perimeter to 800.
+        The eight pieces therefore remain exactly equal in visible path length.
+      */
+      rect.setAttribute('pathLength', String(NORMALIZED_PATH));
+      rect.setAttribute(
+        'stroke-dasharray',
+        `${SEGMENT_LENGTH} ${NORMALIZED_PATH - SEGMENT_LENGTH}`
+      );
+      rect.setAttribute(
+        'stroke-dashoffset',
+        String(-index * SEGMENT_LENGTH)
+      );
+    });
+
+    return true;
+  }
+
+  function normalizeAll() {
+    rafId = 0;
+    CELL_BORDER_PAIRS.forEach(([cellId, borderId]) => {
+      normalizeOne(cellId, borderId);
+    });
+  }
+
+  function scheduleNormalize() {
+    if (rafId) return;
+    rafId = requestAnimationFrame(normalizeAll);
+  }
+
+  function bind() {
+    const cells = CELL_BORDER_PAIRS
+      .map(([cellId]) => document.getElementById(cellId))
+      .filter(Boolean);
+
+    if (!cells.length) {
+      setTimeout(bind, 80);
+      return;
+    }
+
+    if (typeof ResizeObserver === 'function') {
+      resizeObserver = new ResizeObserver(scheduleNormalize);
+      cells.forEach(cell => resizeObserver.observe(cell));
+    }
+
+    /*
+      v686 creates its SVG overlays dynamically. Observe child additions so geometry
+      is normalized immediately when a border is created/recreated.
+    */
+    mutationObserver = new MutationObserver(scheduleNormalize);
+    cells.forEach(cell => {
+      mutationObserver.observe(cell, { childList: true });
+    });
+
+    scheduleNormalize();
+    setTimeout(scheduleNormalize, 60);
+    setTimeout(scheduleNormalize, 220);
+  }
+
+  window.addEventListener('resize', scheduleNormalize, { passive: true });
+  window.addEventListener('orientationchange', scheduleNormalize, { passive: true });
+  window.addEventListener('pageshow', scheduleNormalize);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind, { once: true });
+  } else {
+    bind();
+  }
+
+  window.bpCoreBorderGeometryV782 = {
+    refresh: scheduleNormalize,
+    inspect() {
+      return CELL_BORDER_PAIRS.map(([cellId, borderId]) => {
+        const cell = document.getElementById(cellId);
+        const svg = document.getElementById(borderId);
+        const rect = svg?.querySelector('rect[data-segment-index="0"]');
+        return {
+          cellId,
+          borderId,
+          cell: cell ? {
+            width: cell.getBoundingClientRect().width,
+            height: cell.getBoundingClientRect().height,
+            radius: getComputedStyle(cell).borderRadius
+          } : null,
+          svgViewBox: svg?.getAttribute('viewBox') || null,
+          rect: rect ? {
+            x: rect.getAttribute('x'),
+            y: rect.getAttribute('y'),
+            width: rect.getAttribute('width'),
+            height: rect.getAttribute('height'),
+            rx: rect.getAttribute('rx'),
+            strokeWidth: rect.getAttribute('stroke-width')
+          } : null
+        };
+      });
+    }
+  };
+})();
+</script>
 
 </body>
 </html>

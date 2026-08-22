@@ -66179,112 +66179,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
      Party Goal field, not on the individual progress circles. Each real progress
      step briefly gives the whole field the same rotating yellow/orange frame
      language used by the onboarding text cards. -->
-<style id="v728-party-goal-box-progress-spin-style">
-.button-wrapper .reset-btn.v606-party-goal-host {
-  overflow: visible !important;
-  isolation: isolate !important;
-}
-
-/* Decorative ring sits behind the existing Party Goal panel, so all dots,
-   figures and text remain exactly as v726 renders them. */
-.button-wrapper .reset-btn.v606-party-goal-host.v728-goal-frame-spin::after {
-  content: "" !important;
-  position: absolute !important;
-  inset: -4px !important;
-  z-index: 45 !important;
-  pointer-events: none !important;
-  border-radius: 11px !important;
-  background: conic-gradient(
-    from var(--v728-goal-angle),
-    #FFD86A 0deg 45deg,
-    #e88a2d 45deg 90deg,
-    #FFD86A 90deg 135deg,
-    #e88a2d 135deg 180deg,
-    #FFD86A 180deg 225deg,
-    #e88a2d 225deg 270deg,
-    #FFD86A 270deg 315deg,
-    #e88a2d 315deg 360deg
-  ) !important;
-  box-shadow:
-    0 0 7px rgba(255,216,106,.72),
-    0 0 13px rgba(232,138,45,.46) !important;
-  animation: v728PartyGoalFrameSpin 1050ms linear 1 !important;
-}
-
-/* The real panel is already z-index 50 in v607, so it masks the centre of the
-   conic layer and leaves only a rotating frame visible around the larger box. */
-@keyframes v728PartyGoalFrameSpin {
-  from { --v728-goal-angle: 0deg; }
-  to   { --v728-goal-angle: 360deg; }
-}
-
-@property --v728-goal-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .button-wrapper .reset-btn.v606-party-goal-host.v728-goal-frame-spin::after {
-    animation: none !important;
-  }
-}
-</style>
-<script id="v728-party-goal-box-progress-spin-script">
-(function(){
-  'use strict';
-
-  const timers = new WeakMap();
-
-  function celebrateHost(host){
-    if (!host || !host.classList.contains('v606-party-goal-host')) return;
-    const previous = timers.get(host);
-    if (previous) clearTimeout(previous);
-
-    host.classList.remove('v728-goal-frame-spin');
-    void host.offsetWidth;
-    host.classList.add('v728-goal-frame-spin');
-
-    const timer = setTimeout(function(){
-      host.classList.remove('v728-goal-frame-spin');
-      timers.delete(host);
-    }, 1100);
-    timers.set(host, timer);
-  }
-
-  function watchHost(host){
-    if (!host || host.dataset.v728GoalFrameWatched === '1') return;
-    host.dataset.v728GoalFrameWatched = '1';
-
-    let hadHit = host.classList.contains('v606-goal-hit');
-    const observer = new MutationObserver(function(){
-      const hasHit = host.classList.contains('v606-goal-hit');
-      if (hasHit && !hadHit) celebrateHost(host);
-      hadHit = hasHit;
-    });
-    observer.observe(host, {attributes:true, attributeFilter:['class']});
-  }
-
-  function attach(){
-    document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host').forEach(watchHost);
-  }
-
-  document.addEventListener('DOMContentLoaded', function(){
-    attach();
-    const wrapper = document.querySelector('.button-wrapper');
-    if (wrapper && typeof MutationObserver === 'function') {
-      const observer = new MutationObserver(attach);
-      observer.observe(wrapper, {childList:true, subtree:true});
-    }
-  });
-
-  /* In case this script is parsed after DOMContentLoaded in a restored WebView. */
-  if (document.readyState !== 'loading') attach();
-})();
-</script>
-
-
-
 <style id="v729-active-party-mission-cell-emphasis">
 /* V729: when a Party Mission is actually running, the mission cell becomes one
    prominent full-width status tile. The idle NEXT MISSION preview is untouched. */
@@ -67867,6 +67761,20 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v783:
+     Removed the real cause of the orange/yellow rotation centered between SCORE and LEVEL.
+     - The lower authoritative Party Goal host still occupies the old wide slot underneath
+       SCORE + LEVEL, because v742 uses its geometry as the anchor for those two cells.
+     - Legacy v728 was still drawing a yellow/orange conic ::after ring on that hidden host.
+       Because only the host CONTENT was hidden, its pseudo-element remained visible behind
+       SCORE + LEVEL and appeared to rotate around a center between both cells.
+     - v728 visual/runtime code is removed.
+     - The lower Party Goal host is now explicitly geometry/state-only: no animation,
+       transform, filter, shadow or host-level pseudo-elements may render there.
+     - Party Goal state/classes remain live and the top v767 Party Goal celebration is
+       completely untouched.
+     - SCORE keeps its normal scoring animation; LEVEL remains non-animated. -->
 
 <!-- v782:
      Proper geometry fix for REPAIRS / NEXT SET / SCORE / LEVEL.
@@ -70767,6 +70675,36 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   };
 })();
 </script>
+
+
+<style id="v783-lower-party-goal-host-geometry-only">
+  /*
+    The lower Party Goal host is intentionally kept in layout as a geometry/state
+    source for v742. It must never paint anything itself because SCORE + LEVEL now
+    occupy that exact visible slot.
+  */
+  .button-wrapper .reset-btn.v606-party-goal-host {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+  }
+
+  /*
+    Critical fix: legacy host-level pseudo-elements remain visible even when the
+    Party Goal panel child is display:none. Kill them at the authoritative source.
+  */
+  .button-wrapper .reset-btn.v606-party-goal-host::before,
+  .button-wrapper .reset-btn.v606-party-goal-host::after {
+    content: none !important;
+    display: none !important;
+    animation: none !important;
+    transform: none !important;
+    background: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+</style>
 
 </body>
 </html>

@@ -57924,682 +57924,113 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
-<!-- v627: hard invariant: no automatic visible movement faster than fallSpeed. -->
-<script id="v627-authoritative-fall-gate">
+<!-- v775 replaces the retired v627/v628/v630 timing stack below v626.
+     Their executable wrappers and diagnostics are intentionally absent. -->
+
+<script id="v775-frame-committed-automatic-cadence">
 (() => {
   'use strict';
 
-  const v627PreviousStopFallLoop = v625StopFallLoop;
-  const v627LoopWasActive = fallInterval !== null && typeof fallInterval !== 'undefined';
-  const v627ActiveDelayAtInstall = Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400;
-
-  // First cancel every timer/rAF owned by V626 before replacing the scheduler.
-  try { v627PreviousStopFallLoop(); } catch (_) {}
-
-  const v627RawUpdate = update;
-  const v627RawUpdateH = updateH;
-
-  let v627LastAutomaticMoveAt = -Infinity;
-  let v627LastAutomaticBlock = null;
-  let v627LastAutomaticPosition = null;
-  let v627FallRafId = null;
-
-  const timing = window.bpTimingV627 = {
-    preventedTooFastMoves: 0,
-    automaticMoves: 0,
-    minAutomaticMoveGapMs: null,
-    lastAutomaticMoveGapMs: null,
-    lastAutomaticMoveSource: null,
-    lastPreventedRemainingMs: null,
-    recentMoves: []
-  };
-
-  function v627DelayMs() {
-    // Preserve intended later-game BPM changes: the invariant is the CURRENT
-    // fall interval, not a permanently hard-coded 400 ms.
-    return Math.max(16, Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400);
-  }
-
-  function v627SameBlock(block) {
-    return !!block && block === v627LastAutomaticBlock;
-  }
-
-  function v627RemainingMs(block, now = performance.now()) {
-    if (!v627SameBlock(block) || !Number.isFinite(v627LastAutomaticMoveAt)) return 0;
-    return Math.max(0, v627DelayMs() - (now - v627LastAutomaticMoveAt));
-  }
-
-  function v627CanAutomaticMovementNow(block, source = 'unknown') {
-    // DROP BLOCK is explicitly an instant player power: its many internal steps
-    // are intentionally exempt. The normal cadence is re-armed afterwards.
-    if (typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress) return true;
-    if (!block) return true;
-
-    const remaining = v627RemainingMs(block);
-    if (remaining > 0) {
-      timing.preventedTooFastMoves += 1;
-      timing.lastPreventedRemainingMs = remaining;
-      timing.lastAutomaticMoveSource = `prevented:${source}`;
-      return false;
-    }
-    return true;
-  }
-
-  function v627RecordAutomaticMovement(block, source = 'unknown') {
-    const now = performance.now();
-    if (block && v627SameBlock(block) && Number.isFinite(v627LastAutomaticMoveAt)) {
-      const gap = now - v627LastAutomaticMoveAt;
-      timing.lastAutomaticMoveGapMs = gap;
-      timing.minAutomaticMoveGapMs = Number.isFinite(timing.minAutomaticMoveGapMs)
-        ? Math.min(timing.minAutomaticMoveGapMs, gap)
-        : gap;
-    } else {
-      timing.lastAutomaticMoveGapMs = null;
-    }
-
-    v627LastAutomaticMoveAt = now;
-    v627LastAutomaticBlock = block || null;
-    v627LastAutomaticPosition = block ? { x: block.x, y: block.y } : null;
-    timing.automaticMoves += 1;
-    timing.lastAutomaticMoveSource = source;
-    timing.recentMoves.push({
-      at: now,
-      source,
-      x: block ? block.x : null,
-      y: block ? block.y : null,
-      delay: v627DelayMs(),
-      gap: timing.lastAutomaticMoveGapMs
-    });
-    if (timing.recentMoves.length > 30) timing.recentMoves.shift();
-  }
-
-  window.v627CanAutomaticMovementNow = v627CanAutomaticMovementNow;
-  window.v627RecordAutomaticMovement = v627RecordAutomaticMovement;
-
-  function v627GuardMovementFunction(baseFunction, source) {
-    return function() {
-      const blockBefore = fallingBlock;
-      const beforeX = blockBefore ? blockBefore.x : null;
-      const beforeY = blockBefore ? blockBefore.y : null;
-
-      if (
-        blockBefore &&
-        !(typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress) &&
-        !v627CanAutomaticMovementNow(blockBefore, source)
-      ) {
-        return false;
-      }
-
-      const result = baseFunction.apply(this, arguments);
-      const blockAfter = fallingBlock;
-
-      if (typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress) {
-        return result;
-      }
-
-      if (
-        blockBefore &&
-        blockAfter === blockBefore &&
-        (blockAfter.x !== beforeX || blockAfter.y !== beforeY)
-      ) {
-        v627RecordAutomaticMovement(blockAfter, source);
-      } else if (blockAfter && blockAfter !== blockBefore) {
-        // A freshly spawned set gets a fresh cadence origin. This prevents a
-        // callback left over from the previous set moving it immediately.
-        v627RecordAutomaticMovement(blockAfter, `${source}:new-set`);
-      }
-
-      return result;
-    };
-  }
-
-  // Crucial difference from V626: the invariant now lives at the functions that
-  // actually mutate the falling set. A stray caller cannot bypass the scheduler.
-  update = v627GuardMovementFunction(v627RawUpdate, 'update');
-  updateH = v627GuardMovementFunction(v627RawUpdateH, 'updateH');
-
-  // Re-arm cadence after an instant Drop. Drop itself stays instant, but the same
-  // block/new block may not then receive an automatic movement immediately.
-  if (typeof dropButton === 'function') {
-    const v627RawDropButton = dropButton;
-    dropButton = function() {
-      const result = v627RawDropButton.apply(this, arguments);
-      if (fallingBlock) v627RecordAutomaticMovement(fallingBlock, 'drop-finished');
-      return result;
-    };
-  }
-
-  // Authoritative scheduler. It checks BOTH its own delay and the timestamp of
-  // the last actual automatic x/y movement. Restarts, late frames and stale
-  // callbacks therefore cannot shorten the next step.
-  v625StopFallLoop = function() {
-    v625FallLoopGeneration += 1;
-    if (v627FallRafId !== null) {
-      cancelAnimationFrame(v627FallRafId);
-      v627FallRafId = null;
-    }
-    if (fallInterval !== null && typeof fallInterval !== 'undefined') {
-      clearTimeout(fallInterval);
-      clearInterval(fallInterval);
-    }
-    fallInterval = null;
-  };
-
-  v625StartFallLoop = function(requestedDelay = fallSpeed) {
-    v625StopFallLoop();
-
-    const generation = ++v625FallLoopGeneration;
-    const delay = Math.max(16, Number(requestedDelay) || Number(fallSpeed) || 400);
-    v625FallLoopDelayMs = delay;
-
-    const schedule = (waitMs) => {
-      if (generation !== v625FallLoopGeneration) return null;
-      const safeWait = Math.max(0, Number(waitMs) || 0);
-      fallInterval = setTimeout(runTick, safeWait);
-      return fallInterval;
-    };
-
-    const scheduleFullDelayAfterPaint = () => {
-      if (generation !== v625FallLoopGeneration) return;
-      v627FallRafId = requestAnimationFrame(() => {
-        v627FallRafId = null;
-        if (generation !== v625FallLoopGeneration) return;
-        schedule(delay);
-      });
-    };
-
-    const runTick = () => {
-      if (generation !== v625FallLoopGeneration) return;
-
-      // Even if this timeout came from a restart or an unexpected stale path,
-      // do not call gameLoop until the active set has earned a complete interval.
-      const block = fallingBlock;
-      if (block && !(typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress)) {
-        const remaining = v627RemainingMs(block);
-        if (remaining > 0) {
-          timing.preventedTooFastMoves += 1;
-          timing.lastPreventedRemainingMs = remaining;
-          schedule(remaining);
-          return;
-        }
-      }
-
-      gameLoop();
-      if (generation !== v625FallLoopGeneration) return;
-
-      // No phase recovery and no deadline catch-up. A complete interval begins
-      // only after the browser gets a paint opportunity for the resulting state.
-      scheduleFullDelayAfterPaint();
-    };
-
-    // A start/restart never grants an immediate tick.
-    return schedule(delay);
-  };
-
-  // Keep compatibility with the existing V626 developer snapshot while exposing
-  // the stronger V627 invariant separately.
-  timing.getRequestedDelayMs = () => v627DelayMs();
-  timing.getLastAutomaticMoveAt = () => v627LastAutomaticMoveAt;
-  timing.getLastAutomaticPosition = () => v627LastAutomaticPosition && { ...v627LastAutomaticPosition };
-
-  if (v627LoopWasActive) {
-    fallInterval = v625StartFallLoop(v627ActiveDelayAtInstall);
-  }
-})();
-</script>
-
-
-<!-- v628: CURRENT fallSpeed is the absolute minimum between automatic visible movements. -->
-<script id="v628-authoritative-current-fallspeed-gate">
-(() => {
-  'use strict';
-
-  const v628PreviousStopFallLoop = v625StopFallLoop;
-  const v628LoopWasActive = fallInterval !== null && typeof fallInterval !== 'undefined';
-  const v628RequestedDelayAtInstall = Number(v625FallLoopDelayMs) || Number(fallSpeed) || 400;
-
-  // Kill every scheduler callback owned by the previous timing layer first.
-  try { v628PreviousStopFallLoop(); } catch (_) {}
-
-  const v628BlockTiming = new WeakMap();
-  let v628FallRafId = null;
-
-  const timing = window.bpTimingV628 = {
-    preventedTooFastMoves: 0,
-    automaticMoves: 0,
-    violations: 0,
-    minAutomaticMoveGapMs: null,
-    lastAutomaticMoveGapMs: null,
-    lastRequiredGapMs: null,
-    lastAutomaticMoveSource: null,
-    lastPreventedRemainingMs: null,
-    recentMoves: [],
-    recentPrevented: []
-  };
-
-  function v628CurrentFallSpeedMs() {
-    // This is the contract requested by the game design: CURRENT fallSpeed is
-    // the hard floor. No stale requestedDelay or scheduler restart may lower it.
-    const speed = Number(fallSpeed);
-    return Math.max(16, Number.isFinite(speed) && speed > 0 ? speed : 400);
-  }
-
-  function v628DropIsInstant() {
-    return typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress;
-  }
-
-  function v628EnsureBlock(block, source = 'seen') {
-    if (!block || (typeof block !== 'object' && typeof block !== 'function')) return null;
-    let state = v628BlockTiming.get(block);
-    if (!state) {
-      state = {
-        bornAt: performance.now(),
-        lastAutomaticMoveAt: null,
-        source
-      };
-      v628BlockTiming.set(block, state);
-    }
-    return state;
-  }
-
-  function v628ArmNewBlock(block, source = 'spawn') {
-    if (!block || (typeof block !== 'object' && typeof block !== 'function')) return block;
-    v628BlockTiming.set(block, {
-      bornAt: performance.now(),
-      lastAutomaticMoveAt: null,
-      source
-    });
-    return block;
-  }
-
-  function v628ReferenceAt(block) {
-    const state = v628EnsureBlock(block);
-    if (!state) return -Infinity;
-    return Number.isFinite(state.lastAutomaticMoveAt)
-      ? state.lastAutomaticMoveAt
-      : state.bornAt;
-  }
-
-  function v628RemainingMs(block, now = performance.now()) {
-    if (!block) return 0;
-    const elapsed = now - v628ReferenceAt(block);
-    return Math.max(0, v628CurrentFallSpeedMs() - elapsed);
-  }
-
-  function v628CanAutomaticMovementNow(block, source = 'unknown') {
-    if (v628DropIsInstant()) return true;
-    if (!block) return true;
-
-    const remaining = v628RemainingMs(block);
-    if (remaining > 0.5) {
-      timing.preventedTooFastMoves += 1;
-      timing.lastPreventedRemainingMs = remaining;
-      timing.lastAutomaticMoveSource = `prevented:${source}`;
-      timing.recentPrevented.push({
-        at: performance.now(),
-        source,
-        remaining,
-        required: v628CurrentFallSpeedMs(),
-        x: block.x,
-        y: block.y
-      });
-      if (timing.recentPrevented.length > 40) timing.recentPrevented.shift();
-      return false;
-    }
-    return true;
-  }
-
-  function v628RecordAutomaticMovement(block, source = 'unknown') {
-    if (!block) return;
-    const now = performance.now();
-    const state = v628EnsureBlock(block, source);
-    const previousAt = Number.isFinite(state.lastAutomaticMoveAt)
-      ? state.lastAutomaticMoveAt
-      : state.bornAt;
-    const gap = now - previousAt;
-    const required = v628CurrentFallSpeedMs();
-
-    timing.lastAutomaticMoveGapMs = gap;
-    timing.lastRequiredGapMs = required;
-    timing.minAutomaticMoveGapMs = Number.isFinite(timing.minAutomaticMoveGapMs)
-      ? Math.min(timing.minAutomaticMoveGapMs, gap)
-      : gap;
-    timing.automaticMoves += 1;
-    timing.lastAutomaticMoveSource = source;
-
-    // 1 ms tolerance only absorbs performance.now()/callback boundary noise.
-    // A real early movement is counted so it can never hide behind a claim.
-    const violation = gap + 1 < required;
-    if (violation) timing.violations += 1;
-
-    state.lastAutomaticMoveAt = now;
-    state.source = source;
-
-    timing.recentMoves.push({
-      at: now,
-      source,
-      x: block.x,
-      y: block.y,
-      gap,
-      required,
-      violation
-    });
-    if (timing.recentMoves.length > 60) timing.recentMoves.shift();
-  }
-
-  // Timestamp every normal new formation at the moment it is created. This means
-  // even a stale callback cannot move a brand-new set immediately after spawn.
-  if (typeof createBlock === 'function') {
-    const v628RawCreateBlock = createBlock;
-    createBlock = function() {
-      return v628ArmNewBlock(v628RawCreateBlock.apply(this, arguments), 'createBlock');
-    };
-  }
-  if (typeof createBlockH === 'function') {
-    const v628RawCreateBlockH = createBlockH;
-    createBlockH = function() {
-      return v628ArmNewBlock(v628RawCreateBlockH.apply(this, arguments), 'createBlockH');
-    };
-  }
-
-  // The block that existed while this final patch was installed also receives a
-  // cadence origin. On a page load this is harmless; on a hot install it is safe.
-  if (fallingBlock) v628ArmNewBlock(fallingBlock, 'install-existing-block');
-
-  function v628GuardMovementFunction(baseFunction, source) {
-    return function() {
-      const blockBefore = fallingBlock;
-      const beforeX = blockBefore ? blockBefore.x : null;
-      const beforeY = blockBefore ? blockBefore.y : null;
-
-      if (blockBefore && !v628DropIsInstant() && !v628CanAutomaticMovementNow(blockBefore, source)) {
-        return false;
-      }
-
-      const result = baseFunction.apply(this, arguments);
-      const blockAfter = fallingBlock;
-
-      if (v628DropIsInstant()) return result;
-
-      if (blockBefore && blockAfter === blockBefore) {
-        if (blockAfter.x !== beforeX || blockAfter.y !== beforeY) {
-          v628RecordAutomaticMovement(blockAfter, source);
-        }
-      } else if (blockAfter && blockAfter !== blockBefore) {
-        // New-set creation is not a fall step, but it starts the clock for the
-        // first real automatic step of that set.
-        v628ArmNewBlock(blockAfter, `${source}:new-set`);
-      }
-
-      return result;
-    };
-  }
-
-  // Guard the actual normal movement entry points (vertical + horizontal).
-  const v628RawUpdate = update;
-  const v628RawUpdateH = updateH;
-  update = v628GuardMovementFunction(v628RawUpdate, 'update');
-  updateH = v628GuardMovementFunction(v628RawUpdateH, 'updateH');
-
-  // Existing tutorial preview timers already call these public hooks. Redirect
-  // those hooks to the stricter CURRENT-fallSpeed rule too.
-  window.v627CanAutomaticMovementNow = v628CanAutomaticMovementNow;
-  window.v627RecordAutomaticMovement = v628RecordAutomaticMovement;
-  window.v628CanAutomaticMovementNow = v628CanAutomaticMovementNow;
-  window.v628RecordAutomaticMovement = v628RecordAutomaticMovement;
-
-  // Drop Block is deliberately instant. Once it finishes, however, the normal
-  // cadence starts again from that exact moment for the currently active/new set.
-  if (typeof dropButton === 'function') {
-    const v628RawDropButton = dropButton;
-    dropButton = function() {
-      const result = v628RawDropButton.apply(this, arguments);
-      if (fallingBlock) {
-        const state = v628EnsureBlock(fallingBlock, 'drop-finished');
-        const now = performance.now();
-        state.bornAt = now;
-        state.lastAutomaticMoveAt = now;
-        state.source = 'drop-finished';
-      }
-      return result;
-    };
-  }
-
-  // Final scheduler. requestedDelay is allowed to make the game SLOWER, but a
-  // caller can never make it faster than the CURRENT fallSpeed. The current
-  // fallSpeed is checked again on every callback, not just when the loop starts.
-  v625StopFallLoop = function() {
-    v625FallLoopGeneration += 1;
-    if (v628FallRafId !== null) {
-      cancelAnimationFrame(v628FallRafId);
-      v628FallRafId = null;
-    }
-    if (fallInterval !== null && typeof fallInterval !== 'undefined') {
-      clearTimeout(fallInterval);
-      clearInterval(fallInterval);
-    }
-    fallInterval = null;
-  };
-
-  v625StartFallLoop = function(requestedDelay = fallSpeed) {
-    v625StopFallLoop();
-
-    const generation = ++v625FallLoopGeneration;
-    const requested = Number(requestedDelay);
-    const requestedFloor = Number.isFinite(requested) && requested > 0 ? requested : 0;
-
-    const effectiveDelay = () => Math.max(
-      16,
-      v628CurrentFallSpeedMs(),
-      requestedFloor
-    );
-
-    // Keep this legacy variable truthful: it can only be >= current fallSpeed.
-    v625FallLoopDelayMs = effectiveDelay();
-
-    const schedule = (waitMs) => {
-      if (generation !== v625FallLoopGeneration) return null;
-      const safeWait = Math.max(0, Number(waitMs) || 0);
-      fallInterval = setTimeout(runTick, safeWait);
-      return fallInterval;
-    };
-
-    const scheduleFullDelayAfterPaint = () => {
-      if (generation !== v625FallLoopGeneration) return;
-      v628FallRafId = requestAnimationFrame(() => {
-        v628FallRafId = null;
-        if (generation !== v625FallLoopGeneration) return;
-        const delay = effectiveDelay();
-        v625FallLoopDelayMs = delay;
-        schedule(delay);
-      });
-    };
-
-    const runTick = () => {
-      if (generation !== v625FallLoopGeneration) return;
-
-      const delay = effectiveDelay();
-      v625FallLoopDelayMs = delay;
-
-      const block = fallingBlock;
-      if (block && !v628DropIsInstant()) {
-        const remaining = v628RemainingMs(block);
-        if (remaining > 0.5) {
-          timing.preventedTooFastMoves += 1;
-          timing.lastPreventedRemainingMs = remaining;
-          timing.lastAutomaticMoveSource = 'prevented:scheduler';
-          timing.recentPrevented.push({
-            at: performance.now(),
-            source: 'scheduler',
-            remaining,
-            required: v628CurrentFallSpeedMs(),
-            x: block.x,
-            y: block.y
-          });
-          if (timing.recentPrevented.length > 40) timing.recentPrevented.shift();
-          schedule(remaining);
-          return;
-        }
-      }
-
-      gameLoop();
-      if (generation !== v625FallLoopGeneration) return;
-
-      // Never catch up. One complete effective interval starts only after the
-      // just-produced state had a browser paint opportunity.
-      scheduleFullDelayAfterPaint();
-    };
-
-    return schedule(effectiveDelay());
-  };
-
-  timing.getCurrentFallSpeedMs = () => v628CurrentFallSpeedMs();
-  timing.getRemainingMs = () => fallingBlock ? v628RemainingMs(fallingBlock) : 0;
-  timing.snapshot = () => ({
-    currentFallSpeedMs: v628CurrentFallSpeedMs(),
-    scheduledDelayMs: Number(v625FallLoopDelayMs) || null,
-    preventedTooFastMoves: timing.preventedTooFastMoves,
-    automaticMoves: timing.automaticMoves,
-    violations: timing.violations,
-    minAutomaticMoveGapMs: timing.minAutomaticMoveGapMs,
-    lastAutomaticMoveGapMs: timing.lastAutomaticMoveGapMs,
-    lastRequiredGapMs: timing.lastRequiredGapMs,
-    lastAutomaticMoveSource: timing.lastAutomaticMoveSource,
-    lastPreventedRemainingMs: timing.lastPreventedRemainingMs,
-    remainingForCurrentBlockMs: fallingBlock ? v628RemainingMs(fallingBlock) : 0,
-    recentMoves: timing.recentMoves.slice(-12),
-    recentPrevented: timing.recentPrevented.slice(-12)
-  });
-
-  if (v628LoopWasActive) {
-    fallInterval = v625StartFallLoop(v628RequestedDelayAtInstall);
-  }
-})();
-</script>
-
-
-<!-- v630: property-level hard movement lock. Every active falling block gets guarded x/y
-     setters, so even code that bypasses update()/updateH() cannot change its visible position
-     before the required interval. For this verification build the absolute floor is 400 ms;
-     slower fallSpeed values remain respected. Player floor movement and Drop are exempt. -->
-<style id="v630-timing-lock-style">
-  #v630TimingPanel {
-    position: fixed;
-    top: 6px;
-    left: 6px;
-    z-index: 2147483647;
-    width: 186px;
-    box-sizing: border-box;
-    padding: 7px 8px;
-    border: 1px solid rgba(255,255,255,.55);
-    border-radius: 8px;
-    background: rgba(0,0,0,.86);
-    color: #fff;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 10px;
-    line-height: 1.25;
-    pointer-events: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  #v630TimingPanel .v630-title { font-weight: 800; margin-bottom: 4px; }
-  #v630TimingPanel .v630-row { display:flex; justify-content:space-between; gap:6px; white-space:nowrap; }
-  #v630TimingPanel .v630-muted { color: rgba(255,255,255,.72); }
-  #v630TimingPanel .v630-ok { color: #8dff9b; }
-  #v630TimingPanel .v630-bad { color: #ff7a7a; font-weight: 800; }
-  #v630TimingPanel .v630-warn { color: #ffd76a; font-weight: 700; }
-  #v630TimingPanel .v630-divider { height:1px; background:rgba(255,255,255,.22); margin:5px 0; }
-</style>
-<script id="v630-property-level-hard-400ms-lock">
-(() => {
-  'use strict';
-
-  const V630_ABSOLUTE_MIN_MS = 400;
-  const v630PreviousStopFallLoop = v625StopFallLoop;
-  const v630LoopWasActive = fallInterval !== null && typeof fallInterval !== 'undefined';
-  const v630DelayAtInstall = Number(v625FallLoopDelayMs) || Number(fallSpeed) || V630_ABSOLUTE_MIN_MS;
-
-  try { v630PreviousStopFallLoop(); } catch (_) {}
-
-  const v630Coords = new WeakMap();
-  const v630BlockTiming = new WeakMap();
-  const v630Instrumented = new WeakSet();
-
-  let v630AutomaticTransactionDepth = 0;
-  let v630ManualTransactionDepth = 0;
-  let v630DropTransactionDepth = 0;
-  let v630SetupTransactionDepth = 0;
-  let v630FallRafId = null;
-  let v630ObserverRafId = null;
-  let v630LastRecorded = null;
-
-  const timing = window.bpTimingV630 = {
-    absoluteMinimumMs: V630_ABSOLUTE_MIN_MS,
+  const V775_ABSOLUTE_MIN_MS = 400;
+
+  /*
+    Install on top of the existing v626 scheduler, but replace it as the FINAL
+    runtime owner. v626's unrelated capture-gate rendering optimization remains
+    intact; only its earlier scheduler functions are superseded here.
+  */
+  const v775PreviousStopFallLoop = v625StopFallLoop;
+  const v775LoopWasActive =
+    fallInterval !== null && typeof fallInterval !== 'undefined';
+  const v775DelayAtInstall =
+    Number(v625FallLoopDelayMs) || Number(fallSpeed) || V775_ABSOLUTE_MIN_MS;
+
+  try { v775PreviousStopFallLoop(); } catch (_) {}
+
+  const v775Coords = new WeakMap();
+  const v775BlockTiming = new WeakMap();
+  const v775Instrumented = new WeakSet();
+
+  let v775AutomaticTransactionDepth = 0;
+  let v775ManualTransactionDepth = 0;
+  let v775DropTransactionDepth = 0;
+  let v775SetupTransactionDepth = 0;
+  let v775FallRafId = null;
+  let v775LastRecorded = null;
+
+  const timing = window.bpTimingV775 = {
+    absoluteMinimumMs: V775_ABSOLUTE_MIN_MS,
     acceptedAutomaticMoves: 0,
     blockedDirectWrites: 0,
     blockedSchedulerTicks: 0,
     blockedGuardCalls: 0,
-    unguardedObservedMoves: 0,
     instrumentationFailures: 0,
+    tooFastAcceptedMoves: 0,
     minAcceptedGapMs: null,
     lastAcceptedGapMs: null,
+    lastTickStartedAt: null,
+    minTickGapMs: null,
+    lastTickGapMs: null,
     recentMoves: [],
     recentBlocked: [],
+    recentTicks: [],
     lastBlockedStack: null,
-    scheduledDelayMs: null
+    scheduledDelayMs: null,
+    schedulerMode: 'full-delay-then-rAF-no-catch-up'
   };
 
-  function v630RawFallSpeedMs() {
+  function v775RawFallSpeedMs() {
     const n = Number(fallSpeed);
-    return Number.isFinite(n) && n > 0 ? n : V630_ABSOLUTE_MIN_MS;
+    return Number.isFinite(n) && n > 0 ? n : V775_ABSOLUTE_MIN_MS;
   }
 
-  function v630RequiredMs() {
-    // Verification build: under no circumstances may an automatic visible step
-    // happen faster than 400 ms. A deliberately slower fallSpeed still wins.
-    return Math.max(V630_ABSOLUTE_MIN_MS, v630RawFallSpeedMs());
+  function v775RequiredMs() {
+    // Preserve v630's gameplay contract: never faster than 400 ms, while any
+    // deliberately slower current fallSpeed still wins.
+    return Math.max(V775_ABSOLUTE_MIN_MS, v775RawFallSpeedMs());
   }
 
-  function v630DropIsInstant() {
-    return v630DropTransactionDepth > 0 ||
+  function v775DropIsInstant() {
+    return v775DropTransactionDepth > 0 ||
       (typeof v352DropBlockInProgress !== 'undefined' && v352DropBlockInProgress);
   }
 
-  function v630State(block, reset = false, source = 'seen') {
+  function v775State(block, reset = false, source = 'seen') {
     if (!block || (typeof block !== 'object' && typeof block !== 'function')) return null;
-    let state = v630BlockTiming.get(block);
+    let state = v775BlockTiming.get(block);
     if (!state || reset) {
       state = {
         bornAt: performance.now(),
         lastAutomaticMoveAt: null,
         source
       };
-      v630BlockTiming.set(block, state);
+      v775BlockTiming.set(block, state);
     }
     return state;
   }
 
-  function v630ReferenceAt(block) {
-    const state = v630State(block);
+  function v775ReferenceAt(block) {
+    const state = v775State(block);
     if (!state) return -Infinity;
-    return Number.isFinite(state.lastAutomaticMoveAt) ? state.lastAutomaticMoveAt : state.bornAt;
+    return Number.isFinite(state.lastAutomaticMoveAt)
+      ? state.lastAutomaticMoveAt
+      : state.bornAt;
   }
 
-  function v630RemainingMs(block, now = performance.now()) {
+  function v775RemainingMs(block, now = performance.now()) {
     if (!block) return 0;
-    return Math.max(0, v630RequiredMs() - (now - v630ReferenceAt(block)));
+    return Math.max(0, v775RequiredMs() - (now - v775ReferenceAt(block)));
   }
 
-  function v630PushBlocked(kind, block, axis, attemptedValue, remaining, source = 'unknown') {
-    const now = performance.now();
+  function v775PushBlocked(kind, block, axis, attemptedValue, remaining, source = 'unknown') {
     const item = {
-      at: now,
+      at: performance.now(),
       kind,
       source,
       axis: axis || null,
-      attemptedValue: Number.isFinite(Number(attemptedValue)) ? Number(attemptedValue) : attemptedValue,
+      attemptedValue:
+        Number.isFinite(Number(attemptedValue)) ? Number(attemptedValue) : attemptedValue,
       remaining,
-      required: v630RequiredMs(),
+      required: v775RequiredMs(),
       x: block ? block.x : null,
       y: block ? block.y : null
     };
@@ -58607,11 +58038,22 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     if (timing.recentBlocked.length > 30) timing.recentBlocked.shift();
   }
 
-  function v630RecordAutomaticMove(block, source, beforeX, beforeY, now = performance.now()) {
+  function v775RecordAutomaticMove(
+    block,
+    source,
+    beforeX,
+    beforeY,
+    now = performance.now()
+  ) {
     if (!block) return null;
-    const state = v630State(block);
-    const previousAt = Number.isFinite(state.lastAutomaticMoveAt) ? state.lastAutomaticMoveAt : state.bornAt;
+
+    const state = v775State(block);
+    const previousAt = Number.isFinite(state.lastAutomaticMoveAt)
+      ? state.lastAutomaticMoveAt
+      : state.bornAt;
     const gap = now - previousAt;
+    const required = v775RequiredMs();
+
     state.lastAutomaticMoveAt = now;
     state.source = source;
 
@@ -58621,10 +58063,16 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       ? Math.min(timing.minAcceptedGapMs, gap)
       : gap;
 
+    if (gap + 1 < required) {
+      // This should remain zero. Keep the evidence if a future code path bypasses
+      // one of the guards, without adding any polling or UI overhead.
+      timing.tooFastAcceptedMoves += 1;
+    }
+
     const entry = {
       at: now,
       gap,
-      required: v630RequiredMs(),
+      required,
       source,
       x: block.x,
       y: block.y,
@@ -58634,87 +58082,98 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     timing.recentMoves.push(entry);
     if (timing.recentMoves.length > 50) timing.recentMoves.shift();
 
-    v630LastRecorded = {
+    v775LastRecorded = {
       block,
       x: block.x,
       y: block.y,
       at: now,
       source
     };
+
     return entry;
   }
 
-  function v630ShouldFreelyAllowWrite(block) {
+  function v775ShouldFreelyAllowWrite(block) {
     if (!block || block !== fallingBlock) return true;
-    if (v630ManualTransactionDepth > 0) return true;
-    if (v630DropIsInstant()) return true;
-    if (v630SetupTransactionDepth > 0) return true;
-    if (v630AutomaticTransactionDepth > 0) return true;
+    if (v775ManualTransactionDepth > 0) return true;
+    if (v775DropIsInstant()) return true;
+    if (v775SetupTransactionDepth > 0) return true;
+    if (v775AutomaticTransactionDepth > 0) return true;
     return false;
   }
 
-  function v630HandleCoordinateWrite(block, axis, value) {
-    const coords = v630Coords.get(block);
+  function v775HandleCoordinateWrite(block, axis, value) {
+    const coords = v775Coords.get(block);
     if (!coords) return;
+
     const oldValue = coords[axis];
-    const newValue = Number(value);
+    const numericValue = Number(value);
 
-    if (Object.is(oldValue, value) || Object.is(oldValue, newValue)) {
+    if (Object.is(oldValue, value) || Object.is(oldValue, numericValue)) {
       coords[axis] = value;
       return;
     }
 
-    if (v630ShouldFreelyAllowWrite(block)) {
+    if (v775ShouldFreelyAllowWrite(block)) {
       coords[axis] = value;
       return;
     }
 
-    // Any active-block coordinate write that reaches this setter outside an
-    // authorised movement transaction is exactly the old BYPASS class.
     const now = performance.now();
-    const remaining = v630RemainingMs(block, now);
+    const remaining = v775RemainingMs(block, now);
 
     if (remaining > 0.75) {
       timing.blockedDirectWrites += 1;
       timing.lastBlockedStack = (() => {
-        try { return String(new Error('v630 blocked direct x/y write').stack || ''); }
-        catch (_) { return ''; }
+        try {
+          return String(new Error('v775 blocked direct x/y write').stack || '');
+        } catch (_) {
+          return '';
+        }
       })();
-      v630PushBlocked('direct-property-write', block, axis, value, remaining, 'property-lock');
-      return; // HARD REJECT: the visible x/y value does not change.
+      v775PushBlocked(
+        'direct-property-write',
+        block,
+        axis,
+        value,
+        remaining,
+        'property-lock'
+      );
+      return;
     }
 
     const beforeX = coords.x;
     const beforeY = coords.y;
     coords[axis] = value;
-    v630RecordAutomaticMove(block, `direct-${axis}`, beforeX, beforeY, now);
+    v775RecordAutomaticMove(block, `direct-${axis}`, beforeX, beforeY, now);
   }
 
-  function v630InstrumentBlock(block, resetClock = false, source = 'instrument') {
+  function v775InstrumentBlock(block, resetClock = false, source = 'instrument') {
     if (!block || (typeof block !== 'object' && typeof block !== 'function')) return block;
 
-    if (!v630Instrumented.has(block)) {
+    if (!v775Instrumented.has(block)) {
       try {
         const initialX = block.x;
         const initialY = block.y;
         const dx = Object.getOwnPropertyDescriptor(block, 'x');
         const dy = Object.getOwnPropertyDescriptor(block, 'y');
+
         if ((dx && dx.configurable === false) || (dy && dy.configurable === false)) {
           timing.instrumentationFailures += 1;
           return block;
         }
 
-        v630Coords.set(block, { x: initialX, y: initialY });
+        v775Coords.set(block, { x: initialX, y: initialY });
 
         Object.defineProperty(block, 'x', {
           configurable: true,
           enumerable: true,
           get() {
-            const c = v630Coords.get(block);
-            return c ? c.x : initialX;
+            const coords = v775Coords.get(block);
+            return coords ? coords.x : initialX;
           },
           set(value) {
-            v630HandleCoordinateWrite(block, 'x', value);
+            v775HandleCoordinateWrite(block, 'x', value);
           }
         });
 
@@ -58722,175 +58181,229 @@ triggerPromoGroupCelebration = function(group, groupColor) {
           configurable: true,
           enumerable: true,
           get() {
-            const c = v630Coords.get(block);
-            return c ? c.y : initialY;
+            const coords = v775Coords.get(block);
+            return coords ? coords.y : initialY;
           },
           set(value) {
-            v630HandleCoordinateWrite(block, 'y', value);
+            v775HandleCoordinateWrite(block, 'y', value);
           }
         });
 
-        v630Instrumented.add(block);
+        v775Instrumented.add(block);
       } catch (_) {
         timing.instrumentationFailures += 1;
         return block;
       }
     }
 
-    v630State(block, resetClock, source);
+    v775State(block, resetClock, source);
     return block;
   }
 
-  function v630ArmSpawn(block, source = 'spawn') {
-    return v630InstrumentBlock(block, true, source);
+  function v775ArmSpawn(block, source = 'spawn') {
+    return v775InstrumentBlock(block, true, source);
   }
 
-  // Instrument every normal block before callers receive it.
+  /*
+    Instrument all normal creations. A manually assigned tutorial block is still
+    instrumented before update/updateH or by the tutorial compatibility hooks below.
+  */
   if (typeof createBlock === 'function') {
-    const v630RawCreateBlock = createBlock;
+    const v775RawCreateBlock = createBlock;
     createBlock = function() {
-      v630SetupTransactionDepth += 1;
+      v775SetupTransactionDepth += 1;
       try {
-        return v630ArmSpawn(v630RawCreateBlock.apply(this, arguments), 'createBlock');
+        return v775ArmSpawn(
+          v775RawCreateBlock.apply(this, arguments),
+          'createBlock'
+        );
       } finally {
-        v630SetupTransactionDepth -= 1;
+        v775SetupTransactionDepth -= 1;
       }
     };
   }
 
   if (typeof createBlockH === 'function') {
-    const v630RawCreateBlockH = createBlockH;
+    const v775RawCreateBlockH = createBlockH;
     createBlockH = function() {
-      v630SetupTransactionDepth += 1;
+      v775SetupTransactionDepth += 1;
       try {
-        return v630ArmSpawn(v630RawCreateBlockH.apply(this, arguments), 'createBlockH');
+        return v775ArmSpawn(
+          v775RawCreateBlockH.apply(this, arguments),
+          'createBlockH'
+        );
       } finally {
-        v630SetupTransactionDepth -= 1;
+        v775SetupTransactionDepth -= 1;
       }
     };
   }
 
-  if (fallingBlock) v630ArmSpawn(fallingBlock, 'install-existing-block');
+  if (fallingBlock) v775ArmSpawn(fallingBlock, 'install-existing-block');
 
-  // Player movement deliberately changes both floor offset and block coordinates.
-  // It is gameplay input, not falling cadence, so keep it exempt from this clock.
+  /*
+    Player movement intentionally moves the floor and may synchronously adjust the
+    active block coordinate. It is user input, not automatic fall cadence.
+  */
   if (typeof moveGrid === 'function') {
-    const v630RawMoveGrid = moveGrid;
+    const v775RawMoveGrid = moveGrid;
     moveGrid = function() {
-      v630ManualTransactionDepth += 1;
-      try { return v630RawMoveGrid.apply(this, arguments); }
-      finally { v630ManualTransactionDepth -= 1; }
+      v775ManualTransactionDepth += 1;
+      try {
+        return v775RawMoveGrid.apply(this, arguments);
+      } finally {
+        v775ManualTransactionDepth -= 1;
+      }
     };
   }
 
   if (typeof moveGridH === 'function') {
-    const v630RawMoveGridH = moveGridH;
+    const v775RawMoveGridH = moveGridH;
     moveGridH = function() {
-      v630ManualTransactionDepth += 1;
-      try { return v630RawMoveGridH.apply(this, arguments); }
-      finally { v630ManualTransactionDepth -= 1; }
+      v775ManualTransactionDepth += 1;
+      try {
+        return v775RawMoveGridH.apply(this, arguments);
+      } finally {
+        v775ManualTransactionDepth -= 1;
+      }
     };
   }
 
-  function v630CanAutomaticMovementNow(block, source = 'unknown') {
-    if (!block || v630DropIsInstant()) return true;
-    v630InstrumentBlock(block, false, source);
-    const remaining = v630RemainingMs(block);
+  function v775CanAutomaticMovementNow(block, source = 'unknown') {
+    if (!block || v775DropIsInstant()) return true;
+
+    v775InstrumentBlock(block, false, source);
+    const remaining = v775RemainingMs(block);
+
     if (remaining > 0.75) {
       timing.blockedGuardCalls += 1;
-      v630PushBlocked('guard-call', block, null, null, remaining, source);
+      v775PushBlocked('guard-call', block, null, null, remaining, source);
       return false;
     }
     return true;
   }
 
-  function v630GuardMovementFunction(baseFunction, source) {
+  function v775GuardMovementFunction(baseFunction, source) {
     return function() {
       const blockBefore = fallingBlock;
-      if (blockBefore) v630InstrumentBlock(blockBefore, false, source);
+
+      if (blockBefore) {
+        v775InstrumentBlock(blockBefore, false, source);
+      }
+
       const beforeX = blockBefore ? blockBefore.x : null;
       const beforeY = blockBefore ? blockBefore.y : null;
 
-      if (blockBefore && !v630DropIsInstant() && !v630CanAutomaticMovementNow(blockBefore, source)) {
+      if (
+        blockBefore &&
+        !v775DropIsInstant() &&
+        !v775CanAutomaticMovementNow(blockBefore, source)
+      ) {
         return false;
       }
 
-      v630AutomaticTransactionDepth += 1;
+      v775AutomaticTransactionDepth += 1;
       let result;
       try {
         result = baseFunction.apply(this, arguments);
       } finally {
-        v630AutomaticTransactionDepth -= 1;
+        v775AutomaticTransactionDepth -= 1;
       }
 
       const blockAfter = fallingBlock;
-      if (v630DropIsInstant()) return result;
+
+      if (v775DropIsInstant()) return result;
 
       if (blockBefore && blockAfter === blockBefore) {
         if (blockAfter.x !== beforeX || blockAfter.y !== beforeY) {
-          v630RecordAutomaticMove(blockAfter, source, beforeX, beforeY);
+          v775RecordAutomaticMove(
+            blockAfter,
+            source,
+            beforeX,
+            beforeY
+          );
         }
       } else if (blockAfter && blockAfter !== blockBefore) {
-        v630ArmSpawn(blockAfter, `${source}:new-set`);
+        v775ArmSpawn(blockAfter, `${source}:new-set`);
       }
+
       return result;
     };
   }
 
-  // Wrap the already existing V628 movement functions. This transaction lets the
-  // original landing rollback logic perform its synchronous +1/-1 bookkeeping as
-  // one logical tick, while any asynchronous direct write remains blocked below.
-  const v630RawUpdate = update;
-  const v630RawUpdateH = updateH;
-  update = v630GuardMovementFunction(v630RawUpdate, 'update');
-  updateH = v630GuardMovementFunction(v630RawUpdateH, 'updateH');
+  /*
+    One movement wrapper only. This also protects asynchronous update()/updateH()
+    calls such as the existing 600ms landing commit.
+  */
+  const v775RawUpdate = update;
+  const v775RawUpdateH = updateH;
+  update = v775GuardMovementFunction(v775RawUpdate, 'update');
+  updateH = v775GuardMovementFunction(v775RawUpdateH, 'updateH');
 
-  // Existing tutorial/direct-preview code asks these hooks before directly writing
-  // x/y. Keep those paths on exactly the same 400 ms clock.
-  window.v627CanAutomaticMovementNow = v630CanAutomaticMovementNow;
-  window.v628CanAutomaticMovementNow = v630CanAutomaticMovementNow;
-  window.v630CanAutomaticMovementNow = v630CanAutomaticMovementNow;
+  /*
+    Compatibility aliases: existing tutorial preview code already calls the old
+    v627/v628 hook names. Point those names at this one authoritative clock rather
+    than retaining the old timing wrappers.
+  */
+  window.v627CanAutomaticMovementNow = v775CanAutomaticMovementNow;
+  window.v628CanAutomaticMovementNow = v775CanAutomaticMovementNow;
+  window.v775CanAutomaticMovementNow = v775CanAutomaticMovementNow;
 
-  function v630ExternalRecord(block, source = 'external') {
-    if (!block || v630DropIsInstant()) return;
-    v630InstrumentBlock(block, false, source);
+  function v775ExternalRecord(block, source = 'external') {
+    if (!block || v775DropIsInstant()) return;
+
+    v775InstrumentBlock(block, false, source);
     const now = performance.now();
+
     if (
-      v630LastRecorded &&
-      v630LastRecorded.block === block &&
-      v630LastRecorded.x === block.x &&
-      v630LastRecorded.y === block.y &&
-      now - v630LastRecorded.at < 40
+      v775LastRecorded &&
+      v775LastRecorded.block === block &&
+      v775LastRecorded.x === block.x &&
+      v775LastRecorded.y === block.y &&
+      now - v775LastRecorded.at < 40
     ) {
-      return; // setter already recorded this direct move
-    }
-    const state = v630State(block);
-    const beforeX = block.x;
-    const beforeY = block.y;
-    const previousAt = Number.isFinite(state.lastAutomaticMoveAt) ? state.lastAutomaticMoveAt : state.bornAt;
-    const gap = now - previousAt;
-    if (gap + 1 < v630RequiredMs()) {
-      // Do not advance the clock on an impossible duplicate/too-fast record.
       return;
     }
-    v630RecordAutomaticMove(block, source, beforeX, beforeY, now);
+
+    const state = v775State(block);
+    const previousAt = Number.isFinite(state.lastAutomaticMoveAt)
+      ? state.lastAutomaticMoveAt
+      : state.bornAt;
+    const gap = now - previousAt;
+
+    if (gap + 1 < v775RequiredMs()) {
+      return;
+    }
+
+    v775RecordAutomaticMove(
+      block,
+      source,
+      block.x,
+      block.y,
+      now
+    );
   }
 
-  window.v627RecordAutomaticMovement = v630ExternalRecord;
-  window.v628RecordAutomaticMovement = v630ExternalRecord;
-  window.v630RecordAutomaticMovement = v630ExternalRecord;
+  window.v627RecordAutomaticMovement = v775ExternalRecord;
+  window.v628RecordAutomaticMovement = v775ExternalRecord;
+  window.v775RecordAutomaticMovement = v775ExternalRecord;
 
+  /*
+    DROP BLOCK remains an explicit exception: it is supposed to resolve instantly.
+    Once Drop finishes, reset the automatic clock so the next normal step cannot
+    follow immediately afterward.
+  */
   if (typeof dropButton === 'function') {
-    const v630RawDropButton = dropButton;
+    const v775RawDropButton = dropButton;
     dropButton = function() {
-      v630DropTransactionDepth += 1;
+      v775DropTransactionDepth += 1;
       try {
-        return v630RawDropButton.apply(this, arguments);
+        return v775RawDropButton.apply(this, arguments);
       } finally {
-        v630DropTransactionDepth -= 1;
+        v775DropTransactionDepth -= 1;
+
         if (fallingBlock) {
-          v630InstrumentBlock(fallingBlock, false, 'drop-finished');
-          const state = v630State(fallingBlock);
+          v775InstrumentBlock(fallingBlock, false, 'drop-finished');
+          const state = v775State(fallingBlock);
           const now = performance.now();
           state.bornAt = now;
           state.lastAutomaticMoveAt = now;
@@ -58900,184 +58413,151 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     };
   }
 
-  // Final scheduler: no catch-up and no restart can shorten the current required
-  // interval. The property setters are still the final line of defence if some
-  // unrelated timer ignores this scheduler entirely.
+  /*
+    FINAL SCHEDULER
+    ---------------
+    Timer deadlines are never used to "catch up". We always:
+      1) wait a complete effective interval;
+      2) move only inside the next requestAnimationFrame callback;
+      3) after that callback, start a brand-new complete interval.
+
+    If the browser/main thread is late, only one tick occurs. The next wait starts
+    from the actual late frame, so there is no compressed follow-up step.
+  */
   v625StopFallLoop = function() {
     v625FallLoopGeneration += 1;
-    if (v630FallRafId !== null) {
-      cancelAnimationFrame(v630FallRafId);
-      v630FallRafId = null;
+
+    if (v775FallRafId !== null) {
+      cancelAnimationFrame(v775FallRafId);
+      v775FallRafId = null;
     }
+
     if (fallInterval !== null && typeof fallInterval !== 'undefined') {
       clearTimeout(fallInterval);
       clearInterval(fallInterval);
     }
+
     fallInterval = null;
   };
 
   v625StartFallLoop = function(requestedDelay = fallSpeed) {
     v625StopFallLoop();
+
     const generation = ++v625FallLoopGeneration;
     const requested = Number(requestedDelay);
-    const requestedFloor = Number.isFinite(requested) && requested > 0 ? requested : 0;
+    const requestedFloor =
+      Number.isFinite(requested) && requested > 0 ? requested : 0;
 
-    const effectiveDelay = () => Math.max(v630RequiredMs(), requestedFloor);
+    const effectiveDelay = () =>
+      Math.max(v775RequiredMs(), requestedFloor);
 
-    const schedule = (waitMs) => {
+    const scheduleTimer = (waitMs = effectiveDelay()) => {
       if (generation !== v625FallLoopGeneration) return null;
-      fallInterval = setTimeout(runTick, Math.max(0, Number(waitMs) || 0));
+
+      const wait = Math.max(0, Number(waitMs) || 0);
+      v625FallLoopDelayMs = effectiveDelay();
+      timing.scheduledDelayMs = v625FallLoopDelayMs;
+
+      fallInterval = setTimeout(() => {
+        if (generation !== v625FallLoopGeneration) return;
+
+        /*
+          The actual game step is frame-committed. This is the key difference from
+          timer-only stepping: a late timer cannot execute several visual states
+          between browser presentation frames.
+        */
+        v775FallRafId = requestAnimationFrame(() => {
+          v775FallRafId = null;
+          if (generation !== v625FallLoopGeneration) return;
+
+          const activeBlock = fallingBlock;
+
+          if (activeBlock && !v775DropIsInstant()) {
+            v775InstrumentBlock(activeBlock, false, 'scheduler');
+            const remaining = v775RemainingMs(activeBlock);
+
+            /*
+              Another legal path (for example a tutorial preview or landing timer)
+              may have moved/spawned the block while this timer was waiting.
+              Never follow that with a compressed automatic move.
+            */
+            if (remaining > 0.75) {
+              timing.blockedSchedulerTicks += 1;
+              v775PushBlocked(
+                'scheduler',
+                activeBlock,
+                null,
+                null,
+                remaining,
+                'scheduler'
+              );
+              scheduleTimer(remaining);
+              return;
+            }
+          }
+
+          const tickStartedAt = performance.now();
+
+          if (Number.isFinite(timing.lastTickStartedAt)) {
+            const gap = tickStartedAt - timing.lastTickStartedAt;
+            timing.lastTickGapMs = gap;
+            timing.minTickGapMs = Number.isFinite(timing.minTickGapMs)
+              ? Math.min(timing.minTickGapMs, gap)
+              : gap;
+          }
+          timing.lastTickStartedAt = tickStartedAt;
+
+          timing.recentTicks.push({
+            at: tickStartedAt,
+            required: effectiveDelay(),
+            x: fallingBlock ? fallingBlock.x : null,
+            y: fallingBlock ? fallingBlock.y : null
+          });
+          if (timing.recentTicks.length > 30) timing.recentTicks.shift();
+
+          gameLoop();
+
+          if (generation !== v625FallLoopGeneration) return;
+
+          /*
+            Full fresh delay AFTER the frame-committed tick. No deadline arithmetic,
+            no phase recovery, and therefore no catch-up burst.
+          */
+          scheduleTimer(effectiveDelay());
+        });
+      }, wait);
+
       return fallInterval;
     };
 
-    const scheduleAfterPaint = () => {
-      if (generation !== v625FallLoopGeneration) return;
-      v630FallRafId = requestAnimationFrame(() => {
-        v630FallRafId = null;
-        if (generation !== v625FallLoopGeneration) return;
-        const delay = effectiveDelay();
-        v625FallLoopDelayMs = delay;
-        timing.scheduledDelayMs = delay;
-        schedule(delay);
-      });
-    };
-
-    const runTick = () => {
-      if (generation !== v625FallLoopGeneration) return;
-      const delay = effectiveDelay();
-      v625FallLoopDelayMs = delay;
-      timing.scheduledDelayMs = delay;
-
-      const block = fallingBlock;
-      if (block && !v630DropIsInstant()) {
-        v630InstrumentBlock(block, false, 'scheduler');
-        const remaining = v630RemainingMs(block);
-        if (remaining > 0.75) {
-          timing.blockedSchedulerTicks += 1;
-          v630PushBlocked('scheduler', block, null, null, remaining, 'scheduler');
-          schedule(remaining);
-          return;
-        }
-      }
-
-      gameLoop();
-      if (generation !== v625FallLoopGeneration) return;
-      scheduleAfterPaint();
-    };
-
-    const firstDelay = effectiveDelay();
-    v625FallLoopDelayMs = firstDelay;
-    timing.scheduledDelayMs = firstDelay;
-    return schedule(firstDelay);
+    return scheduleTimer(effectiveDelay());
   };
 
-  // Safety observer: it mainly makes sure a newly assigned active object that did
-  // not come through createBlock/createBlockH is instrumented before another frame.
-  let observedBlock = null;
-  let observedX = null;
-  let observedY = null;
-  function v630Observe() {
-    const block = fallingBlock;
-    if (block && !v630Instrumented.has(block)) {
-      v630ArmSpawn(block, 'observer-late-instrument');
-    }
-
-    if (block !== observedBlock) {
-      observedBlock = block || null;
-      observedX = block ? block.x : null;
-      observedY = block ? block.y : null;
-    } else if (block) {
-      const changed = block.x !== observedX || block.y !== observedY;
-      if (changed && !v630Instrumented.has(block)) {
-        timing.unguardedObservedMoves += 1;
-      }
-      observedX = block.x;
-      observedY = block.y;
-    } else {
-      observedX = observedY = null;
-    }
-
-    v630ObserverRafId = requestAnimationFrame(v630Observe);
-  }
-
-  const oldPanel = document.getElementById('v629TimingPanel');
-  if (oldPanel) oldPanel.remove();
-  const panel = document.createElement('div');
-  panel.id = 'v630TimingPanel';
-  document.body.appendChild(panel);
-
-  function v630RenderPanel() {
-    const required = v630RequiredMs();
-    const last10 = timing.recentMoves.slice(-10);
-    const rows = last10.length
-      ? last10.map((entry, i) => {
-          const ms = Math.round(entry.gap);
-          const ok = entry.gap + 1 >= entry.required;
-          return `<div class="v630-row ${ok ? 'v630-ok' : 'v630-bad'}"><span>${i + 1}.</span><span>${ms} ms ${ok ? 'OK' : 'FAST'}</span></div>`;
-        }).join('')
-      : '<div class="v630-muted">waiting for movement…</div>';
-
-    panel.innerHTML = `
-      <div class="v630-title">FALL LOCK TEST v630</div>
-      <div class="v630-row"><span class="v630-muted">raw fallSpeed</span><span>${Math.round(v630RawFallSpeedMs())} ms</span></div>
-      <div class="v630-row"><span class="v630-muted">hard floor</span><span>${V630_ABSOLUTE_MIN_MS} ms</span></div>
-      <div class="v630-row"><span class="v630-muted">effective min</span><span>${Math.round(required)} ms</span></div>
-      <div class="v630-row"><span class="v630-muted">blocked direct</span><span class="${timing.blockedDirectWrites ? 'v630-warn' : 'v630-ok'}">${timing.blockedDirectWrites}</span></div>
-      <div class="v630-row"><span class="v630-muted">unguarded</span><span class="${timing.unguardedObservedMoves ? 'v630-bad' : 'v630-ok'}">${timing.unguardedObservedMoves}</span></div>
-      <div class="v630-row"><span class="v630-muted">instrument fail</span><span class="${timing.instrumentationFailures ? 'v630-bad' : 'v630-ok'}">${timing.instrumentationFailures}</span></div>
-      <div class="v630-divider"></div>
-      <div class="v630-muted" style="margin-bottom:3px">LAST 10 ACCEPTED FALL STEPS</div>
-      ${rows}
-    `;
-  }
-
   timing.snapshot = () => ({
-    rawFallSpeedMs: v630RawFallSpeedMs(),
-    requiredMs: v630RequiredMs(),
+    absoluteMinimumMs: V775_ABSOLUTE_MIN_MS,
+    rawFallSpeedMs: v775RawFallSpeedMs(),
+    requiredMs: v775RequiredMs(),
+    schedulerMode: timing.schedulerMode,
+    scheduledDelayMs: timing.scheduledDelayMs,
     acceptedAutomaticMoves: timing.acceptedAutomaticMoves,
     blockedDirectWrites: timing.blockedDirectWrites,
     blockedSchedulerTicks: timing.blockedSchedulerTicks,
     blockedGuardCalls: timing.blockedGuardCalls,
-    unguardedObservedMoves: timing.unguardedObservedMoves,
     instrumentationFailures: timing.instrumentationFailures,
+    tooFastAcceptedMoves: timing.tooFastAcceptedMoves,
     minAcceptedGapMs: timing.minAcceptedGapMs,
     lastAcceptedGapMs: timing.lastAcceptedGapMs,
-    recentMoves: timing.recentMoves.slice(-10),
-    recentBlocked: timing.recentBlocked.slice(-10),
+    minTickGapMs: timing.minTickGapMs,
+    lastTickGapMs: timing.lastTickGapMs,
+    recentMoves: timing.recentMoves.slice(-12),
+    recentBlocked: timing.recentBlocked.slice(-12),
+    recentTicks: timing.recentTicks.slice(-12),
     lastBlockedStack: timing.lastBlockedStack
   });
 
-  v630ObserverRafId = requestAnimationFrame(v630Observe);
-  v630RenderPanel();
-  setInterval(v630RenderPanel, 100);
-
-  if (v630LoopWasActive) {
-    fallInterval = v625StartFallLoop(v630DelayAtInstall);
+  if (v775LoopWasActive) {
+    fallInterval = v625StartFallLoop(v775DelayAtInstall);
   }
-})();
-</script>
-
-
-<!-- v631: production cleanup. Keep the proven property-level 400 ms fall lock from v630,
-     remove all visible timing/diagnostic overlays. Internal timestamps remain because
-     they are the mechanism that enforces the minimum fall interval. -->
-<style id="v631-hide-timing-diagnostics">
-  #v629TimingPanel,
-  #v630TimingPanel {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-</style>
-<script id="v631-remove-visible-timing-diagnostics">
-(() => {
-  'use strict';
-  const removePanels = () => {
-    document.getElementById('v629TimingPanel')?.remove();
-    document.getElementById('v630TimingPanel')?.remove();
-  };
-  removePanels();
-  requestAnimationFrame(removePanels);
 })();
 </script>
 
@@ -68387,6 +67867,22 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v775:
+     Automatic block cadence consolidated and hardened against apparent catch-up.
+     - Removed the stacked v627, v628 and v630 timing wrappers plus v630/v631 diagnostics.
+     - One final timing layer now owns automatic x/y cadence.
+     - Every scheduled automatic game step waits the full effective interval first,
+       then executes inside requestAnimationFrame, so the movement is committed on a
+       browser render frame instead of a timer callback that may be visually bunched.
+     - No fixed-rate catch-up: a late/blocked frame never shortens the next wait.
+     - Automatic visible x/y writes still have a property-level minimum guard.
+     - Effective automatic interval remains max(400ms, current fallSpeed, requested delay).
+     - Player floor movement stays immediate; DROP BLOCK stays intentionally instant.
+     - Existing 600ms landing correction, bounce/barrier rules, tutorials, scoring,
+       Party Goal, SCORE visuals and all game progression remain unchanged.
+     - Hidden runtime diagnostics are available as window.bpTimingV775 only; no polling,
+       timing panel, setInterval or continuous observer is left running. -->
 
 <!-- v774:
      Party Goal timing consolidated to ONE authoritative source.

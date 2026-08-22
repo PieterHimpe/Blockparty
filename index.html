@@ -68161,6 +68161,14 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v747:
+     - SCORE sizing stabilised in the lower symmetric SCORE/LEVEL pair:
+       0-999 always uses one fixed size, 1000+ uses controlled smaller sizes,
+       and a final post-update fit pass prevents random small/large jumps.
+     - Top PARTY GOAL gets a clearer confetti-style background in colors that
+       stay inside the existing Block Party palette (gold/orange/pink/purple/turquoise).
+     - No score-flight target, level-border logic, Party Goal logic or gameplay changed. -->
+
 <!-- v746:
      Repair tutorial hierarchy/copy refresh.
      - Titles stay in CAPS; explanatory copy uses normal sentence case.
@@ -68807,6 +68815,164 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     font-weight: 900;
   }
 </style>
+
+
+<style id="v747-score-partygoal-visual-refine">
+  /* V747 — stronger, cleaner confetti background for the top Party Goal. */
+  #v742PartyGoalTop > .v606-party-goal-panel {
+    background:
+      linear-gradient(135deg,
+        rgba(32,22,26,.98) 0%,
+        rgba(58,35,34,.97) 34%,
+        rgba(73,43,28,.96) 66%,
+        rgba(34,24,28,.98) 100%) !important;
+  }
+
+  #v742PartyGoalTop > .v606-party-goal-panel::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    opacity: .98 !important;
+    background:
+      radial-gradient(circle at 10% 18%, rgba(255,214,104,.26) 0 2.2px, transparent 2.4px),
+      radial-gradient(circle at 18% 70%, rgba(232,138,45,.22) 0 2.1px, transparent 2.3px),
+      radial-gradient(circle at 31% 28%, rgba(255,87,163,.20) 0 1.9px, transparent 2.1px),
+      radial-gradient(circle at 47% 76%, rgba(155,81,224,.18) 0 1.8px, transparent 2px),
+      radial-gradient(circle at 63% 20%, rgba(80,227,194,.18) 0 1.9px, transparent 2.1px),
+      radial-gradient(circle at 78% 62%, rgba(255,171,77,.22) 0 2px, transparent 2.2px),
+      radial-gradient(circle at 89% 24%, rgba(255,216,57,.23) 0 2.2px, transparent 2.4px),
+      linear-gradient(28deg, transparent 0 46%, rgba(255,177,74,.12) 46% 48%, transparent 48% 100%),
+      linear-gradient(145deg, transparent 0 40%, rgba(255,92,163,.10) 40% 42.2%, transparent 42.2% 100%),
+      linear-gradient(62deg, transparent 0 55%, rgba(80,227,194,.10) 55% 57.1%, transparent 57.1% 100%);
+    background-repeat: no-repeat !important;
+  }
+
+  #v742PartyGoalTop > .v606-party-goal-panel::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    pointer-events: none !important;
+    opacity: .88 !important;
+    background:
+      linear-gradient(115deg, transparent 0 13%, rgba(255,214,104,.82) 13% 14.3%, transparent 14.3% 100%) 7% 26% / 18px 18px no-repeat,
+      linear-gradient(160deg, transparent 0 34%, rgba(232,138,45,.80) 34% 35.5%, transparent 35.5% 100%) 20% 72% / 16px 16px no-repeat,
+      linear-gradient(90deg, transparent 0 46%, rgba(255,87,163,.82) 46% 47.6%, transparent 47.6% 100%) 33% 16% / 14px 14px no-repeat,
+      linear-gradient(32deg, transparent 0 36%, rgba(155,81,224,.76) 36% 37.6%, transparent 37.6% 100%) 49% 80% / 15px 15px no-repeat,
+      linear-gradient(140deg, transparent 0 42%, rgba(80,227,194,.78) 42% 43.7%, transparent 43.7% 100%) 63% 24% / 14px 14px no-repeat,
+      linear-gradient(78deg, transparent 0 52%, rgba(255,171,77,.82) 52% 53.5%, transparent 53.5% 100%) 79% 68% / 16px 16px no-repeat,
+      linear-gradient(24deg, transparent 0 38%, rgba(255,216,57,.84) 38% 39.6%, transparent 39.6% 100%) 91% 20% / 15px 15px no-repeat;
+    mix-blend-mode: screen !important;
+  }
+
+  /* V747 — stable bottom SCORE sizing.
+     Keep SCORE and LEVEL visually equal for 0-999; 1000+ may scale down.
+     JS also sets an inline size as a last safety net after every update. */
+  :root {
+    --v747-score-size-3: var(--v745-core-number-size);
+    --v747-score-size-4: clamp(1.06rem, 4.10vw, 1.30rem);
+    --v747-score-size-5: clamp(.96rem, 3.55vw, 1.13rem);
+    --v747-score-size-6: clamp(.88rem, 3.10vw, 1.00rem);
+  }
+
+  #v742BottomCoreStats #scoreValue {
+    white-space: nowrap !important;
+    line-height: .90 !important;
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+    transition: font-size 100ms ease !important;
+  }
+
+  #v742BottomCoreStats #scoreValue.v747-score-3 { font-size: var(--v747-score-size-3) !important; }
+  #v742BottomCoreStats #scoreValue.v747-score-4 { font-size: var(--v747-score-size-4) !important; }
+  #v742BottomCoreStats #scoreValue.v747-score-5 { font-size: var(--v747-score-size-5) !important; }
+  #v742BottomCoreStats #scoreValue.v747-score-6 { font-size: var(--v747-score-size-6) !important; }
+</style>
+
+<script id="v747-score-partygoal-visual-refine-runtime">
+(() => {
+  'use strict';
+
+  function v747ClassForDigits(digitCount){
+    if (digitCount <= 3) return 'v747-score-3';
+    if (digitCount === 4) return 'v747-score-4';
+    if (digitCount === 5) return 'v747-score-5';
+    return 'v747-score-6';
+  }
+
+  function v747BaseSizeForDigits(digitCount){
+    if (digitCount <= 3) return 'var(--v747-score-size-3)';
+    if (digitCount === 4) return 'var(--v747-score-size-4)';
+    if (digitCount === 5) return 'var(--v747-score-size-5)';
+    return 'var(--v747-score-size-6)';
+  }
+
+  function v747ApplyStableScoreSizing(){
+    const scoreCell = document.getElementById('scoreDisplay');
+    const scoreValue = document.getElementById('scoreValue');
+    if (!scoreCell || !scoreValue) return;
+
+    const rawText = String(scoreValue.textContent || '').trim();
+    const digitCount = rawText.replace(/[^0-9]/g, '').length || rawText.length || 1;
+
+    scoreValue.classList.remove('v747-score-3','v747-score-4','v747-score-5','v747-score-6');
+    scoreValue.classList.add(v747ClassForDigits(digitCount));
+
+    // Start from the intended canonical size every time, so a previous smaller
+    // value can never "stick" and make the score randomly stay tiny.
+    scoreValue.style.setProperty('font-size', v747BaseSizeForDigits(digitCount), 'important');
+
+    // 0-999 must remain identical to LEVEL and must not be shrunk further.
+    if (digitCount <= 3) return;
+
+    requestAnimationFrame(() => {
+      let px = parseFloat(getComputedStyle(scoreValue).fontSize || '16');
+      const maxWidth = Math.max(10, Math.floor(scoreCell.clientWidth * 0.88));
+      while (scoreValue.scrollWidth > maxWidth && px > 14) {
+        px -= 1;
+        scoreValue.style.setProperty('font-size', px + 'px', 'important');
+      }
+    });
+  }
+
+  function v747ScheduleStableScoreSizing(){
+    v747ApplyStableScoreSizing();
+    requestAnimationFrame(v747ApplyStableScoreSizing);
+    setTimeout(v747ApplyStableScoreSizing, 0);
+    setTimeout(v747ApplyStableScoreSizing, 70);
+    setTimeout(v747ApplyStableScoreSizing, 180);
+  }
+
+  ['updateScoreDisplay', 'updateFeatureAvailability', 'updateLevelDisplay', 'updateLevelAndBpmDisplay'].forEach((name) => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      v747ScheduleStableScoreSizing();
+      return result;
+    };
+  });
+
+  if (window.ResizeObserver) {
+    const scoreCell = document.getElementById('scoreDisplay');
+    if (scoreCell) new ResizeObserver(v747ScheduleStableScoreSizing).observe(scoreCell);
+  }
+
+  const scoreValue = document.getElementById('scoreValue');
+  if (scoreValue && window.MutationObserver) {
+    new MutationObserver(v747ScheduleStableScoreSizing).observe(scoreValue, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+  }
+
+  requestAnimationFrame(v747ScheduleStableScoreSizing);
+  setTimeout(v747ScheduleStableScoreSizing, 120);
+  setTimeout(v747ScheduleStableScoreSizing, 300);
+})();
+</script>
 
 </body>
 </html>

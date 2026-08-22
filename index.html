@@ -67762,6 +67762,53 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v789:
+     Locked REPAIRS / NEXT SET now keep their full orange border visible.
+     - The central cells use the v686 SVG border instead of a normal CSS border.
+     - Generic feature-lock styling was dimming that SVG and the lock overlay sat above it.
+     - While REPAIRS or NEXT SET is locked, their v686 border is now explicitly kept
+       undimmed and above the dark lock overlay, exactly like the orange border remains
+       visible on the other locked HUD cells.
+     - No duplicate CSS border is added; v686 stays the single border owner.
+     - Unlock logic, lock icon, SCORE, LEVEL, Party Goal and gameplay are unchanged. -->
+
+<!-- v788:
+     SCORE and LEVEL values now use one fixed true vertical center.
+     - Removed the v786 41%/59% + translateY(-3px) workaround.
+     - SCORE and LEVEL titles stay independently at the top.
+     - Their numeric value layer now covers the full card and centers on the exact
+       center of the complete cell, not the lower content row.
+     - Because SCORE starts exactly on the card center, the existing card pulse +
+       inverse digit scaling can no longer move the number vertically while scoring.
+     - LEVEL uses the exact same fixed center and remains non-animated.
+     - REPAIRS stays REPAIRS.
+     - Border animations, Party Goal behavior, scoring logic and timing are unchanged. -->
+
+<!-- v787:
+     PARTY GOAL celebration border now animates on the REAL border footprint.
+     - The slight inward offset in v784/v786 came from animating a ::after pseudo-element
+       on an element that still had a 4px border. Absolute positioning is relative to the
+       padding box, so the ring sat 4px too far inward.
+     - Fix: during PARTY GOAL celebration, the host itself paints the animated conic border
+       in its own border-box via layered backgrounds and a transparent 4px border.
+     - The old PARTY GOAL ::after ring is disabled during celebration, so there is no
+       second ring and no inward shift.
+     - Durations, pulse effect, colours and game logic stay unchanged.
+     - SCORE behavior is untouched. -->
+
+<!-- v786:
+     - Restored the HUD label from REPAIR back to REPAIRS.
+     - SCORE and LEVEL values in the bottom HUD are vertically centered more consistently,
+       so the normal state matches the centered feel seen during score updates.
+     - The title/value composition is adjusted only for SCORE and LEVEL in the moved
+       bottom-core HUD area.
+     - SCORE animation logic, LEVEL progress logic, Party Goal behavior and timing are unchanged. -->
+
+<!-- v785:
+     HUD copy tweak: changed the REPAIRS cell label to REPAIR.
+     - Only the visible label text is adjusted.
+     - No gameplay, counters, styling or animations are changed. -->
+
 <!-- v784:
      SCORE + PARTY GOAL border animation now replaces the normal orange border itself.
      - No second inner or outer animated ring is visible.
@@ -70675,6 +70722,212 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     padding: 4px !important;
     box-sizing: border-box !important;
     z-index: 30 !important;
+  }
+</style>
+<style id="v787-partygoal-real-border-animation">
+  /*
+    Authoritative final Party Goal border animation.
+    Paint the animated colour ring on the host's own border-box so it occupies
+    the exact same footprint as the normal 4px orange border.
+  */
+
+  #v742PartyGoalTop.v767-progress-celebrate::after,
+  #v742PartyGoalTop.v767-complete-celebrate::after {
+    content: none !important;
+    display: none !important;
+    animation: none !important;
+  }
+
+  #v742PartyGoalTop.v767-progress-celebrate,
+  #v742PartyGoalTop.v767-complete-celebrate {
+    border: 4px solid transparent !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    background:
+      linear-gradient(var(--v692-hud-bg, rgba(0,0,0,.68)), var(--v692-hud-bg, rgba(0,0,0,.68))) padding-box,
+      conic-gradient(
+        from var(--v235-score-angle),
+        var(--party-dark, #245486) 0deg 60deg,
+        var(--party-light, #9BC9F2) 60deg 120deg,
+        var(--party-dark, #245486) 120deg 180deg,
+        var(--party-light, #9BC9F2) 180deg 240deg,
+        var(--party-dark, #245486) 240deg 300deg,
+        var(--party-light, #9BC9F2) 300deg 360deg
+      ) border-box !important;
+    background-origin: padding-box, border-box !important;
+    background-clip: padding-box, border-box !important;
+  }
+
+  #v742PartyGoalTop.v767-progress-celebrate {
+    animation:
+      v767PartyGoalProgressPulse 2720ms cubic-bezier(.2,.86,.24,1) 1,
+      v235ScoreColorsForward 2720ms linear 1 !important;
+    transform-origin: center center !important;
+  }
+
+  #v742PartyGoalTop.v767-complete-celebrate {
+    animation:
+      v767PartyGoalCompletePulse 4000ms cubic-bezier(.16,.9,.24,1) 1,
+      v235ScoreColorsForward 4000ms linear 1 !important;
+    transform-origin: center center !important;
+  }
+</style>
+
+
+<style id="v788-score-level-fixed-true-center">
+  /*
+    SCORE + LEVEL:
+    title positioning and number positioning are now independent.
+    The numeric layer spans the FULL card, so its center is always the real
+    center of the cell in both normal and animated SCORE states.
+  */
+
+  #v742BottomCoreStats > #scoreDisplay .v685-shell,
+  #v742BottomCoreStats > #extraCell1 .v685-shell {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Keep SCORE / LEVEL titles independently anchored at the top. */
+  #v742BottomCoreStats > #scoreDisplay .v685-top,
+  #v742BottomCoreStats > #extraCell1 .v685-top {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 41% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1px 1px 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    z-index: 45 !important;
+    pointer-events: none !important;
+  }
+
+  /*
+    The value layer is no longer a "bottom row".
+    It is an overlay covering the whole card, centered at exactly 50% / 50%.
+  */
+  #v742BottomCoreStats > #scoreDisplay .v685-bottom,
+  #v742BottomCoreStats > #extraCell1 .v685-bottom {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    z-index: 42 !important;
+    pointer-events: none !important;
+  }
+
+  /* SCORE value itself occupies the full overlay and centers its text. */
+  #v742BottomCoreStats > #scoreDisplay #scoreValue {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+
+  /*
+    LEVEL has two legacy wrappers. Make both full-size centering layers so the
+    numeral lands on the exact same center as SCORE.
+  */
+  #v742BottomCoreStats > #extraCell1 #levelStatusValues,
+  #v742BottomCoreStats > #extraCell1 #levelStatusValues > div:first-child {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #v742BottomCoreStats > #extraCell1 #levelDisplayExtra {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-align: center !important;
+    transform: none !important;
+  }
+
+  /*
+    Explicitly preserve exactly the same geometry while SCORE is pulsing/hit.
+    Only the existing scale animation is allowed to change; vertical position
+    stays locked because the value starts at the card's true center.
+  */
+  #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-bottom,
+  #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-bottom {
+    inset: 0 !important;
+    transform: none !important;
+  }
+</style>
+
+
+<style id="v789-locked-core-orange-border">
+  /*
+    REPAIRS + NEXT SET use an SVG border. Generic .feature-locked > * rules dim
+    all children, including that SVG, and the lock ::after overlay is z-index 50.
+    Keep the SVG as the one authoritative border and put it above the lock layer.
+  */
+  #livesDisplay.info-cell.feature-locked > .v686-border-overlay,
+  #nextBlockDisplay.info-cell.feature-locked > .v686-border-overlay {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    filter: none !important;
+    z-index: 60 !important;
+  }
+
+  /* These two cells have no segmented progress: locked border is fully orange. */
+  #livesDisplay.info-cell.feature-locked > .v686-border-overlay rect,
+  #nextBlockDisplay.info-cell.feature-locked > .v686-border-overlay rect {
+    stroke: #e88a2d !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  /*
+    Do not restore a normal CSS border: that would create a double frame.
+    The v686 SVG remains the only visible border in locked and unlocked states.
+  */
+  #livesDisplay.info-cell.feature-locked,
+  #nextBlockDisplay.info-cell.feature-locked {
+    border: 0 !important;
   }
 </style>
 

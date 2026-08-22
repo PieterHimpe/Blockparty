@@ -67868,6 +67868,33 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v781:
+     SCORE / LEVEL behavior simplified exactly as intended.
+     - Removed the entire v780 Party-Goal-specific SCORE/LEVEL suppression logic.
+     - SCORE now ALWAYS uses the same normal scoring animation, whether the cleared
+       group advances PARTY GOAL or not.
+     - The special Party Goal +100 SCORE payoff animation is visually disabled, so
+       it cannot replace the normal SCORE treatment.
+     - LEVEL never animates: no pulse, transition, transform or payoff effect.
+     - LEVEL number/progress values still update normally; the 8-part yellow border
+       still advances normally.
+     - PARTY GOAL keeps its own celebration unchanged. -->
+
+<!-- v780:
+     When a cleared 5+ group actually adds a requested color to the active
+     post-tutorial PARTY GOAL, SCORE and LEVEL are kept visually quiet.
+     - PARTY GOAL keeps its own long rotating-ring celebration unchanged.
+     - SCORE gets no pulse / moving ring / hit / Party Goal payoff animation for
+       that exact matching group.
+     - LEVEL gets no transient animation/transform for that exact matching group.
+     - Score points, LEVEL progress, level-up logic and the flying group itself are
+       NOT changed.
+     - Ordinary groups that do NOT advance PARTY GOAL keep their normal SCORE effects.
+     - Detection is made before PARTY GOAL is updated, using the currently unfinished
+       requested-color dots, so completed/duplicate colors do not suppress HUD feedback.
+     - Overlapping matching group flights use a reference counter, preventing one
+       completed flight from re-enabling SCORE/LEVEL while another is still active. -->
+
 <!-- v779:
      REPAIRS and NEXT SET dark fills adjusted after v777.
      - Their inset dark fill is reduced from 2px to 1px, so the black/dark panel
@@ -70636,6 +70663,79 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   #nextBlockDisplay.info-cell > .v685-shell::before {
     inset: 1px !important;
     border-radius: 9px !important;
+  }
+</style>
+
+<style id="v781-score-always-same-level-never-animate">
+  /* ============================================================
+     SCORE: ALWAYS THE SAME NORMAL SCORING TREATMENT
+     ============================================================ */
+
+  /*
+    PARTY GOAL completion may still add v634-score-goal-payoff for bookkeeping.
+    It must never introduce a second SCORE animation of its own.
+  */
+  #scoreDisplay.v634-score-goal-payoff:not(.score-party-active) {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  #scoreDisplay.v634-score-goal-payoff:not(.score-party-active) #scoreValue {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /*
+    If the +100 payoff class overlaps the ordinary scoring class, the ordinary
+    SCORE animation wins completely. This keeps PARTY GOAL colors and ordinary
+    colors visually identical in SCORE.
+  */
+  #scoreDisplay.score-party-active.v634-score-goal-payoff {
+    animation: v760ScoreCardPulse 420ms ease-in-out infinite alternate !important;
+    transform-origin: center center !important;
+  }
+
+  #scoreDisplay.score-party-active.v634-score-goal-payoff #scoreValue {
+    animation: v760ScoreDigitsCounterPulse 420ms ease-in-out infinite alternate !important;
+    transform-origin: center center !important;
+  }
+
+  #scoreDisplay.score-party-hit.v634-score-goal-payoff {
+    animation: v760ScoreCardHit 170ms ease-out !important;
+  }
+
+  #scoreDisplay.score-party-hit.v634-score-goal-payoff #scoreValue {
+    animation: v760ScoreDigitsCounterHit 170ms ease-out !important;
+  }
+
+  /* ============================================================
+     LEVEL: NEVER ANIMATE
+     ============================================================ */
+
+  #extraCell1,
+  #extraCell1.info-cell,
+  #extraCell1 > .v685-shell,
+  #extraCell1 .v685-top,
+  #extraCell1 .v685-bottom,
+  #extraCell1 #levelStatusValues,
+  #extraCell1 #levelStatusValues > div:first-child,
+  #extraCell1 #levelDisplayExtra,
+  #extraCell1 > .v686-border-overlay,
+  #extraCell1 > .v686-border-overlay rect {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+  }
+
+  /*
+    Keep only the level numeral's normal static positioning. Do not touch border
+    stroke colours, so the 8-part yellow LEVEL progress continues to update.
+  */
+  #extraCell1,
+  #extraCell1 #levelDisplayExtra {
+    transform: none !important;
   }
 </style>
 

@@ -67868,6 +67868,13 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v779:
+     REPAIRS and NEXT SET dark fills adjusted after v777.
+     - Their inset dark fill is reduced from 2px to 1px, so the black/dark panel
+       sits closer to the orange border again.
+     - SCORE and LEVEL keep the stronger 2px inset fix from v777.
+     - Party Goal, SCORE animation, LEVEL progress and v775 timing are unchanged. -->
+
 <!-- v778:
      SCORE celebration ring made visibly equivalent to the PARTY GOAL treatment.
      - Removed the v776 SCORE-ring override that left the moving ring too hard to
@@ -70619,6 +70626,16 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   #scoreDisplay.score-party-active > .v685-shell::before {
     display: none !important;
     content: none !important;
+  }
+</style>
+
+
+<style id="v779-repairs-nextset-fill-less-inset">
+  /* Keep the v777 fix, but make REPAIRS and NEXT SET less inset than SCORE/LEVEL. */
+  #livesDisplay.info-cell > .v685-shell::before,
+  #nextBlockDisplay.info-cell > .v685-shell::before {
+    inset: 1px !important;
+    border-radius: 9px !important;
   }
 </style>
 

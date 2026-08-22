@@ -67905,6 +67905,29 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v804:
+     V803 follow-up: the Party Goal spotlight now truly fills the whole top HUD row.
+     - From level 11 onward, a matched Party Goal color no longer only fills the
+       Party Goal cell itself.
+     - Instead, the spotlight overlay measures the real HUD row that contains the
+       top Party Goal area and covers that ENTIRE top row, matching the user's
+       request to make it as broad as the pause-style top-space treatment.
+     - The 3x colored-disc flicker, colored progress text, final 5th-color reward
+       message, and suppression of the old separate completion toast all remain. -->
+
+<!-- v803:
+     Post-tutorial Party Goal progress is made much more obvious.
+     - Applies only from level 11 onward (never during tutorial levels 1-10).
+     - When a correct Party Goal color is cleared, the TOP Party Goal cell gets a
+       temporary full-cell spotlight overlay.
+     - The newly earned colored goal disc flashes exactly 3 times.
+     - The usual 'MATCH THE COLORS' copy is temporarily replaced by progress copy
+       in the earned color, e.g. 'GOOD JOB!' or 'ONLY ONE MORE TO GO!'.
+     - On the 5th/final color, the same full-cell spotlight shows that the Party
+       Goal was achieved and that +100 points were won.
+     - The separate normal PARTY GOAL COMPLETE / +100 POINTS toast is suppressed
+       for full-party goals because this top-cell spotlight now replaces it. -->
+
 <!-- v802:
      Party Mission 1 Repair-cell feedback corrected.
      - Normally, when a real Repair resource is earned, the REPAIRS cell still
@@ -71193,6 +71216,464 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     white-space: nowrap !important;
   }
 </style>
+
+
+<style id="v803-party-goal-progress-spotlight-style">
+  /*
+    V803 — Stronger level-11+ Party Goal progress spotlight.
+    The overlay fully occupies the mirrored top Party Goal card for a short time,
+    without touching tutorial Party Goals or underlying gameplay logic.
+  */
+  #v742PartyGoalTop.v803-goal-spotlight-host {
+    z-index: 130 !important;
+    overflow: visible !important;
+  }
+
+  #v742PartyGoalTop.v803-goal-spotlight-host > .v606-party-goal-panel {
+    opacity: 0 !important;
+  }
+
+  .info-container.v803-goal-row-host {
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  #v803GoalSpotlight {
+    position: absolute !important;
+    inset: auto !important;
+    z-index: 160 !important;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6px 10px 7px !important;
+    box-sizing: border-box !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255,255,255,.14) 0 7%, transparent 7.5%),
+      radial-gradient(circle at 82% 26%, rgba(255,255,255,.12) 0 6%, transparent 6.5%),
+      radial-gradient(circle at 28% 82%, rgba(255,255,255,.08) 0 5%, transparent 5.5%),
+      linear-gradient(180deg, rgba(39,26,20,.98), rgba(18,14,21,.98)) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,244,200,.12),
+      0 0 12px rgba(232,138,45,.30) !important;
+    pointer-events: none !important;
+    isolation: isolate !important;
+    box-sizing: border-box !important;
+  }
+
+  #v803GoalSpotlight::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 8px;
+    pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--v803-goal-color, #e88a2d) 58%, white 42%);
+    opacity: .34;
+  }
+
+  #v803GoalSpotlight.v803-visible {
+    display: flex !important;
+    animation: v803GoalSpotlightFade 2200ms ease both;
+  }
+
+  #v803GoalSpotlight.v803-complete {
+    animation-duration: 2600ms !important;
+  }
+
+  #v803GoalSpotlight .v803-content {
+    position: relative;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  #v803GoalSpotlight .v803-side {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #v803GoalSpotlight .v803-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  #v803GoalSpotlight .v803-title {
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.82rem, 3.45vw, 1.16rem) !important;
+    line-height: .96 !important;
+    font-weight: 1000 !important;
+    letter-spacing: .018em !important;
+    color: var(--v803-goal-color, #ffe680) !important;
+    text-shadow:
+      0 0 8px color-mix(in srgb, var(--v803-goal-color, #ffe680) 52%, black 48%),
+      0 1px 0 rgba(0,0,0,.55);
+    white-space: nowrap;
+  }
+
+  #v803GoalSpotlight .v803-sub {
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.52rem, 2.2vw, .76rem) !important;
+    line-height: .98 !important;
+    font-weight: 900 !important;
+    color: color-mix(in srgb, var(--v803-goal-color, #ffe680) 86%, white 14%) !important;
+    text-shadow: 0 0 7px rgba(0,0,0,.36);
+    white-space: nowrap;
+  }
+
+  #v803GoalSpotlight .v803-reward {
+    margin-top: 1px;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.54rem, 2.25vw, .78rem) !important;
+    line-height: .98 !important;
+    font-weight: 1000 !important;
+    color: #7ef7dd !important;
+    text-shadow: 0 0 8px rgba(80,227,194,.28);
+    white-space: nowrap;
+    display: none;
+  }
+
+  #v803GoalSpotlight.v803-complete .v803-reward {
+    display: block;
+  }
+
+  #v803GoalSpotlight .v803-disc-wrap {
+    position: relative;
+    width: clamp(30px, 7vw, 44px);
+    height: clamp(30px, 7vw, 44px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  #v803GoalSpotlight .v803-disc-wrap::before,
+  #v803GoalSpotlight .v803-disc-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--v803-goal-color, #ffe680) 72%, white 28%);
+    opacity: .18;
+  }
+
+  #v803GoalSpotlight .v803-disc-wrap::after {
+    inset: -8px;
+    opacity: .08;
+  }
+
+  #v803GoalSpotlight .v803-disc {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--v803-goal-color, #e88a2d);
+    border: 3px solid rgba(255,255,255,.96);
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,.18),
+      0 0 12px color-mix(in srgb, var(--v803-goal-color, #e88a2d) 74%, white 26%);
+    animation: v803DiscFlash 1320ms ease-in-out 1;
+  }
+
+  #v803GoalSpotlight.v803-complete .v803-disc {
+    width: clamp(34px, 8vw, 48px);
+    height: clamp(34px, 8vw, 48px);
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,.16),
+      0 0 14px color-mix(in srgb, var(--v803-goal-color, #e88a2d) 74%, white 26%);
+  }
+
+  @keyframes v803GoalSpotlightFade {
+    0%   { opacity: 0; transform: scale(.96); }
+    10%  { opacity: 1; transform: scale(1.015); }
+    84%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(.985); }
+  }
+
+  @keyframes v803DiscFlash {
+    0%, 7%, 24%, 41%, 58%, 100% {
+      opacity: 1;
+      filter: brightness(1) saturate(1);
+      transform: scale(1);
+    }
+    15%, 32%, 49% {
+      opacity: .30;
+      filter: brightness(.72) saturate(.82);
+      transform: scale(.92);
+    }
+    11%, 28%, 45% {
+      opacity: 1;
+      filter: brightness(1.3) saturate(1.2);
+      transform: scale(1.08);
+    }
+    66% {
+      opacity: 1;
+      filter: brightness(1.14) saturate(1.08);
+      transform: scale(1.02);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #v803GoalSpotlight.v803-visible,
+    #v803GoalSpotlight .v803-disc {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script id="v803-party-goal-progress-spotlight-runtime">
+(() => {
+  'use strict';
+
+  let v803Timer = null;
+
+  function v803TopGoal() {
+    return document.getElementById('v742PartyGoalTop');
+  }
+
+  function v803HudContainer() {
+    return document.querySelector('.info-container');
+  }
+
+  function v803SameHudRowBounds() {
+    const host = v803TopGoal();
+    const hud = v803HudContainer();
+    if (!host || !hud) return null;
+
+    const hostRect = host.getBoundingClientRect();
+    const hudRect = hud.getBoundingClientRect();
+    const hostTop = hostRect.top;
+
+    const rowCells = Array.from(hud.children).filter((el) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 4 && r.height > 4 && Math.abs(r.top - hostTop) <= 6;
+    });
+
+    if (!rowCells.length) {
+      return {
+        left: hostRect.left - hudRect.left,
+        top: hostRect.top - hudRect.top,
+        width: hostRect.width,
+        height: hostRect.height
+      };
+    }
+
+    const left = Math.min(...rowCells.map((el) => el.getBoundingClientRect().left)) - hudRect.left;
+    const top = Math.min(...rowCells.map((el) => el.getBoundingClientRect().top)) - hudRect.top;
+    const right = Math.max(...rowCells.map((el) => el.getBoundingClientRect().right)) - hudRect.left;
+    const bottom = Math.max(...rowCells.map((el) => el.getBoundingClientRect().bottom)) - hudRect.top;
+
+    return {
+      left,
+      top,
+      width: right - left,
+      height: bottom - top
+    };
+  }
+
+  function v803PositionOverlay(host, overlay) {
+    const hud = v803HudContainer();
+    if (!hud || !overlay) return;
+    const bounds = v803SameHudRowBounds();
+    if (!bounds) return;
+
+    hud.classList.add('v803-goal-row-host');
+    overlay.style.left = `${bounds.left}px`;
+    overlay.style.top = `${bounds.top}px`;
+    overlay.style.width = `${bounds.width}px`;
+    overlay.style.height = `${bounds.height}px`;
+  }
+
+  function v803SafeLevel() {
+    try { return Number(level) || 1; } catch (_) { return 1; }
+  }
+
+  function v803IsFullParty() {
+    return v803SafeLevel() >= 11;
+  }
+
+  function v803DisplayColor(color) {
+    try {
+      if (typeof v730DisplayGameColor === 'function') {
+        return String(v730DisplayGameColor(color) || color || '#e88a2d');
+      }
+    } catch (_) {}
+    return String(color || '#e88a2d');
+  }
+
+  function v803EnsureOverlay(host) {
+    if (!host) return null;
+    const hud = v803HudContainer();
+    if (!hud) return null;
+    let overlay = hud.querySelector('#v803GoalSpotlight');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'v803GoalSpotlight';
+      overlay.innerHTML =
+        '<div class="v803-content">' +
+          '<div class="v803-side"></div>' +
+          '<div class="v803-disc-wrap"><div class="v803-disc"></div></div>' +
+          '<div class="v803-side v803-copy">' +
+            '<div class="v803-title">GOOD JOB!</div>' +
+            '<div class="v803-sub">1 OF 5 MATCHED</div>' +
+            '<div class="v803-reward">+100 POINTS WON</div>' +
+          '</div>' +
+        '</div>';
+      hud.appendChild(overlay);
+    }
+    return overlay;
+  }
+
+  function v803HideOverlay() {
+    const host = v803TopGoal();
+    const hud = v803HudContainer();
+    if (host) host.classList.remove('v803-goal-spotlight-host');
+    if (hud) hud.classList.remove('v803-goal-row-host');
+    if (!hud) return;
+    const overlay = hud.querySelector('#v803GoalSpotlight');
+    if (!overlay) return;
+    overlay.classList.remove('v803-visible', 'v803-complete');
+    overlay.style.removeProperty('--v803-goal-color');
+  }
+
+  function v803ShowOverlay({ color, current, total, complete = false, reward = 100 }) {
+    if (!v803IsFullParty()) return;
+    const host = v803TopGoal();
+    if (!host) return;
+
+    const overlay = v803EnsureOverlay(host);
+    if (!overlay) return;
+
+    v803PositionOverlay(host, overlay);
+
+    if (v803Timer) {
+      clearTimeout(v803Timer);
+      v803Timer = null;
+    }
+
+    const shownColor = v803DisplayColor(color);
+    const titleEl = overlay.querySelector('.v803-title');
+    const subEl = overlay.querySelector('.v803-sub');
+    const rewardEl = overlay.querySelector('.v803-reward');
+    const disc = overlay.querySelector('.v803-disc');
+    const left = overlay.querySelector('.v803-side');
+
+    let title = 'GOOD JOB!';
+    let sub = `${Math.max(0, Number(current) || 0)} OF ${Math.max(1, Number(total) || 5)} MATCHED`;
+
+    if (complete) {
+      title = 'PARTY GOAL HIT!';
+      sub = 'ALL 5 COLORS MATCHED';
+    } else if ((Number(total) || 5) - (Number(current) || 0) === 1) {
+      title = 'ONLY ONE MORE TO GO!';
+      sub = `${Math.max(0, Number(current) || 0)} OF ${Math.max(1, Number(total) || 5)} MATCHED`;
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    if (subEl) subEl.textContent = sub;
+    if (rewardEl) rewardEl.textContent = `+${Number(reward) || 100} POINTS WON`;
+    if (left) left.innerHTML = complete
+      ? '<div class="v803-title" style="font-size:clamp(.64rem,2.6vw,.94rem)!important;line-height:.94!important;">GOAL</div><div class="v803-sub" style="margin-top:-2px;">COMPLETED</div>'
+      : '<div class="v803-title" style="font-size:clamp(.60rem,2.45vw,.88rem)!important;line-height:.94!important;">PARTY</div><div class="v803-sub" style="margin-top:-2px;">GOAL</div>';
+
+    host.classList.add('v803-goal-spotlight-host');
+    overlay.style.setProperty('--v803-goal-color', shownColor);
+    overlay.classList.remove('v803-visible', 'v803-complete');
+    void overlay.offsetWidth;
+    if (disc) {
+      disc.style.animation = 'none';
+      void disc.offsetWidth;
+      disc.style.animation = '';
+    }
+    overlay.classList.add('v803-visible');
+    if (complete) overlay.classList.add('v803-complete');
+
+    v803Timer = setTimeout(() => {
+      v803HideOverlay();
+      v803Timer = null;
+    }, complete ? 2600 : 2200);
+  }
+
+  // Suppress the separate full-party completion toast: the top-card spotlight
+  // now replaces it from level 11 onward.
+  if (typeof v468Toast === 'function') {
+    const v803BaseToast = v468Toast;
+    v468Toast = function(title, text = '', durationMs) {
+      const upperTitle = String(title || '').trim().toUpperCase();
+      const upperText = String(text || '').trim().toUpperCase();
+      if (
+        v803IsFullParty() &&
+        upperTitle === 'PARTY GOAL COMPLETE!' &&
+        upperText === '+100 POINTS'
+      ) {
+        return;
+      }
+      return v803BaseToast.apply(this, arguments);
+    };
+  }
+
+  if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onProgress === 'function') {
+    const v803BaseProgress = window.bpPartyGoalV634.onProgress;
+    window.bpPartyGoalV634.onProgress = function(payload) {
+      const result = v803BaseProgress.apply(this, arguments);
+      try {
+        if (v803IsFullParty()) {
+          v803ShowOverlay({
+            color: payload && payload.color,
+            current: payload && payload.current,
+            total: payload && payload.total,
+            complete: false
+          });
+        }
+      } catch (_) {}
+      return result;
+    };
+  }
+
+  if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
+    const v803BaseComplete = window.bpPartyGoalV634.onComplete;
+    window.bpPartyGoalV634.onComplete = function(payload) {
+      const result = v803BaseComplete.apply(this, arguments);
+      try {
+        if (v803IsFullParty() && !(payload && payload.muted)) {
+          v803ShowOverlay({
+            color: '#50e3c2',
+            current: 5,
+            total: 5,
+            complete: true,
+            reward: payload && payload.reward
+          });
+        }
+      } catch (_) {}
+      return result;
+    };
+  }
+
+  window.addEventListener('resize', () => {
+    const hud = v803HudContainer();
+    const overlay = hud ? hud.querySelector('#v803GoalSpotlight') : null;
+    const host = v803TopGoal();
+    if (overlay && overlay.classList.contains('v803-visible')) {
+      v803PositionOverlay(host, overlay);
+    }
+  });
+
+  window.addEventListener('pageshow', v803HideOverlay);
+})();
+</script>
 
 </body>
 </html>

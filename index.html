@@ -28725,8 +28725,8 @@ function showFirstBarrierRepairTutorialAfterDamage() {
       : BARRIER_STATE_DAMAGED;
   const barrierRepairTitle =
     repairTargetState === BARRIER_STATE_OPEN
-      ? "PARTY BARRIER OPEN"
-      : "PARTY BARRIER DAMAGED";
+      ? "BARRIER OPEN"
+      : "BARRIER DAMAGED";
 
   showDismissibleTutorialPopup(
     barrierRepairTitle,
@@ -28737,8 +28737,8 @@ function showFirstBarrierRepairTutorialAfterDamage() {
       firstBarrierRepairTutorialStage = "repair_intro";
       gamePaused = true;
       showDismissibleTutorialPopup(
-        "EARN YOUR FIRST REPAIR",
-        "The next block is a Repair (R) Block. Clear it in a group of 5 or more blocks of the same color to earn 1 Repair.",
+        "EARN A REPAIR",
+        "Clear the R Block in a group of 5+ matching blocks to earn a Repair.",
         8200,
         () => {
           if (!firstBarrierRepairTutorialActive) return;
@@ -41207,7 +41207,7 @@ resolveOuterBarrierImpact = function(block) {
 
 
 // Repair-flow: het Repair-blok verschijnt pas na de volledige uitleg
-// "PARTY BARRIER DAMAGED..." + "EARN YOUR FIRST REPAIR".
+// "PARTY BARRIER DAMAGED..." + "EARN A REPAIR".
 const v453BaseShowFirstBarrierRepairTutorialAfterDamage =
   showFirstBarrierRepairTutorialAfterDamage;
 
@@ -41235,8 +41235,8 @@ showFirstBarrierRepairTutorialAfterDamage = function() {
 
   const barrierRepairTitle =
     repairTargetState === BARRIER_STATE_OPEN
-      ? "PARTY BARRIER OPEN"
-      : "PARTY BARRIER DAMAGED";
+      ? "BARRIER OPEN"
+      : "BARRIER DAMAGED";
 
   showDismissibleTutorialPopup(
     barrierRepairTitle,
@@ -41249,8 +41249,8 @@ showFirstBarrierRepairTutorialAfterDamage = function() {
       gamePaused = true;
 
       showDismissibleTutorialPopup(
-        "EARN YOUR FIRST REPAIR",
-        "The next block is a Repair (R) Block. Clear it in a group of 5 or more blocks of the same color to earn 1 Repair.",
+        "EARN A REPAIR",
+        "Clear the R Block in a group of 5+ matching blocks to earn a Repair.",
         8200,
         () => {
           if (!firstBarrierRepairTutorialActive) return;
@@ -46117,7 +46117,15 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     const titleEl=document.getElementById('movementTutorialTitle');
     const textEl=document.getElementById('movementTutorialText');
     const image=document.getElementById('movementTutorialDjImage');
-    if(card) card.classList.add('v464-has-image');
+    if(card){
+      card.classList.add('v464-has-image');
+      card.classList.remove('v746-barrier-damaged','v746-barrier-open','v746-earn-repair','v746-repair-earned');
+      const v746TitleKey=String(title||'').trim().toUpperCase();
+      if(v746TitleKey==='BARRIER DAMAGED') card.classList.add('v746-barrier-damaged');
+      else if(v746TitleKey==='BARRIER OPEN') card.classList.add('v746-barrier-open');
+      else if(v746TitleKey==='EARN A REPAIR') card.classList.add('v746-earn-repair');
+      else if(v746TitleKey==='REPAIR +1') card.classList.add('v746-repair-earned');
+    }
     if(titleEl) titleEl.textContent=String(title||'');
     if(textEl) textEl.innerHTML=String(text||'').replace(/\n/g,'<br>');
     if(image){ image.src=icon; image.alt=''; image.style.display='block'; image.style.visibility='visible'; }
@@ -46444,13 +46452,16 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     const resolvedDirection=v453FinishBarrierHitWithoutSpawning(block);v453StoreDeferredBarrierSpawn(resolvedDirection);
     v410BarrierLessonShown=true;drawGrid();
     const becameOpen=indices.some(i=>barrierWallStates[side][i]===BARRIER_STATE_OPEN);
-    v471ShowHint(becameOpen?'PARTY BARRIER OPEN':'PARTY BARRIER DAMAGED','1 HIT DAMAGES THE BARRIER.\nA SECOND HIT OPENS A GAP.\nA BLOCK THROUGH AN OPEN GAP ENDS THE PARTY.',becameOpen?V471_ICONS.barrierOpen:V471_ICONS.barrier,4800,()=>{
+    const v746BarrierTitle=becameOpen?'BARRIER OPEN':'BARRIER DAMAGED';
+    const v746BarrierCopy=becameOpen
+      ? 'This hit <span class="v746-danger">opened a gap</span> in the Party Barrier.<br>If a block escapes through a gap, <span class="v746-danger">the party ends</span>.'
+      : 'One hit damages the Party Barrier.<br>A second hit <span class="v746-warn">opens a gap</span>.<br>If a block escapes through a gap, <span class="v746-danger">the party ends</span>.';
+    v471ShowHint(v746BarrierTitle,v746BarrierCopy,becameOpen?V471_ICONS.barrierOpen:V471_ICONS.barrier,5200,()=>{
       if(!repairStarted||!firstBarrierRepairTutorialActive)return;
       firstBarrierRepairTutorialStage='repair_intro';
       gamePaused=true;v625StopFallLoop();
-      // V552: do not make the R Block appear unexplained. First tell the player
-      // exactly what it earns and what action frees it.
-      v471ShowHint('EARN YOUR FIRST REPAIR','CLEAR THE R BLOCK IN A GROUP OF 5+\nTO EARN A REPAIR',(document.querySelector('#livesDisplay img')?.getAttribute('src')||'images/fig4.png'),4300,()=>{
+      // V746: explain one simple action in sentence case; key concepts carry the emphasis.
+      v471ShowHint('EARN A REPAIR','Clear the <span class="v746-repair">R Block</span> in a group of <span class="v746-match">5+ matching blocks</span> to earn a Repair.',(document.querySelector('#livesDisplay img')?.getAttribute('src')||'images/fig4.png'),4700,()=>{
         if(!firstBarrierRepairTutorialActive)return;
         firstBarrierRepairTutorialStage='waiting_for_repair';
         v453SpawnDeferredBarrierSet();gamePaused=false;v408RestartFallLoop();v468ScheduleAutosave(0);
@@ -46482,12 +46493,10 @@ body.v471-block-b-card .tutorial-tap-to-continue {
 
   openFirstBarrierRepairTutorialAfterCounterArrival=function(){
     if(!firstBarrierRepairTutorialActive||firstBarrierRepairTutorialStage!=='repair_flying')return;
-    firstBarrierRepairTutorialStage='repair_ready';gamePaused=true;v625StopFallLoop();updateLivesDisplay();pulseTutorialInfoCell('livesDisplay');
-    v471ShowHint('REPAIR +1','',V471_ICONS.repair,950,()=>{
-      if(!firstBarrierRepairTutorialActive)return;
-      firstBarrierRepairTutorialStage='awaiting_lives_click';gamePaused=true;pulseTutorialInfoCell('livesDisplay');
-      v471ShowHint('USE YOUR REPAIR','',V471_ICONS.repair,0,null,true);v468ScheduleAutosave(0);
-    });
+    firstBarrierRepairTutorialStage='awaiting_lives_click';
+    gamePaused=true;v625StopFallLoop();updateLivesDisplay();pulseTutorialInfoCell('livesDisplay');
+    v471ShowHint('REPAIR +1','Tap REPAIRS to fix the damage.',V471_ICONS.repair,0,null,true);
+    v468ScheduleAutosave(0);
   };
 
   const livesCell=document.getElementById('livesDisplay');
@@ -46676,7 +46685,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     if(firstBarrierRepairTutorialActive){
       const st=firstBarrierRepairTutorialStage;
       if(st==='repair_flying'||st==='repair_ready'||st==='awaiting_lives_click'||st==='repairing'){
-        firstBarrierRepairTutorialStage='awaiting_lives_click';gamePaused=true;v625StopFallLoop();pulseTutorialInfoCell('livesDisplay');v471ShowHint('USE YOUR REPAIR','',V471_ICONS.repair,0,null,true);
+        firstBarrierRepairTutorialStage='awaiting_lives_click';gamePaused=true;v625StopFallLoop();pulseTutorialInfoCell('livesDisplay');v471ShowHint('REPAIR +1','Tap REPAIRS to fix the damage.',V471_ICONS.repair,0,null,true);
       }else{
         v471EnsureRepairSetAfterResume(snapshot);
       }
@@ -48051,7 +48060,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
       updateLivesDisplay();
       gamePaused=true;isPaused=false;v625StopFallLoop();
       if(typeof pulseTutorialInfoCell==='function')pulseTutorialInfoCell('livesDisplay');
-      if(typeof v468Toast==='function')v468Toast('USE YOUR REPAIR','',2600);
+      if(typeof v468Toast==='function')v468Toast('REPAIR +1','Tap REPAIRS to fix the damage.',2600);
       return true;
     }
 
@@ -68152,6 +68161,17 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v746:
+     Repair tutorial hierarchy/copy refresh.
+     - Titles stay in CAPS; explanatory copy uses normal sentence case.
+     - First Barrier damage uses BARRIER DAMAGED + concise risk explanation.
+     - EARN YOUR FIRST REPAIR becomes EARN A REPAIR.
+     - Key phrases get restrained semantic color accents.
+     - After earning the R Block, REPAIR +1 itself says "Tap REPAIRS to fix the damage.";
+       the separate sticky USE YOUR REPAIR card is removed.
+     - The REPAIRS cell still pulses and the forced panel title remains REPAIR THE DAMAGE.
+     - No Barrier rules, Repair rewards, score logic, level logic or HUD geometry changed. -->
+
 <!-- v745:
      SCORE and LEVEL remain perfectly symmetrical in the lower HUD.
      Their numeric typography is reduced so 3-digit values have comfortable
@@ -68734,6 +68754,57 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     white-space: nowrap !important;
     font-variant-numeric: lining-nums tabular-nums !important;
     font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+  }
+</style>
+
+
+<style id="v746-repair-tutorial-hierarchy">
+  /* V746: title = headline; body = calm readable instruction. */
+  body.v471-block-b-card #movementTutorialCard.v746-barrier-damaged #movementTutorialTitle {
+    color: #E88A2D !important;
+    text-shadow: 0 2px 0 rgba(91,38,0,.72), 0 0 12px rgba(232,138,45,.34) !important;
+  }
+
+  body.v471-block-b-card #movementTutorialCard.v746-barrier-open #movementTutorialTitle {
+    color: #FF7B63 !important;
+    text-shadow: 0 2px 0 rgba(91,10,0,.76), 0 0 13px rgba(255,107,107,.38) !important;
+  }
+
+  body.v471-block-b-card #movementTutorialCard.v746-earn-repair #movementTutorialTitle,
+  body.v471-block-b-card #movementTutorialCard.v746-repair-earned #movementTutorialTitle {
+    color: #FFE680 !important;
+    text-shadow: 0 2px 0 rgba(110,55,0,.72), 0 0 12px rgba(255,230,128,.34) !important;
+  }
+
+  body.v471-block-b-card #movementTutorialCard.v746-barrier-damaged #movementTutorialText,
+  body.v471-block-b-card #movementTutorialCard.v746-barrier-open #movementTutorialText,
+  body.v471-block-b-card #movementTutorialCard.v746-earn-repair #movementTutorialText,
+  body.v471-block-b-card #movementTutorialCard.v746-repair-earned #movementTutorialText {
+    color: #FFF7EB !important;
+    font-weight: 700 !important;
+    line-height: 1.22 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  #movementTutorialText .v746-warn {
+    color: #FFB14A;
+    font-weight: 900;
+  }
+
+  #movementTutorialText .v746-danger {
+    color: #FF7777;
+    font-weight: 900;
+  }
+
+  #movementTutorialText .v746-repair {
+    color: #FFE680;
+    font-weight: 900;
+  }
+
+  #movementTutorialText .v746-match {
+    color: #E88A2D;
+    font-weight: 900;
   }
 </style>
 

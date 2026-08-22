@@ -8895,7 +8895,7 @@ drop cell
   <div class="tutorial-color-tracker" aria-label="Tutorial colors"></div>
   <div class="v606-party-goal-panel" data-total="0">
     <div class="v606-party-goal-label">PARTY GOAL</div>
-    <div class="v606-party-goal-sub">SOON</div>
+    <div class="v606-party-goal-sub">COMING SOON</div>
     <div class="v606-party-goal-dots" aria-label="Party Goal progress"></div>
   </div>
 </button>
@@ -8963,7 +8963,7 @@ drop cell
   <div class="tutorial-color-tracker" aria-label="Tutorial colors"></div>
   <div class="v606-party-goal-panel" data-total="0">
     <div class="v606-party-goal-label">PARTY GOAL</div>
-    <div class="v606-party-goal-sub">SOON</div>
+    <div class="v606-party-goal-sub">COMING SOON</div>
     <div class="v606-party-goal-dots" aria-label="Party Goal progress"></div>
   </div>
 </button> 
@@ -40263,17 +40263,34 @@ function v450IsArrowControl(control) {
 }
 
 function v448SyncControlLocks() {
+  /*
+    V764:
+    In normal gameplay (level 11+) the short movement-area transition is only
+    a technical no-input window. It no longer needs a visible gray-arrow flash.
+    Tutorial levels keep the old visual teaching language.
+  */
+  const normalGameplayTransitionOnly = Boolean(
+    typeof level !== "undefined" &&
+    level >= 11 &&
+    typeof isMovementAreaTransitionActive === "function" &&
+    isMovementAreaTransitionActive() &&
+    !gamePaused &&
+    !tutorialLevelBannerActive &&
+    !v448IsFeatureUnlockPresentationActive()
+  );
+
   document.querySelectorAll(V448_BLOCKED_CONTROL_SELECTOR).forEach((control) => {
     const shouldLock = v448ShouldLockControl(control);
+    const isArrow = v450IsArrowControl(control);
 
-    // Visuele lock enkel op pijltjes.
+    // Visuele lock enkel op pijltjes, behalve bij de gewone 360ms as-overgang.
     control.classList.toggle(
       "v448-auto-input-locked",
-      shouldLock && v450IsArrowControl(control)
+      shouldLock && isArrow && !normalGameplayTransitionOnly
     );
 
     // Zorg dat niet-pijltjes nooit onterecht grijs blijven hangen.
-    if (!v450IsArrowControl(control) && control.classList.contains("v448-auto-input-locked")) {
+    if (!isArrow && control.classList.contains("v448-auto-input-locked")) {
       control.classList.remove("v448-auto-input-locked");
     }
   });
@@ -55901,7 +55918,7 @@ body.v546-onboarding-levels #levelProgressBar {
       const dots = panel.querySelector('.v606-party-goal-dots');
 
       if (label) label.textContent = 'PARTY GOAL';
-      if (sub) sub.textContent = 'SOON';
+      if (sub) sub.textContent = 'COMING SOON';
       if (dots) dots.innerHTML = '';
     });
   }
@@ -68384,6 +68401,34 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v766:
+     Tutorial Party Goal placeholder copy improved.
+     Visible subtext changed from "SOON" to "COMING SOON".
+     No Party Goal logic, timing or progress behavior changed. -->
+
+<!-- v765:
+     Party Goal progress/complete visual upgrade + top-image flicker fix.
+     - The top Party Goal no longer replaces its whole innerHTML on every update.
+       Label/subtext/dots are synced, but the two side figures stay mounted and
+       only their src/state is updated. This removes the visible disappear/reappear
+       on each earned color.
+     - On each earned Party Goal color, the whole top Party Goal cell pulses a bit larger.
+     - The pulse accent now uses the actually won color (instead of the old unrelated palette).
+     - During each single progress hit, the Party Goal border becomes a rotating light/dark ring
+       in that won color.
+     - Full Party Goal completion gets a stronger pulse and the same rotating ring.
+     - Existing Party Goal logic and score reward stay unchanged. -->
+
+<!-- v764:
+     Normal gameplay no longer flashes the movement arrows gray between sets.
+     Root cause: v448 treated the 360ms movement-area axis transition as a visual
+     tutorial/input lock and applied grayscale/opacity to the arrows.
+     - Technical movement blocking during the transition remains unchanged.
+     - From level 11 onward, a transition by itself no longer dims the arrows.
+     - Real pause/tutorial/banner/feature-unlock locks still keep their existing
+       visual behavior.
+     - Tutorial levels 1-10 are untouched. -->
+
 <!-- v763:
      NEXT SET preview consolidated around one authoritative square normalizer.
      Fixes the case where one complete preview could remain visually flat until
@@ -68928,7 +68973,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       topHost.innerHTML = `
         <div class="v606-party-goal-panel" data-total="0">
           <div class="v606-party-goal-label">PARTY GOAL</div>
-          <div class="v606-party-goal-sub">SOON</div>
+          <div class="v606-party-goal-sub">COMING SOON</div>
           <div class="v606-party-goal-dots" aria-label="Party Goal progress"></div>
         </div>`;
       hud.appendChild(topHost);
@@ -69021,10 +69066,82 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       target.appendChild(targetPanel);
     }
 
-    /* Copy the already-rendered authoritative Party Goal state. */
-    if (targetPanel.innerHTML !== sourcePanel.innerHTML) {
-      targetPanel.innerHTML = sourcePanel.innerHTML;
+    /* V765: keep the two side images mounted.
+       Replacing the whole innerHTML made both figures disappear and return
+       whenever one Party Goal color was earned. */
+    targetPanel.className = sourcePanel.className;
+
+    const syncSimpleNode = (selector) => {
+      const sourceNode = sourcePanel.querySelector(selector);
+      if (!sourceNode) return null;
+
+      let targetNode = targetPanel.querySelector(selector);
+      if (!targetNode) {
+        targetNode = document.createElement(sourceNode.tagName.toLowerCase());
+        targetPanel.appendChild(targetNode);
+      }
+
+      targetNode.className = sourceNode.className;
+      targetNode.textContent = sourceNode.textContent;
+      for (const attr of sourceNode.getAttributeNames()) {
+        if (attr === 'class') continue;
+        targetNode.setAttribute(attr, sourceNode.getAttribute(attr));
+      }
+      return targetNode;
+    };
+
+    syncSimpleNode('.v606-party-goal-label');
+    syncSimpleNode('.v606-party-goal-sub');
+
+    const sourceDots = sourcePanel.querySelector('.v606-party-goal-dots');
+    if (sourceDots) {
+      let targetDots = targetPanel.querySelector('.v606-party-goal-dots');
+      if (!targetDots) {
+        targetDots = document.createElement('div');
+        targetPanel.appendChild(targetDots);
+      }
+      targetDots.className = sourceDots.className;
+      targetDots.innerHTML = sourceDots.innerHTML;
+      for (const attr of sourceDots.getAttributeNames()) {
+        if (attr === 'class') continue;
+        targetDots.setAttribute(attr, sourceDots.getAttribute(attr));
+      }
     }
+
+    ['v615-left','v615-right'].forEach((sideClass) => {
+      const sourceWrap = sourcePanel.querySelector('.v614-party-goal-image.' + sideClass);
+      if (!sourceWrap) return;
+
+      let targetWrap = targetPanel.querySelector('.v614-party-goal-image.' + sideClass);
+      if (!targetWrap) {
+        targetWrap = document.createElement('div');
+        targetPanel.appendChild(targetWrap);
+      }
+      targetWrap.className = sourceWrap.className;
+      targetWrap.dataset.state = sourceWrap.dataset.state || '';
+
+      const sourceImg = sourceWrap.querySelector('img');
+      let targetImg = targetWrap.querySelector('img');
+      if (!targetImg) {
+        targetImg = document.createElement('img');
+        targetImg.alt = '';
+        targetWrap.appendChild(targetImg);
+      }
+
+      if (sourceImg) {
+        const wantedSrc = sourceImg.currentSrc || sourceImg.getAttribute('src') || sourceImg.src || '';
+        if (wantedSrc && targetImg.getAttribute('src') !== wantedSrc) {
+          targetImg.setAttribute('src', wantedSrc);
+        }
+        targetImg.alt = sourceImg.alt || '';
+      }
+
+      targetImg.style.setProperty('display', 'block', 'important');
+      targetImg.style.setProperty('visibility', 'visible', 'important');
+      targetImg.style.setProperty('opacity', '1', 'important');
+      targetImg.style.setProperty('transform', 'none', 'important');
+    });
+
     targetPanel.dataset.total = sourcePanel.dataset.total || '0';
 
     SYNC_HOST_CLASSES.forEach((cls) => {
@@ -70245,6 +70362,196 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   requestAnimationFrame(normalize);
   setTimeout(normalize, 50);
   setTimeout(normalize, 180);
+})();
+</script>
+
+
+<style id="v765-party-goal-progress-effects-style">
+  /* Final visual treatment for the visible top Party Goal. */
+  #v742PartyGoalTop {
+    position: relative !important;
+    overflow: visible !important;
+    isolation: isolate !important;
+  }
+
+  #v742PartyGoalTop > .v606-party-goal-panel {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  /* Rotating colored border ring for progress + complete. */
+  #v742PartyGoalTop::before,
+  #v742PartyGoalTop::after {
+    content: none;
+  }
+
+  #v742PartyGoalTop.v643-party-progress-pop::before,
+  #v742PartyGoalTop.v634-complete-payoff::before,
+  #v742PartyGoalTop.v614-complete::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: -2px !important;
+    border-radius: 14px !important;
+    padding: 2px !important;
+    pointer-events: none !important;
+    z-index: 6 !important;
+    background:
+      conic-gradient(
+        from 0deg,
+        color-mix(in srgb, var(--v643-party-accent, #ffd166) 88%, white 12%) 0deg,
+        color-mix(in srgb, var(--v643-party-accent, #ffd166) 48%, black 52%) 78deg,
+        color-mix(in srgb, var(--v643-party-accent, #ffd166) 90%, white 10%) 158deg,
+        color-mix(in srgb, var(--v643-party-accent, #ffd166) 42%, black 58%) 238deg,
+        color-mix(in srgb, var(--v643-party-accent, #ffd166) 92%, white 8%) 318deg,
+        color-mix(in srgb, var(--v643-party-accent, #ffd166) 88%, white 12%) 360deg
+      ) !important;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: v765PartyGoalRingSpin 720ms linear infinite, v765PartyGoalRingGlow 650ms ease-in-out infinite alternate !important;
+    box-shadow:
+      0 0 7px color-mix(in srgb, var(--v643-party-accent, #ffd166) 72%, white 28%),
+      0 0 16px color-mix(in srgb, var(--v643-party-accent, #ffd166) 84%, transparent 16%) !important;
+  }
+
+  /* Slightly larger pulse for one earned color. */
+  #v742PartyGoalTop.v643-party-progress-pop {
+    animation: v765TopGoalProgressPulse 620ms cubic-bezier(.2,.85,.25,1) 1 !important;
+    transform-origin: center center !important;
+  }
+
+  /* Stronger pulse for a fully completed Party Goal. */
+  #v742PartyGoalTop.v634-complete-payoff,
+  #v742PartyGoalTop.v614-complete {
+    animation: v765TopGoalCompletePulse 900ms cubic-bezier(.16,.9,.24,1) 1 !important;
+    transform-origin: center center !important;
+  }
+
+  #v742PartyGoalTop.v643-party-progress-pop > .v606-party-goal-panel,
+  #v742PartyGoalTop.v634-complete-payoff > .v606-party-goal-panel,
+  #v742PartyGoalTop.v614-complete > .v606-party-goal-panel {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--v643-party-accent, #ffd166) 65%, white 35%),
+      0 0 12px color-mix(in srgb, var(--v643-party-accent, #ffd166) 70%, transparent 30%),
+      0 0 24px color-mix(in srgb, var(--v643-party-accent, #ffd166) 46%, transparent 54%) !important;
+  }
+
+  @keyframes v765TopGoalProgressPulse {
+    0%   { transform: scale(1); }
+    24%  { transform: scale(1.055); }
+    54%  { transform: scale(1.025); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes v765TopGoalCompletePulse {
+    0%   { transform: scale(1); }
+    18%  { transform: scale(1.085); }
+    46%  { transform: scale(1.045); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes v765PartyGoalRingSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @keyframes v765PartyGoalRingGlow {
+    from { opacity: .82; }
+    to   { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #v742PartyGoalTop.v643-party-progress-pop,
+    #v742PartyGoalTop.v634-complete-payoff,
+    #v742PartyGoalTop.v614-complete {
+      animation: none !important;
+      transform: none !important;
+    }
+
+    #v742PartyGoalTop.v643-party-progress-pop::before,
+    #v742PartyGoalTop.v634-complete-payoff::before,
+    #v742PartyGoalTop.v614-complete::before {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script id="v765-party-goal-progress-effects-runtime">
+(() => {
+  'use strict';
+
+  function v765SourceGoalHost() {
+    return document.querySelector('.button-wrapper .reset-btn.v606-party-goal-host');
+  }
+
+  function v765AccentFromPayload(payload) {
+    const key = String(payload && payload.color || '').trim();
+    if (!key) return '';
+    if (typeof window.v730DisplayGameColor === 'function') {
+      return window.v730DisplayGameColor(key);
+    }
+    return key;
+  }
+
+  function v765AccentFromCompletedGoal(host) {
+    if (!host) return '#ffd166';
+    const doneDots = Array.from(host.querySelectorAll('.v606-party-goal-dots .v619-color-target.done'));
+    const lastDone = doneDots[doneDots.length - 1];
+    if (!lastDone) return '#ffd166';
+    return (
+      lastDone.style.getPropertyValue('--v730-goal-display-color') ||
+      lastDone.style.getPropertyValue('--v619-goal-color') ||
+      getComputedStyle(lastDone).backgroundColor ||
+      '#ffd166'
+    );
+  }
+
+  function v765ApplyAccent(host, accent, durationMs) {
+    if (!host || !accent) return;
+    host.style.setProperty('--v643-party-accent', accent);
+    if (host._v765AccentTimer) clearTimeout(host._v765AccentTimer);
+    host._v765AccentTimer = setTimeout(() => {
+      host.style.removeProperty('--v643-party-accent');
+      host._v765AccentTimer = null;
+    }, Math.max(400, Number(durationMs) || 700));
+  }
+
+  if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onProgress === 'function') {
+    const v765BaseOnProgress = window.bpPartyGoalV634.onProgress;
+    window.bpPartyGoalV634.onProgress = function(payload) {
+      const result = v765BaseOnProgress.apply(this, arguments);
+      try {
+        const host = v765SourceGoalHost();
+        const accent = v765AccentFromPayload(payload || {});
+        if (host && accent) {
+          host.style.setProperty('--v643-party-accent', accent);
+          host.classList.remove('v643-party-progress-pop');
+          void host.offsetWidth;
+          host.classList.add('v643-party-progress-pop');
+          v765ApplyAccent(host, accent, 700);
+        }
+      } catch (_) {}
+      return result;
+    };
+  }
+
+  if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
+    const v765BaseOnComplete = window.bpPartyGoalV634.onComplete;
+    window.bpPartyGoalV634.onComplete = function(payload) {
+      const result = v765BaseOnComplete.apply(this, arguments);
+      try {
+        const host = v765SourceGoalHost();
+        const accent = v765AccentFromCompletedGoal(host);
+        if (host && accent) {
+          host.style.setProperty('--v643-party-accent', accent);
+          v765ApplyAccent(host, accent, 1100);
+        }
+      } catch (_) {}
+      return result;
+    };
+  }
 })();
 </script>
 

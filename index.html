@@ -9228,7 +9228,7 @@ padding-top: 10px;
 onterechte code  -->
 
 <div id="saveConfirmOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(20,20,20,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; font-family: 'Baloo Bhaina 2', sans-serif;">
-  <img src="images/fig22.png" alt="Save popup" style="max-width: 80%; height: auto; margin-bottom: 20px;">
+  <img src="images/fig12.png" alt="Save popup" style="max-width: 80%; height: auto; margin-bottom: 20px;">
   <div style="display: flex; gap: 20px;">
     <button id="saveYesBtn" style="font-size: 1.2rem; padding: 10px 20px; background-color: #B65A0D; color: white; border: none; border-radius: 8px;">Yes</button>
     <button id="saveNoBtn" style="font-size: 1.2rem; padding: 10px 20px; background-color: #888; color: white; border: none; border-radius: 8px;">No</button>
@@ -14648,7 +14648,8 @@ let originalChallenge7Level = challenge7Level;
 
 // param chal 1
 let challengeBlockLimit = CHALLENGE_TEST_MODE ? 100 : 60;
-let challengeHeartTarget = CHALLENGE_TEST_MODE ? 1 : 30; // AANPASSEN
+let challengeHeartTarget = CHALLENGE_TEST_MODE ? 1 : 30; // mission objective stays 30
+const challengeRepairRushSequence = 33; // V801: force 33 Repair blocks in a row
 
 // param chal 2
 let challenge2BlockLimit = CHALLENGE_TEST_MODE ? 100 : 100;
@@ -18445,8 +18446,8 @@ function updateNextBlockDisplay(color, length = 1, isDiva = false, isSpecial = f
       const pie = document.createElement("div");
       pie.className = "v699-nextset-multicolor-pie";
       pie.style.position = "absolute";
-      pie.style.width = "78%";
-      pie.style.height = "78%";
+      pie.style.width = "52%";
+      pie.style.height = "52%";
       pie.style.left = "50%";
       pie.style.top = "50%";
       pie.style.transform = "translate(-50%, -50%)";
@@ -19629,7 +19630,7 @@ if (!saveUnlocked) {
 
           // Reset teller en terug naar aftelbeeld
           saveUnlocked = false;
-          saveBlockCountdown = 99;
+          saveBlockCountdown = 60;
           wrapper.style.cursor = "default";
           wrapper.onclick = null;
           wrapper.innerHTML = `
@@ -19990,7 +19991,7 @@ if (!saveUnlocked) {
 
           // Reset teller en terug naar aftelbeeld
           saveUnlocked = false;
-          saveBlockCountdown = 99;
+          saveBlockCountdown = 60;
           wrapper.style.cursor = "default";
           wrapper.onclick = null;
           wrapper.innerHTML = `
@@ -23267,6 +23268,24 @@ function triggerV334ResourceCounterGlow(destination) {
   if (!destination || destination.type === 'score' || !destination.pulseElement) return;
 
   const pulseElement = destination.pulseElement;
+
+  // V802: Party Mission 1 deliberately clears many R blocks without awarding
+  // actual Repair resources (preventHeartReward=true). In that mission the
+  // REPAIRS counter must therefore stay visually quiet as well: no scale/glow.
+  if (
+    destination.type === 'repair' &&
+    typeof challengeActive !== 'undefined' &&
+    challengeActive
+  ) {
+    if (pulseElement._v334GlowTimer) {
+      clearTimeout(pulseElement._v334GlowTimer);
+      pulseElement._v334GlowTimer = null;
+    }
+    pulseElement.classList.remove('resource-party-hit');
+    pulseElement.style.removeProperty('--resource-party-color');
+    return;
+  }
+
   if (pulseElement._v334GlowTimer) {
     clearTimeout(pulseElement._v334GlowTimer);
     pulseElement._v334GlowTimer = null;
@@ -25794,17 +25813,27 @@ drawInnerBarrierLayout(
 
 // tekenen van blokje terwijl het valt (dus zonder raster en nog niet geland)
 
+function getFallingDivaDisplayCountdown(block) {
+  if (!block || !block.isDiva) return "";
+
+  const rawValue = Number(
+    block.divaCountdown ??
+    (challenge5Active ? 29 : 10)
+  );
+
+  if (!Number.isFinite(rawValue)) return "";
+
+  // V797: de gewone Diva staat intern nog op 10 tot haar landing.
+  // Omdat die landing haar meteen naar 9 brengt, tonen we visueel al 9
+  // vanaf het moment waarop ze ontstaat. De spelmechaniek zelf verandert niet.
+  return String(rawValue === 10 ? 9 : rawValue);
+}
+
 function getFallingBlockCenterText(block) {
   if (!block) return "";
 
-  // Diva toont vanaf haar ontstaan haar eigen startwaarde (normaal 10).
-  // De waarde verandert pas nadat zij geland is en updateDivaCountdowns haar
-  // bij die landing onmiddellijk naar 9 brengt.
   if (block.isDiva) {
-    return String(
-      block.divaCountdown ??
-      (challenge5Active ? 29 : 10)
-    );
+    return getFallingDivaDisplayCountdown(block);
   }
 
   return "";
@@ -25860,7 +25889,7 @@ function drawOuterFallingTileInFront(drawX, drawY, block, text) {
     drawDivaCountdownText(
       drawX,
       drawY,
-      String(block.divaCountdown ?? (challenge5Active ? 29 : 10))
+      getFallingDivaDisplayCountdown(block)
     );
     drawV337ActiveBorder(drawX, drawY);
     return;
@@ -25999,7 +26028,7 @@ if (fallingBlock.isDiva) {
   drawDivaCountdownText(
     drawX,
     drawY,
-    String(fallingBlock.divaCountdown ?? (challenge5Active ? 29 : 10))
+    getFallingDivaDisplayCountdown(fallingBlock)
   );
 } else {
   const specialCenterDrawn = drawSpecialBlockCenter(drawX, drawY, fallingBlock, true);
@@ -26379,15 +26408,47 @@ document.getElementById("multicolorDisplay").addEventListener("click", () => {
     multicolorDisplay.textContent = multicolorCount;
 
     showColorChoice((selectedColor) => {
-      nextBlock = {
-        color: selectedColor,
-        length: 1,
-        isSpecial: false,
-        isMulticolor: true,
-        isDiva: false,
-        divaCountdown: null
-      };
-      updateNextBlockDisplay(nextBlock.color, nextBlock.length, nextBlock.isDiva, nextBlock.isSpecial, nextBlock.isMulticolor);
+      // V800: Multicolor is a COLOR power-up, not a Free Picture-style
+      // replacement set. The next formation has already had its normal
+      // length/special rolls. Preserve those rolls and change only its color.
+      //
+      // Priority mirrors the real next-spawn/preview order:
+      // forcedNextBlock -> queued Goal-7 Multicolor preview -> nextBlock.
+      const queuedGoal7Multicolor =
+        (typeof window.v542NextMulticolorPreviewBlock !== 'undefined')
+          ? window.v542NextMulticolorPreviewBlock
+          : null;
+
+      const selectedNextFormation =
+        forcedNextBlock ||
+        queuedGoal7Multicolor ||
+        nextBlock;
+
+      if (selectedNextFormation) {
+        selectedNextFormation.color = selectedColor;
+      }
+
+      // Keep nextBlockColor only as a legacy compatibility value; it must never
+      // force Multicolor status. The selected formation keeps whatever type it
+      // already rolled naturally.
+      nextBlockColor = selectedColor;
+      nextBlockIsMulticolor = false;
+
+      const previewFormation =
+        forcedNextBlock ||
+        queuedGoal7Multicolor ||
+        nextBlock;
+
+      if (previewFormation) {
+        updateNextBlockDisplay(
+          previewFormation.color,
+          previewFormation.length,
+          previewFormation.isDiva,
+          previewFormation.isSpecial,
+          previewFormation.isMulticolor
+        );
+      }
+
       onLevel7ColorSelected(selectedColor);
 
 gtag('event', 'powerup_used', {
@@ -27001,7 +27062,7 @@ if (level === challengeLevel && !challengeRewardGiven) {
     updateLevelDisplay();
     challengeHeartCount = 0;
     challengeBlockCounter = 0;
-    challengeHeartOverrideCounter = CHALLENGE_TEST_MODE ? 30 : challengeHeartTarget;
+    challengeHeartOverrideCounter = challengeRepairRushSequence;
     preventHeartReward = true;
     challengeRewardGiven = false;
     updateChallengeStatusCell();
@@ -31891,7 +31952,7 @@ left.style.alignItems = "center";
 
 // Tekst links van de afbeelding
 const leftText = document.createElement("div");
-leftText.textContent = "Brace yourself – 30 Repair Blocks are coming in a row! Make them all vanish within 60 blocks. Specials and Skip may be used. Beat it and choose your reward!"; // ← dynamisch als je wil
+leftText.textContent = "Brace yourself – 33 Repair Blocks are coming in a row! Clear 30 within 60 blocks. Specials and Skip may be used. Beat it and choose your reward!"; // ← dynamisch als je wil
 leftText.style.width = "80%";
 leftText.style.color = isInactive ? "#888" : "#FFE680";
 leftText.style.fontWeight = "bold";
@@ -32008,7 +32069,7 @@ function restartChallenge1() {
   challengeRewardGiven = false;
   challengeHeartCount = 0;
   challengeBlockCounter = 0;
-  challengeHeartOverrideCounter = CHALLENGE_TEST_MODE ? 30 : challengeHeartTarget;
+  challengeHeartOverrideCounter = challengeRepairRushSequence;
   preventHeartReward = true;
   passedChallenge1c = false;
   challenge1Success = false;
@@ -33968,7 +34029,7 @@ challenge7BlockCount = 0;
 challenge7GroupCount = 0;
 //challenge7RewardGiven = false;
 
-saveBlockCountdown = 99;
+saveBlockCountdown = 60;
 
 updateChallengeStatusCell();
 updateChallenge2StatusCell();
@@ -46576,7 +46637,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     if(fallingBlock&&(fallingBlock.isSpecial||fallingBlock.isMulticolor||fallingBlock.isFreePicture||fallingBlock.isDiva))return false;
     level2DirectionBlocksResolved+=1;
     if(v408Level3MasteryStage==='final_practice'&&typeof window.v501SetMiniChallenge==='function')window.v501SetMiniChallenge('4 SIDES',Math.min(4,level2DirectionBlocksResolved),4);
-    if(v408Level3MasteryStage==='direction_cycle'&&level2DirectionBlocksResolved>=4){
+    if(v408Level3MasteryStage==='direction_cycle'&&level2DirectionBlocksResolved>=8){
       if(typeof v459TutorialBlockedByScore==='function'&&v459TutorialBlockedByScore()){
         v459DeferTutorialUntilCleanOrdinarySet('v471-side-lane',()=>{if(level===3&&v408Level3MasteryStage==='direction_cycle')startLevel3SideLaneTutorial();});return false;
       }
@@ -47568,7 +47629,8 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
   onLevel7ColorSelected=function(color){
     if(!level7MulticolorTutorialActive||level!==7||level7MulticolorStage!=='choosing_color')return;
     level7ColorSelected=true;level7SelectedColor=color;level7MulticolorStage='complete';level7DeployedJokerCleared=true;level7BlocksAfterMastery=0;
-    // De bestaande click-handler zet hier eerst isMulticolor=true. Master: het volgende GEWONE set krijgt de gekozen kleur.
+    // Tutorial master rule: the first taught use still demonstrates a GEWONE set in the chosen color.
+    // V800's generic handler already preserves normal rolled status outside the tutorial.
     if(nextBlock){nextBlock.color=color;nextBlock.isMulticolor=false;nextBlock.isSpecial=false;nextBlock.isFreePicture=false;nextBlock.isDiva=false;nextBlock.divaCountdown=null;}
     nextBlockIsMulticolor=false;
     if(nextBlock)updateNextBlockDisplay(nextBlock.color,nextBlock.length,nextBlock.isDiva,nextBlock.isSpecial,nextBlock.isMulticolor);
@@ -48124,7 +48186,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     challengeBlockCounter=saved?Math.max(0,Number(saved.blockCounter)||0):0;
     challengeHeartOverrideCounter=saved
       ? Math.max(0,Number(saved.repairOverrideCounter)||0)
-      : (CHALLENGE_TEST_MODE?30:challengeHeartTarget);
+      : challengeRepairRushSequence;
     preventHeartReward=saved?!!saved.preventRepairReward:true;
     passedChallenge1c=saved?!!saved.passed:false;
     challenge1Success=saved?!!saved.success:false;
@@ -51227,7 +51289,7 @@ body.v473-block-d-card #movementTutorialCard {
           typeof v408Level3MasteryStage !== 'undefined' &&
           v408Level3MasteryStage === 'direction_cycle' &&
           typeof level2DirectionBlocksResolved !== 'undefined' &&
-          Number(level2DirectionBlocksResolved) >= 3 &&
+          Number(level2DirectionBlocksResolved) >= 7 &&
           !(typeof firstBarrierRepairTutorialActive !== 'undefined' && firstBarrierRepairTutorialActive)
         ) {
           return basic('#4A90E2', 3);
@@ -53447,7 +53509,7 @@ body.v546-onboarding-levels #levelProgressBar {
   if(typeof startLevel3SideLaneTutorial==='function'){
     const base=startLevel3SideLaneTutorial;
     startLevel3SideLaneTutorial=function(){
-      const bridge=level===3&&v408Level3MasteryStage==='direction_cycle'&&Number(level2DirectionBlocksResolved)>=4&&!fourSidesBridgeShown&&!fourSidesBridgeRunning&&!(typeof firstBarrierRepairTutorialActive!=='undefined'&&firstBarrierRepairTutorialActive);
+      const bridge=level===3&&v408Level3MasteryStage==='direction_cycle'&&Number(level2DirectionBlocksResolved)>=8&&!fourSidesBridgeShown&&!fourSidesBridgeRunning&&!(typeof firstBarrierRepairTutorialActive!=='undefined'&&firstBarrierRepairTutorialActive);
       if(!bridge)return base.apply(this,arguments);
       if(typeof v459TutorialBlockedByScore==='function'&&v459TutorialBlockedByScore())return base.apply(this,arguments);
       fourSidesBridgeRunning=true;gamePaused=true;v625StopFallLoop();
@@ -57657,14 +57719,64 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     }, 0);
   }, true);
 
-  // 11) Diva arrival: use the former Diva->normal cue when a Diva actually enters play.
-  //     The countdown reaching 0 is intentionally silent; it is not an attention-critical event.
-  function v731PlayDivaArrival(block) {
+  // 11) Diva flight sound.
+  //     V798: keep the arrival cue looping while the Diva is actually falling,
+  //     and stop it the instant the Diva lands. Reaching countdown 0 remains silent.
+  let v798DivaFlightAudio = null;
+  let v798DivaFlightBlock = null;
+
+  function v798StopDivaFlightSound() {
+    const audio = v798DivaFlightAudio;
+    v798DivaFlightAudio = null;
+    v798DivaFlightBlock = null;
+    if (!audio) return;
     try {
-      if (block && block.isDiva) {
-        window.bpPlaySfx('divaNormal', { throttleMs: 180 });
-      }
+      audio.loop = false;
+      audio.pause();
+      audio.currentTime = 0;
     } catch (_) {}
+  }
+
+  function v798StartDivaFlightSound(block) {
+    try {
+      if (!block || !block.isDiva) return;
+
+      // Only one formation can be the active falling block, so never stack Diva loops.
+      v798StopDivaFlightSound();
+
+      const src = BP_SFX.divaNormal;
+      if (!src) return;
+      const audio = bpAcquireSfxAudio('divaNormal', src);
+      if (!audio) return;
+
+      v798DivaFlightAudio = audio;
+      v798DivaFlightBlock = block;
+
+      audio.volume = Math.max(0, Math.min(1, Number(BP_SFX_VOLUME.divaNormal ?? .68)));
+      audio.playbackRate = 1;
+      audio.loop = true;
+      try { audio.currentTime = 0; } catch (_) {}
+
+      bpDuckBackgroundForSfx('divaNormal', 650);
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (_) {
+      v798StopDivaFlightSound();
+    }
+  }
+
+  // All four landing directions converge through updateDivaCountdowns immediately
+  // after the landed formation has been written to the field.
+  if (typeof window.updateDivaCountdowns === 'function') {
+    const v798BaseUpdateDivaCountdowns = window.updateDivaCountdowns;
+    window.updateDivaCountdowns = function(...args) {
+      if (v798DivaFlightBlock) v798StopDivaFlightSound();
+      return v798BaseUpdateDivaCountdowns.apply(this, args);
+    };
+  }
+
+  function v731PlayDivaArrival(block) {
+    v798StartDivaFlightSound(block);
   }
 
   if (typeof window.createBlock === 'function') {
@@ -57689,6 +57801,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   if (typeof window.showPartyMissionResult === 'function') {
     const baseMissionResult = window.showPartyMissionResult;
     window.showPartyMissionResult = function(success,...rest) {
+      v798StopDivaFlightSound();
       if (success) playMajorVictory(); else window.bpPlaySfx('partyDown', { throttleMs: 900 });
       return baseMissionResult.call(this,success,...rest);
     };
@@ -57696,6 +57809,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   if (typeof window.showGameOverScreen === 'function') {
     const baseGameOver = window.showGameOverScreen;
     window.showGameOverScreen = function(...args) {
+      v798StopDivaFlightSound();
       window.bpPlaySfx('partyDown', { throttleMs: 900 });
       return baseGameOver.apply(this,args);
     };
@@ -65298,8 +65412,9 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
 
 
-<!-- v698:
-     - no Repair (R) blocks are generated before the Party Barrier has taken its first real damage
+<!-- v698 / corrected by v799:
+     - DURING the first Repair tutorial only, no Repair (R) blocks are generated before the Party Barrier has taken its first real damage
+     - outside that tutorial (including START NEW GAME at level 11+), Repair blocks may spawn immediately
      - the first forced tutorial Repair remains available immediately AFTER that first impact
      - first/second Barrier impact SFX are softer; Drop Block SFX is slightly louder -->
 <script id="v698-repair-gate-after-first-barrier-damage">
@@ -65320,7 +65435,24 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     }
   }
 
+  function v698RepairGateApplies() {
+    // V799: the pre-damage gate is purely an onboarding rule.
+    // A fresh experienced party sets firstBarrierRepairTutorialCompleted=true,
+    // so Repair blocks are allowed from the very first generated set.
+    try {
+      if (typeof firstBarrierRepairTutorialCompleted === 'undefined') return false;
+      return firstBarrierRepairTutorialCompleted !== true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function v698RepairMaySpawn() {
+    // Outside the first Repair tutorial there is NEVER a Barrier prerequisite.
+    if (!v698RepairGateApplies()) return true;
+
+    // During that tutorial, keep the original rule: first real Barrier damage
+    // unlocks Repair generation (including the mandatory tutorial Repair).
     if (v698BarrierDamageSeen) return true;
     if (v698BarrierCurrentlyDamaged()) {
       v698BarrierDamageSeen = true;
@@ -65365,7 +65497,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
   /* Final generation gate. It catches random, DJ-driven and stale forced R blocks.
-     Before first Barrier damage they become an ordinary block of the same color/length. */
+     V799: this stripping is allowed ONLY while the first Repair tutorial is pending.
+     In normal/full-party play a pristine Barrier does not block Repair generation. */
   if (typeof window.generateNextBlock === 'function') {
     const v698BaseGenerateNextBlock = window.generateNextBlock;
     window.generateNextBlock = function() {
@@ -65374,7 +65507,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
         typeof challengeActive !== 'undefined' && challengeActive === true
       );
 
-      // v720: Party Mission 1 (REPAIR RUSH) deliberately forces 30 Repair Blocks.
+      // v720 / V801: Party Mission 1 (REPAIR RUSH) deliberately forces 33 Repair Blocks in a row.
       // The normal pre-first-Barrier-damage safety gate must not strip those mission blocks.
       if (!v720RepairRushActive && !v698RepairMaySpawn() && v698IsRepairBlock(block)) {
         return {
@@ -65386,7 +65519,9 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     };
   }
 
-  /* A complete Barrier reset starts a new undamaged Barrier lifecycle. */
+  /* A complete Barrier reset starts a new undamaged Barrier lifecycle only for
+     the still-pending tutorial gate. Once the Repair tutorial is complete,
+     v698RepairMaySpawn() ignores this flag entirely. */
   if (typeof window.resetBarrierWallStates === 'function') {
     const v698BaseResetBarrier = window.resetBarrierWallStates;
     window.resetBarrierWallStates = function() {
@@ -65400,17 +65535,18 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
 
 
-<!-- v699: NEXT SET Multicolor preview only.
+<!-- v699 / resized by v800: NEXT SET Multicolor preview only.
      The old v685 child cleanup removes transforms from inner preview marks,
      which displaced the Multicolor pie. Keep this one centered and scale it
-     relative to the dynamically resized preview square. -->
+     relative to the dynamically resized preview square.
+     V800 deliberately uses 52%: exactly one third smaller than the former 78%. -->
 <style id="v699-nextset-multicolor-preview-fix">
   #nextBlockDisplay.info-cell #nextBlockPreview > div > .v699-nextset-multicolor-pie {
     position: absolute !important;
     left: 50% !important;
     top: 50% !important;
-    width: 78% !important;
-    height: 78% !important;
+    width: 52% !important;
+    height: 52% !important;
     min-width: 0 !important;
     min-height: 0 !important;
     max-width: none !important;
@@ -67768,6 +67904,86 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v802:
+     Party Mission 1 Repair-cell feedback corrected.
+     - Normally, when a real Repair resource is earned, the REPAIRS cell still
+       performs its existing short glow/scale feedback.
+     - During Party Mission 1 / REPAIR RUSH, cleared R blocks do NOT increase
+       the player's Repair counter (existing mission rule), so the REPAIRS cell
+       must not visually grow/glow either.
+     - R-block flight/gameplay, mission counters and the normal Repair reward
+       animation outside Mission 1 are unchanged. -->
+
+<!-- v801:
+     Party Mission 1 + bottom HUD label refinement.
+     - REPAIR RUSH now forces 33 Repair blocks in a row instead of 30.
+       The mission objective itself remains 30 Repairs within 60 blocks, so
+       the extra 3 forced Repairs are intentional buffer.
+     - The SCORE and LEVEL LABEL text (not the numeric values) is 1.5x larger.
+     - Their label band is moved slightly lower so the larger words keep
+       comfortable clearance from the top border.
+     - A final authoritative style is appended after all older SCORE/LEVEL
+       rules so no earlier HUD rule can override the requested size/position. -->
+
+<!-- v800:
+     Two Multicolor fixes.
+     1) NEXT SET preview: the colored Multicolor pie is one third smaller
+        (78% -> 52% of the preview tile). This affects NEXT SET only, never
+        the falling/landed Multicolor block on the dance floor.
+     2) Using an earned Multicolor no longer turns the next set into another
+        Multicolor. Choosing a color now ONLY changes the color of the actual
+        queued next formation while preserving the formation's already-rolled
+        type/length (ordinary, Repair, Diva, or naturally rolled Multicolor).
+        Therefore its chance to be Multicolor is exactly the same as before
+        the player used the Multicolor resource. Free Picture remains the
+        intentional exception that replaces the next set with its special set. -->
+
+<!-- v799:
+     Repair generation gate corrected to match the intended design.
+     - Waiting for the Party Barrier's first damage applies ONLY while the first Repair tutorial is still pending.
+     - In a normal fresh party / START NEW GAME at level 11+, Repairs may spawn immediately, even with a completely intact Barrier.
+     - Once the first Repair tutorial has been completed, later Barrier resets can never re-enable the pre-damage Repair gate.
+     - Party Mission 1 / Repair Rush exception remains intact.
+     - Normal Repair probability, rewards and Repair usage are otherwise unchanged. -->
+
+<!-- v798:
+     Diva flight sound lifecycle fixed.
+     - The Diva arrival sound now loops for as long as that Diva is the active falling block.
+     - The loop stops immediately when the Diva lands (via the shared Diva landing/countdown path).
+     - Starting another Diva first stops any previous Diva loop, preventing overlap.
+     - Game Over / Party Mission result also stop the Diva loop as a safety fallback.
+     - Sound mute/unmute remains compatible with the existing global audio tracker. -->
+
+<!-- v797:
+     Diva visual countdown cleanup.
+     - A normal Diva that internally starts at 10 now already SHOWS 9 while it is falling.
+     - It therefore no longer visually jumps from 10 to 9 at the moment it lands.
+     - The underlying Diva countdown/gameplay timing is unchanged: this is display-only.
+     - Tutorial/challenge/DJ Diva values other than 10 are left unchanged. -->
+
+<!-- v796:
+     SAVE NOW cooldown reduced from 99 to 60 resolved sets.
+     - The save countdown starts at 60.
+     - After a successful manual save, the cooldown resets to 60.
+     - No popup behavior, artwork, snapshot logic or other gameplay is changed. -->
+
+<!-- v795:
+     Save confirmation image updated.
+     - The SAVE popup no longer uses images/fig22.png.
+     - It now uses the same artwork as the SAVE cell itself: images/fig12.png.
+     - Save behavior, buttons, countdown and snapshot logic are unchanged. -->
+
+<!-- v794:
+     Level 3 onboarding pacing: Extra Space now starts after 8 resolved ordinary
+     direction sets instead of 4.
+     - This gives two full cycles through down/left/up/right before the next concept.
+     - The active v471 direction-cycle threshold is changed from 4 -> 8.
+     - The "GREAT! ALL 4 SIDES!" bridge uses the same 8-set threshold.
+     - NEXT SET only previews the fixed Extra Space demo block when the 8th set is
+       the upcoming transition (7 sets already resolved), instead of after set 3.
+     - Final-practice / Party Goal 3 rules remain unchanged.
+     - No score, HUD, border, timing or other tutorial logic changed. -->
 
 <!-- v793:
      SCORE / LEVEL values moved lower for better visual balance.
@@ -70938,6 +71154,43 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     top: 67% !important;
     height: 28% !important;
     transform: translateY(-50%) !important;
+  }
+</style>
+
+<style id="v801-score-level-labels-150pct-final">
+  /*
+    V801 — FINAL AUTHORITATIVE SCORE / LEVEL LABEL RULE.
+    v742's active label size was clamp(.52rem, 2.15vw, .72rem).
+    This is exactly 1.5x: clamp(.78rem, 3.225vw, 1.08rem).
+
+    The larger labels are also moved down enough to preserve roughly the
+    same visual clearance from the top border. This block is deliberately
+    the final stylesheet in the document so older HUD rules cannot override it.
+  */
+  #v742BottomCoreStats > #scoreDisplay .v685-top,
+  #v742BottomCoreStats > #extraCell1 .v685-top,
+  #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-top,
+  #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-top {
+    top: 15% !important;
+    height: 20% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+
+  #v742BottomCoreStats > #scoreDisplay .v685-title,
+  #v742BottomCoreStats > #extraCell1 .v685-title,
+  #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-title,
+  #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-title {
+    font-size: clamp(.78rem, 3.225vw, 1.08rem) !important;
+    line-height: .95 !important;
+    font-weight: 900 !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
   }
 </style>
 

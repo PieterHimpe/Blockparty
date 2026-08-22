@@ -67868,6 +67868,25 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v777:
+     Small visual alignment fix for REPAIRS / NEXT SET / SCORE / LEVEL.
+     - Their orange/yellow v686 SVG borders stay exactly where they are.
+     - The normal dark fill is now drawn 2px inward, so it can no longer peek
+       outside the rounded orange border on mobile anti-aliasing/pixel rounding.
+     - Cell outer dimensions, border geometry, content positions and gameplay
+       are unchanged.
+     - SCORE celebration, LEVEL progress ring, Party Goal and timing logic are untouched. -->
+
+<!-- v776:
+     SCORE celebration ring aligned visually with PARTY GOAL.
+     - The existing orange v686 SCORE border stays visible as the outer ring.
+     - The moving light/dark colour ring is drawn as a separate INNER ring,
+       above the SCORE content background and above the v686 border layer.
+     - No behind/outer halo geometry: the animated ring is inset inside the
+       existing orange frame, matching the perceived PARTY GOAL treatment.
+     - SCORE value sizing/pulse behavior, Party Goal timing, 400ms cadence,
+       gameplay and all other HUD cells remain unchanged. -->
+
 <!-- v775:
      Automatic block cadence consolidated and hardened against apparent catch-up.
      - Removed the stacked v627, v628 and v630 timing wrappers plus v630/v631 diagnostics.
@@ -70427,6 +70446,101 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
 </style>
 
+
+
+<style id="v776-score-inner-ring-like-party-goal">
+  /*
+    PARTY GOAL reads correctly because its animated ring is a foreground ring
+    inside the already visible frame. SCORE still had its animated pseudo-element
+    below the v686 SVG border (z-index 3 vs v686 z-index 7), which made it read as
+    a second/behind ring.
+
+    Keep the existing v686 SCORE border as the outer orange frame and place the
+    moving colour ring just INSIDE it.
+  */
+  #scoreDisplay.score-party-active::before {
+    inset: 5px !important;
+    border-radius: 7px !important;
+    padding: 3px !important;
+    z-index: 30 !important;
+    filter: none !important;
+    pointer-events: none !important;
+  }
+
+  #scoreDisplay.score-party-hit.score-party-active::before,
+  #scoreDisplay.score-party-active.score-party-hit::before {
+    inset: 5px !important;
+    border-radius: 7px !important;
+    padding: 3px !important;
+    z-index: 30 !important;
+  }
+
+  /*
+    v686 stays the visible OUTER orange frame.
+    Explicitly keep it under the animated inner ring but above the card background.
+  */
+  #scoreDisplay.info-cell > #v686ScoreBorder {
+    z-index: 7 !important;
+  }
+
+  /*
+    Keep SCORE text above both rings. This only affects stacking, never size.
+  */
+  #scoreDisplay.score-party-active .v685-shell,
+  #scoreDisplay.score-party-active #scoreValue {
+    position: relative !important;
+    z-index: 40 !important;
+  }
+</style>
+
+
+<style id="v777-four-core-cells-inner-dark-fill">
+  /*
+    Simple fix: keep the v686 border unchanged and make only the NORMAL dark fill
+    slightly smaller. Use the already-existing .v685-shell as the paint host so
+    no box dimensions or content layout need to change.
+  */
+
+  #livesDisplay.info-cell,
+  #nextBlockDisplay.info-cell,
+  #extraCell1.info-cell,
+  #scoreDisplay.info-cell:not(.score-party-active) {
+    background: transparent !important;
+  }
+
+  #livesDisplay.info-cell > .v685-shell::before,
+  #nextBlockDisplay.info-cell > .v685-shell::before,
+  #extraCell1.info-cell > .v685-shell::before,
+  #scoreDisplay.info-cell:not(.score-party-active) > .v685-shell::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 2px !important;
+    border-radius: 8px !important;
+    background: rgba(0,0,0,.70) !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+  }
+
+  /*
+    Keep all real cell content above the inset fill.
+    This does not alter size or position.
+  */
+  #livesDisplay.info-cell > .v685-shell > *,
+  #nextBlockDisplay.info-cell > .v685-shell > *,
+  #extraCell1.info-cell > .v685-shell > *,
+  #scoreDisplay.info-cell > .v685-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /*
+    SCORE's existing celebration remains authoritative and uses its own background
+    and inner animated ring; never place the normal dark inset over it.
+  */
+  #scoreDisplay.score-party-active > .v685-shell::before {
+    display: none !important;
+  }
+</style>
 
 </body>
 </html>

@@ -67762,6 +67762,18 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v784:
+     SCORE + PARTY GOAL border animation now replaces the normal orange border itself.
+     - No second inner or outer animated ring is visible.
+     - SCORE: while scoring, the normal v686 orange border is temporarily hidden and
+       the moving light/dark group-colour ring occupies EXACTLY that same 4px footprint.
+       When scoring ends, the normal orange border returns.
+     - PARTY GOAL: during progress/complete celebration, the normal 4px orange border
+       becomes transparent and the existing animated ::after ring occupies EXACTLY
+       the same 4px border footprint. When celebration ends, orange returns.
+     - The moving colour pattern, durations and score/Party Goal logic are unchanged.
+     - LEVEL remains non-animated; v782 geometry and v775 movement timing are untouched. -->
+
 <!-- v783:
      Removed the real cause of the orange/yellow rotation centered between SCORE and LEVEL.
      - The lower authoritative Party Goal host still occupies the old wide slot underneath
@@ -70235,168 +70247,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     border-radius: 10px !important;
   }
 </style>
-<style id="v773-score-and-party-goal-celebration-refine">
-  /* ---------------- SCORE ----------------
-     Use the current border area itself, not an extra outer ring.
-  */
-  #scoreDisplay.score-party-active {
-    border-color: transparent !important;
-  }
-
-  #scoreDisplay.score-party-active::before {
-    inset: 0 !important;
-    border-radius: 10px !important;
-    padding: 4px !important;
-    filter: none !important;
-  }
-
-  /* Keep the hit-state on the same geometry too. */
-  #scoreDisplay.score-party-hit.score-party-active::before,
-  #scoreDisplay.score-party-active.score-party-hit::before {
-    inset: 0 !important;
-    border-radius: 10px !important;
-    padding: 4px !important;
-  }
-
-  /* ---------------- PARTY GOAL ----------------
-     Static frame should visually match REPAIRS/NEXT SET.
-     Use a real 4px border (border-box) rather than a visually softer inset shadow.
-  */
-  #v742PartyGoalTop {
-    box-sizing: border-box !important;
-    border: 4px solid var(--v692-hud-border, #e88a2d) !important;
-    border-radius: 10px !important;
-    box-shadow: 0 0 6px var(--v692-hud-border, #e88a2d) !important;
-  }
-
-  /* Keep the festive interior fitted inside the 4px frame. */
-  #v742PartyGoalTop > .v606-party-goal-panel {
-    border-radius: 6px !important;
-  }
-
-  /* Animated ring uses the same thickness as the normal frame. */
-  #v742PartyGoalTop.v767-progress-celebrate::after,
-  #v742PartyGoalTop.v767-complete-celebrate::after {
-    inset: 0 !important;
-    padding: 4px !important;
-    border-radius: 10px !important;
-  }
-
-</style>
-<style id="v778-score-visible-inner-moving-ring">
-  /*
-    Final SCORE celebration geometry.
-    PARTY GOAL is readable because the moving colour ring is shown against a
-    dark card. Do the same for SCORE:
-      fixed orange outer v686 border
-      dark inner card
-      moving colour ring inside that border
-      content above everything
-  */
-
-  #scoreDisplay.score-party-active {
-    position: relative !important;
-    isolation: isolate !important;
-    background: transparent !important;
-    border-color: transparent !important;
-
-    /* Remove V230's hard white outer ring; the v686 orange frame stays authoritative. */
-    box-shadow: none !important;
-  }
-
-  /* Dark celebration card, 2px inward like the v777 normal core-cell fill. */
-  #scoreDisplay.score-party-active::after {
-    content: "" !important;
-    position: absolute !important;
-    inset: 2px !important;
-    border-radius: 8px !important;
-    background: rgba(0,0,0,.70) !important;
-    pointer-events: none !important;
-    z-index: 0 !important;
-  }
-
-  /*
-    Fixed outer SCORE border remains the existing v686 SVG.
-    It is NOT recoloured and does NOT move.
-  */
-  #scoreDisplay.info-cell > #v686ScoreBorder {
-    z-index: 7 !important;
-  }
-
-  /*
-    Moving INNER ring. Re-declare the complete visual + animation here instead
-    of depending on the older v235 geometry.
-  */
-  #scoreDisplay.score-party-active::before {
-    display: block !important;
-    content: "" !important;
-    position: absolute !important;
-    inset: 4px !important;
-    border-radius: 8px !important;
-    padding: 4px !important;
-    pointer-events: none !important;
-    z-index: 30 !important;
-    opacity: 1 !important;
-
-    background: conic-gradient(
-      from var(--v235-score-angle),
-      var(--party-dark, #245486) 0deg 60deg,
-      var(--party-light, #9BC9F2) 60deg 120deg,
-      var(--party-dark, #245486) 120deg 180deg,
-      var(--party-light, #9BC9F2) 180deg 240deg,
-      var(--party-dark, #245486) 240deg 300deg,
-      var(--party-light, #9BC9F2) 300deg 360deg
-    ) !important;
-
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0) !important;
-    -webkit-mask-composite: xor !important;
-            mask-composite: exclude !important;
-
-    filter: none !important;
-    transform: none !important;
-    animation: v235ScoreColorsForward 2450ms linear infinite !important;
-  }
-
-  #scoreDisplay.score-party-active.v235-spin-reverse::before {
-    animation: v235ScoreColorsReverse 2450ms linear infinite !important;
-  }
-
-  /* Arrival hit must not replace or hide the moving ring. */
-  #scoreDisplay.score-party-hit.score-party-active::before,
-  #scoreDisplay.score-party-active.score-party-hit::before {
-    display: block !important;
-    inset: 4px !important;
-    border-radius: 8px !important;
-    padding: 4px !important;
-    z-index: 30 !important;
-    opacity: 1 !important;
-    animation: v235ScoreColorsForward 2450ms linear infinite !important;
-  }
-
-  /* SCORE content stays above dark fill, fixed outer border and moving inner ring. */
-  #scoreDisplay.score-party-active > .v685-shell {
-    position: relative !important;
-    z-index: 40 !important;
-    background: transparent !important;
-  }
-
-  #scoreDisplay.score-party-active #scoreValue,
-  #scoreDisplay.score-party-active .v685-title {
-    position: relative !important;
-    z-index: 41 !important;
-  }
-
-  /*
-    v777 normally excludes active SCORE from its inset-fill pseudo-element.
-    Keep that explicit: v778's parent ::after is the only active dark fill.
-  */
-  #scoreDisplay.score-party-active > .v685-shell::before {
-    display: none !important;
-    content: none !important;
-  }
-</style>
 <style id="v781-score-always-same-level-never-animate">
   /* ============================================================
      SCORE: ALWAYS THE SAME NORMAL SCORING TREATMENT
@@ -70703,6 +70553,128 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     background: none !important;
     box-shadow: none !important;
     filter: none !important;
+  }
+</style>
+
+
+<style id="v784-animate-existing-score-partygoal-border">
+  /* ============================================================
+     SCORE — ANIMATE THE EXISTING ORANGE BORDER FOOTPRINT
+     ============================================================ */
+
+  /*
+    The v686 SVG is the normal 4px orange SCORE border.
+    During the score celebration it is hidden, not left underneath or outside.
+    That guarantees only ONE visible ring.
+  */
+  #scoreDisplay.score-party-active > #v686ScoreBorder,
+  #scoreDisplay.score-party-hit > #v686ScoreBorder {
+    opacity: 0 !important;
+  }
+
+  /*
+    SCORE card itself remains dark. The animated ring replaces the hidden v686
+    border in exactly the same outer geometry: 0px inset, 10px radius, 4px ring.
+  */
+  #scoreDisplay.score-party-active {
+    position: relative !important;
+    isolation: isolate !important;
+    background: rgba(0,0,0,.70) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #scoreDisplay.score-party-active::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  #scoreDisplay.score-party-active::before,
+  #scoreDisplay.score-party-hit.score-party-active::before,
+  #scoreDisplay.score-party-active.score-party-hit::before {
+    display: block !important;
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+    z-index: 30 !important;
+    opacity: 1 !important;
+
+    background: conic-gradient(
+      from var(--v235-score-angle),
+      var(--party-dark, #245486) 0deg 60deg,
+      var(--party-light, #9BC9F2) 60deg 120deg,
+      var(--party-dark, #245486) 120deg 180deg,
+      var(--party-light, #9BC9F2) 180deg 240deg,
+      var(--party-dark, #245486) 240deg 300deg,
+      var(--party-light, #9BC9F2) 300deg 360deg
+    ) !important;
+
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0) !important;
+    -webkit-mask-composite: xor !important;
+            mask-composite: exclude !important;
+
+    filter: none !important;
+    transform: none !important;
+    animation: v235ScoreColorsForward 2450ms linear infinite !important;
+  }
+
+  #scoreDisplay.score-party-active.v235-spin-reverse::before {
+    animation: v235ScoreColorsReverse 2450ms linear infinite !important;
+  }
+
+  /*
+    Keep all SCORE content above the animated replacement border.
+    No font-size or value behavior is changed.
+  */
+  #scoreDisplay.score-party-active > .v685-shell,
+  #scoreDisplay.score-party-active #scoreValue,
+  #scoreDisplay.score-party-active .v685-title {
+    position: relative !important;
+    z-index: 40 !important;
+  }
+
+  /* ============================================================
+     PARTY GOAL — ANIMATE THE EXISTING ORANGE BORDER FOOTPRINT
+     ============================================================ */
+
+  /*
+    Normal state: one real 4px orange border, matching REPAIRS/NEXT SET.
+  */
+  #v742PartyGoalTop {
+    box-sizing: border-box !important;
+    border: 4px solid var(--v692-hud-border, #e88a2d) !important;
+    border-radius: 10px !important;
+    background: var(--v692-hud-bg, rgba(0,0,0,.68)) !important;
+    box-shadow: 0 0 6px var(--v692-hud-border, #e88a2d) !important;
+  }
+
+  #v742PartyGoalTop > .v606-party-goal-panel {
+    border-radius: 6px !important;
+  }
+
+  /*
+    Celebration state: hide only the orange border colour.
+    The existing v767 ::after animation then REPLACES that exact same border.
+    There is no orange border plus animated inner ring anymore.
+  */
+  #v742PartyGoalTop.v767-progress-celebrate,
+  #v742PartyGoalTop.v767-complete-celebrate {
+    border-color: transparent !important;
+  }
+
+  #v742PartyGoalTop.v767-progress-celebrate::after,
+  #v742PartyGoalTop.v767-complete-celebrate::after {
+    inset: 0 !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+    z-index: 30 !important;
   }
 </style>
 

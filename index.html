@@ -1,3 +1,4 @@
+<!-- v741: rebuilt Game Over as PARTY OVER with dynamic score/level records, tutorial-aware CONTINUE PARTY, saved-game resume, new-game restart, and fig107.png mascot art. -->
 <!-- v724: Party Goal start card keeps its sizing class through fade-out, preventing a one-frame giant side-image flash in Android WebView. -->
 <!-- v730: all seven logical game colors keep their legacy IDs for mechanics/saves, but render through one central higher-contrast visual palette across tiles, tutorial trackers, mission-cell tracker, Next Set, Multicolor choices, score flights, Party Goals and the Party Goal start card. -->
 <!-- v723: five-star Party Goal countdown is used before the first goal and between every later goal. The auto-created first level-11 set is ignored so the display starts at five full stars. -->
@@ -31116,16 +31117,28 @@ function startNormalGame() {
   lifeLossPopupActive = false;
   localStorage.removeItem("lifeLossExplained");
 
-  firstBarrierRepairTutorialCompleted = false;
+  // V744: Repair is a tutorial topic only during onboarding.
+  // If a fresh experienced party starts at level 10/11+, do not leave REPAIRS
+  // locked just because the event-driven Repair lesson never happened.
+  const repairLessonNoLongerRequired = newGameStartLevel >= 10;
+
+  firstBarrierRepairTutorialCompleted = repairLessonNoLongerRequired;
   firstBarrierRepairTutorialActive = false;
-  firstBarrierRepairTutorialStage = "idle";
+  firstBarrierRepairTutorialStage = repairLessonNoLongerRequired ? "complete" : "idle";
   firstBarrierRepairTutorialRequiredTargets = [];
   firstBarrierRepairTutorialRewardRegistered = false;
   firstRepairTutorialExclusive = false;
   firstRepairResumeRightDirectionTutorial = false;
   firstRepairResumeSideLaneTutorial = false;
   tutorialQuietBlocksRemaining = 0;
-  localStorage.removeItem(FIRST_BARRIER_REPAIR_TUTORIAL_KEY_V361);
+
+  if (repairLessonNoLongerRequired) {
+    localStorage.setItem(FIRST_BARRIER_REPAIR_TUTORIAL_KEY_V361, "true");
+    localStorage.setItem("featureRepairDiscoveredV552", "true");
+  } else {
+    localStorage.removeItem(FIRST_BARRIER_REPAIR_TUTORIAL_KEY_V361);
+    localStorage.removeItem("featureRepairDiscoveredV552");
+  }
   level3TutorialActive = false;
   level3TutorialColorIndex = 1;
   level3YellowGroupsCleared = 0;
@@ -34320,17 +34333,41 @@ tutorialNextButton.addEventListener("click", function() {
 
 </script>
 
-<!-- GAME OVER OVERLAY -->
-<div id="gameOverOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.95); z-index: 99999; flex-direction: column; justify-content: center; align-items: center;">
-  <img src="images/fig106.png" alt="Game Over" style="max-width: 90vw; max-height: 70vh; border-radius: 16px; box-shadow: 0 0 20px #000;"/>
-  <button onclick="returnToMenu1()" style="margin-top: 20px; background: #e88a2d; color: #FFE680; border: none; padding: 1rem 2rem; border-radius: 12px; font-size: 1.1rem; font-family: 'Baloo Bhaina 2', sans-serif; font-weight: bold; box-shadow: 0 0 10px #e88a2d; cursor: pointer;">
-    BACK TO MENU
-  </button>
+<!-- GAME OVER OVERLAY — v741 -->
+<div id="gameOverOverlay" class="bp741-game-over" aria-hidden="true">
+  <section class="bp741-game-over-card" role="dialog" aria-modal="true" aria-labelledby="bp741GameOverTitle">
+    <div id="bp741GameOverTitle" class="bp741-game-over-title">PARTY OVER!</div>
+    <div id="bp741GameOverReason" class="bp741-game-over-reason">A block escaped through the Party Barrier.</div>
+
+    <img id="bp741GameOverImage" class="bp741-game-over-image" src="images/fig107.png" alt="Five Block Party blocks after the party ends" />
+
+    <div id="bp741TutorialMessage" class="bp741-tutorial-message" hidden>
+      <strong>YOUR PROGRESS IS SAVED.</strong>
+      <span>Jump back in from your latest checkpoint.</span>
+    </div>
+
+    <div id="bp741GameOverStats" class="bp741-game-over-stats">
+      <div class="bp741-stat-card">
+        <span class="bp741-stat-label">SCORE</span>
+        <strong id="bp741GameOverScore" class="bp741-stat-value">0</strong>
+        <span id="bp741GameOverBestScore" class="bp741-stat-best">BEST 0</span>
+      </div>
+      <div class="bp741-stat-card">
+        <span class="bp741-stat-label">LEVEL REACHED</span>
+        <strong id="bp741GameOverLevel" class="bp741-stat-value">1</strong>
+        <span id="bp741GameOverBestLevel" class="bp741-stat-best">BEST 1</span>
+      </div>
+    </div>
+
+    <div id="bp741GameOverRecord" class="bp741-record-badge" hidden>NEW PARTY RECORD!</div>
+
+    <div class="bp741-game-over-actions">
+      <button id="bp741GameOverPrimary" class="bp741-game-over-btn bp741-game-over-primary" type="button"></button>
+      <button id="bp741GameOverSecondary" class="bp741-game-over-btn bp741-game-over-secondary" type="button"></button>
+      <button id="bp741GameOverMenu" class="bp741-game-over-menu" type="button">BACK TO MENU</button>
+    </div>
+  </section>
 </div>
-
-
-
-
 
 <script>
 /* ===== STARTFLOW =====
@@ -50652,7 +50689,7 @@ body.v473-block-d-card #movementTutorialCard {
 </script>
 
 
-<!-- v515: clearer clockwise explanation + REPAIRS locked until first Repair is actually earned. -->
+<!-- v515/v744: clearer clockwise explanation; REPAIRS is locked during onboarding until discovered, but is always available from level 10+. -->
 <script id="v515-clockwise-and-repairs-lock">
 (() => {
   'use strict';
@@ -50691,8 +50728,10 @@ body.v473-block-d-card #movementTutorialCard {
       if (localStorage.getItem(V515_REPAIR_DISCOVERY_KEY) === 'true') return true;
     } catch (_) {}
 
-    // V552: reaching level 10+ by itself does not teach Repair. Keep the cell
-    // locked until a Repair has actually been earned or the first Repair lesson completed.
+    // V744: once onboarding is over, Repair no longer needs a separate lesson.
+    // A player starting/playing level 10+ must always have access to REPAIRS.
+    if (typeof level !== 'undefined' && Number(level) >= 10) return true;
+
     if (typeof repairCount !== 'undefined' && Number(repairCount) > 0) return true;
     if (
       typeof firstBarrierRepairTutorialCompleted !== 'undefined' &&
@@ -67192,6 +67231,1511 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 })();
 </script>
+
+
+<script id="v739-save-fix-barrier-and-level-progress">
+/* V739: fix two concrete resume gaps in post-tutorial saves:
+   1) persistent Party Barrier damage/open segments
+   2) progress inside the current level (bigGroupCount / 0-8 progress)
+   Keep gameplay logic untouched; only save/restore is extended. */
+(function(){
+  const TEST_BARRIER_KEY = 'testBarrierWallStates';
+  const TEST_BIGGROUP_KEY = 'testBigGroupCount';
+
+  function ensureManualKey(key) {
+    if (!Array.isArray(window.MANUAL_PARTY_SAVE_KEYS)) return;
+    if (!window.MANUAL_PARTY_SAVE_KEYS.includes(key)) {
+      window.MANUAL_PARTY_SAVE_KEYS.push(key);
+    }
+  }
+
+  ensureManualKey(TEST_BARRIER_KEY);
+  ensureManualKey(TEST_BIGGROUP_KEY);
+
+  function normalizeBarrierSide(sideArr) {
+    const segmentCount = Math.max(0, Number(window.BARRIER_SEGMENTS_PER_SIDE) || 0);
+    const intact = Number(window.BARRIER_STATE_INTACT) || 2;
+    const damaged = Number(window.BARRIER_STATE_DAMAGED) || 1;
+    const open = Number(window.BARRIER_STATE_OPEN) || 0;
+    const src = Array.isArray(sideArr) ? sideArr : [];
+    const out = [];
+    for (let i = 0; i < segmentCount; i++) {
+      const raw = Number(src[i]);
+      let state = intact;
+      if (raw === open || raw === damaged || raw === intact) state = raw;
+      else if (Number.isFinite(raw)) state = Math.max(open, Math.min(intact, Math.round(raw)));
+      out.push(state);
+    }
+    return out;
+  }
+
+  function captureBarrierSnapshot() {
+    if (typeof window.v418SnapshotBarrierStates === 'function') {
+      return window.v418SnapshotBarrierStates();
+    }
+    const src = window.barrierWallStates || {};
+    return {
+      top: normalizeBarrierSide(src.top),
+      right: normalizeBarrierSide(src.right),
+      bottom: normalizeBarrierSide(src.bottom),
+      left: normalizeBarrierSide(src.left)
+    };
+  }
+
+  function restoreBarrierSnapshot(snapshot) {
+    const normalized = {
+      top: normalizeBarrierSide(snapshot && snapshot.top),
+      right: normalizeBarrierSide(snapshot && snapshot.right),
+      bottom: normalizeBarrierSide(snapshot && snapshot.bottom),
+      left: normalizeBarrierSide(snapshot && snapshot.left)
+    };
+
+    if (typeof window.v418RestoreBarrierStates === 'function') {
+      window.v418RestoreBarrierStates(normalized);
+      return true;
+    }
+
+    if (!window.barrierWallStates) return false;
+    ['top','right','bottom','left'].forEach(side => {
+      if (!Array.isArray(window.barrierWallStates[side])) return;
+      window.barrierWallStates[side].splice(0, window.barrierWallStates[side].length, ...normalized[side]);
+    });
+    return true;
+  }
+
+  function persistExtraResumeState() {
+    try {
+      const groups = Math.max(0, Number(window.bigGroupCount) || 0);
+      localStorage.setItem(TEST_BIGGROUP_KEY, String(groups));
+      localStorage.setItem(TEST_BARRIER_KEY, JSON.stringify(captureBarrierSnapshot()));
+    } catch (error) {
+      console.error('V739 extra save failed:', error);
+    }
+  }
+
+  function restoreExtraResumeState() {
+    // Restore level progress within the current level.
+    const rawBigGroupCount = localStorage.getItem(TEST_BIGGROUP_KEY);
+    window.bigGroupCount = Math.max(0, Number(rawBigGroupCount) || 0);
+
+    // Restore Party Barrier state for post-tutorial games.
+    const rawBarrier = localStorage.getItem(TEST_BARRIER_KEY);
+    if (rawBarrier) {
+      try {
+        const parsed = JSON.parse(rawBarrier);
+        restoreBarrierSnapshot(parsed);
+      } catch (error) {
+        console.error('V739 barrier restore failed:', error);
+        if (typeof window.resetBarrierWallStates === 'function') {
+          window.resetBarrierWallStates();
+        }
+      }
+    } else if (typeof window.resetBarrierWallStates === 'function') {
+      // Older saves had no stored barrier snapshot: resume on a clean intact barrier.
+      window.resetBarrierWallStates();
+    }
+
+    if (typeof window.updateLevelDisplay === 'function') window.updateLevelDisplay();
+    if (typeof window.updateLevelAndBpmDisplay === 'function') window.updateLevelAndBpmDisplay();
+    if (typeof window.drawGrid === 'function') window.drawGrid();
+    if (window.fallingBlock && typeof window.drawFallingBlock === 'function') window.drawFallingBlock();
+  }
+
+  // Extend existing save without touching its current behaviour.
+  if (typeof window.saveTestScore === 'function') {
+    const baseSaveTestScore = window.saveTestScore;
+    window.saveTestScore = function(...args) {
+      const result = baseSaveTestScore.apply(this, args);
+      persistExtraResumeState();
+      return result;
+    };
+  }
+
+  // Extend resume after the legacy loader has rebuilt the regular game state.
+  if (typeof window.continueWithScore === 'function') {
+    const baseContinueWithScore = window.continueWithScore;
+    window.continueWithScore = function(...args) {
+      const result = baseContinueWithScore.apply(this, args);
+      restoreExtraResumeState();
+      return result;
+    };
+  }
+})();
+</script>
+
+
+<script id="v740-party-mission-full-resume">
+/* V740 — post-tutorial Party Mission save/resume, mission by mission.
+   Also makes V739's Barrier + in-level progress fields authoritative in the
+   manual snapshot using the actual global lexical bindings. */
+(function(){
+  'use strict';
+
+  const V740_MISSION_KEY = 'partyMissionRuntimeV740';
+  const V740_BARRIER_KEY = 'testBarrierWallStates';
+  const V740_BIGGROUP_KEY = 'testBigGroupCount';
+
+  // These keys must be part of SAVE NOW's immutable manual snapshot.
+  [V740_MISSION_KEY, V740_BARRIER_KEY, V740_BIGGROUP_KEY].forEach((key) => {
+    if (Array.isArray(MANUAL_PARTY_SAVE_KEYS) && !MANUAL_PARTY_SAVE_KEYS.includes(key)) {
+      MANUAL_PARTY_SAVE_KEYS.push(key);
+    }
+  });
+
+  function v740Bool(v){ return !!v; }
+  function v740Num(v, fallback = 0){
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  function v740NonNeg(v){ return Math.max(0, v740Num(v, 0)); }
+
+  function v740ActiveMissionId(){
+    if (challengeActive) return 1;
+    if (challenge2Active) return 2;
+    if (challenge3Active) return 3;
+    if (challenge4Active) return 4;
+    if (challenge5Active) return 5;
+    if (challenge6Active) return 6;
+    if (challenge7Active) return 7;
+    return 0;
+  }
+
+  function v740SetTemplate(block){
+    if (!block) return null;
+    return {
+      color: block.color || null,
+      length: Math.max(1, Math.min(3, Math.floor(v740Num(block.length, 1)))),
+      isSpecial: !!block.isSpecial,
+      isMulticolor: !!block.isMulticolor,
+      isFreePicture: !!block.isFreePicture,
+      isDiva: !!block.isDiva,
+      divaCountdown: block.divaCountdown == null ? null : v740Num(block.divaCountdown, null),
+      direction: block.direction || null
+    };
+  }
+
+  function v740CapturePassedFlags(){
+    return {
+      p1: !!passedChallenge1, p1c: !!passedChallenge1c,
+      p2: !!passedChallenge2, p2c: !!passedChallenge2c,
+      p3: !!passedChallenge3, p3c: !!passedChallenge3c,
+      p4: !!passedChallenge4, p4c: !!passedChallenge4c,
+      p5: !!passedChallenge5, p5c: !!passedChallenge5c,
+      p6: !!passedChallenge6, p6c: !!passedChallenge6c,
+      p7: !!passedChallenge7, p7c: !!passedChallenge7c
+    };
+  }
+
+  function v740RestorePassedFlags(p){
+    if (!p) return;
+    passedChallenge1=!!p.p1; passedChallenge1c=!!p.p1c;
+    passedChallenge2=!!p.p2; passedChallenge2c=!!p.p2c;
+    passedChallenge3=!!p.p3; passedChallenge3c=!!p.p3c;
+    passedChallenge4=!!p.p4; passedChallenge4c=!!p.p4c;
+    passedChallenge5=!!p.p5; passedChallenge5c=!!p.p5c;
+    passedChallenge6=!!p.p6; passedChallenge6c=!!p.p6c;
+    passedChallenge7=!!p.p7; passedChallenge7c=!!p.p7c;
+
+    localStorage.setItem('passedChallenge1', String(passedChallenge1));
+    localStorage.setItem('passedChallenge2', String(passedChallenge2));
+    localStorage.setItem('passedChallenge3', String(passedChallenge3));
+    localStorage.setItem('passedChallenge4', String(passedChallenge4));
+    localStorage.setItem('passedChallenge5', String(passedChallenge5));
+    localStorage.setItem('passedChallenge6', String(passedChallenge6));
+    localStorage.setItem('passedChallenge7', String(passedChallenge7));
+  }
+
+  function v740CaptureMission(){
+    const id = v740ActiveMissionId();
+    if (!id || Number(level) < 11) return null;
+
+    return {
+      version: 1,
+      savedAt: Date.now(),
+      activeMissionId: id,
+      currentPartyMissionId: Number(currentPartyMissionId) || id,
+      challengeLocked: !!challengeLocked,
+      passed: v740CapturePassedFlags(),
+
+      // The active/next templates are informational continuity for mission-specific
+      // specials. We do NOT restore exact x/y positions; resume remains collision-safe.
+      activeSet: v740SetTemplate(fallingBlock),
+      nextSet: v740SetTemplate(nextBlock),
+      forcedNextSet: v740SetTemplate(typeof forcedNextBlock !== 'undefined' ? forcedNextBlock : null),
+
+      mission1: {
+        active: !!challengeActive,
+        done: !!challenge1Done,
+        repairCount: v740NonNeg(challengeHeartCount),
+        blockCounter: v740NonNeg(challengeBlockCounter),
+        repairOverrideCounter: v740NonNeg(challengeHeartOverrideCounter),
+        preventRepairReward: !!preventHeartReward,
+        rewardGiven: !!challengeRewardGiven,
+        success: !!challenge1Success
+      },
+      mission2: {
+        active: !!challenge2Active,
+        done: !!challenge2Done,
+        multiCount: v740NonNeg(challenge2MultiCount),
+        blockCounter: v740NonNeg(challenge2BlockCounter),
+        pendingMulticolors: v740NonNeg(challenge2PendingMulticolors),
+        rewardGiven: !!challenge2RewardGiven,
+        success: !!challenge2Success,
+        successImageShown: !!challenge2SuccessImageShown
+      },
+      mission3: {
+        active: !!challenge3Active,
+        started: !!challenge3Started,
+        done: !!challenge3Done,
+        failed: !!challenge3Failed,
+        success: !!challenge3Success,
+        count: v740NonNeg(challenge3Count),
+        rewardGiven: !!challenge3RewardGiven
+      },
+      mission4: {
+        active: !!challenge4Active,
+        done: !!challenge4Done,
+        count: v740NonNeg(challenge4Count),
+        fullFieldMoments: v740NonNeg(challenge4FullFieldMoments),
+        success: !!challenge4Success,
+        rewardGiven: !!challenge4RewardGiven
+      },
+      mission5: {
+        active: !!challenge5Active,
+        done: !!challenge5Done,
+        success: !!challenge5Success,
+        blockCounter: v740NonNeg(challenge5BlockCounter),
+        startImageShown: !!challenge5StartImageShown,
+        successImageShown: !!challenge5SuccessImageShown,
+        started: !!challenge5Started,
+        rewardGiven: !!challenge5RewardGiven
+      },
+      mission6: {
+        active: !!challenge6Active,
+        done: !!challenge6Done,
+        success: !!challenge6Success,
+        blockCounter: v740NonNeg(challenge6BlockCounter),
+        sixGroupCount: v740NonNeg(challenge6SixGroupCount),
+        rewardGiven: !!challenge6RewardGiven
+      },
+      mission7: {
+        active: !!challenge7Active,
+        done: !!challenge7Done,
+        success: !!challenge7Success,
+        blockCount: v740NonNeg(challenge7BlockCount),
+        groupCount: v740NonNeg(challenge7GroupCount),
+        rewardGiven: !!challenge7RewardGiven,
+        fallSpeed: Math.max(1, v740Num(fallSpeed, defaultFallSpeed)),
+        fallSpeedBefore: Math.max(1, v740Num(fallSpeedBeforeChallenge7, defaultFallSpeed))
+      }
+    };
+  }
+
+  function v740PersistBarrierAndProgress(){
+    try {
+      localStorage.setItem(V740_BIGGROUP_KEY, String(Math.max(0, Number(bigGroupCount) || 0)));
+      const b = typeof v418SnapshotBarrierStates === 'function'
+        ? v418SnapshotBarrierStates()
+        : {
+            top: barrierWallStates.top.slice(),
+            right: barrierWallStates.right.slice(),
+            bottom: barrierWallStates.bottom.slice(),
+            left: barrierWallStates.left.slice()
+          };
+      localStorage.setItem(V740_BARRIER_KEY, JSON.stringify(b));
+    } catch (e) {
+      console.error('V740 Barrier/progress save failed:', e);
+    }
+  }
+
+  function v740ReadMission(){
+    const raw = localStorage.getItem(V740_MISSION_KEY);
+    if (!raw) return null;
+    try {
+      const s = JSON.parse(raw);
+      const id = Math.floor(Number(s && s.activeMissionId) || 0);
+      if (!s || Number(s.version) !== 1 || id < 1 || id > 7) return null;
+      return s;
+    } catch (e) {
+      console.error('V740 Party Mission snapshot unreadable:', e);
+      return null;
+    }
+  }
+
+  function v740RestoreBarrierAndProgress(){
+    // Correct V739's lexical-global edge case explicitly.
+    const rawGroups = localStorage.getItem(V740_BIGGROUP_KEY);
+    if (rawGroups !== null) bigGroupCount = Math.max(0, Number(rawGroups) || 0);
+
+    const rawBarrier = localStorage.getItem(V740_BARRIER_KEY);
+    if (rawBarrier) {
+      try {
+        const b = JSON.parse(rawBarrier);
+        if (typeof v418RestoreBarrierStates === 'function') {
+          v418RestoreBarrierStates(b);
+        } else {
+          ['top','right','bottom','left'].forEach(side => {
+            if (b && Array.isArray(b[side]) && Array.isArray(barrierWallStates[side])) {
+              barrierWallStates[side].splice(0, barrierWallStates[side].length, ...b[side]);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('V740 Party Barrier restore failed:', e);
+      }
+    }
+  }
+
+  function v740ResetAllMissionRuntime(){
+    challengeActive=false; challenge1Done=false; challengeHeartCount=0; challengeBlockCounter=0;
+    challengeHeartOverrideCounter=0; preventHeartReward=false;
+
+    challenge2Active=false; challenge2Done=false; challenge2MultiCount=0; challenge2BlockCounter=0;
+    challenge2PendingMulticolors=0; challenge2SuccessImageShown=false;
+
+    challenge3Active=false; challenge3Started=false; challenge3Done=false; challenge3Failed=false; challenge3Count=0;
+
+    challenge4Active=false; challenge4Done=false; challenge4Count=0; challenge4FullFieldMoments=0;
+
+    challenge5Active=false; challenge5Done=false; challenge5BlockCounter=0; challenge5StartImageShown=false;
+    challenge5SuccessImageShown=false; challenge5Started=false;
+
+    challenge6Active=false; challenge6Done=false; challenge6BlockCounter=0; challenge6SixGroupCount=0;
+
+    challenge7Active=false; challenge7Done=false; challenge7BlockCount=0; challenge7GroupCount=0;
+  }
+
+  function v740ApplyMissionSnapshot(s){
+    if (!s) return false;
+    const id = Math.floor(Number(s.activeMissionId) || 0);
+    if (id < 1 || id > 7) return false;
+
+    v740ResetAllMissionRuntime();
+    currentPartyMissionId = Number(s.currentPartyMissionId) || id;
+    challengeLocked = !!s.challengeLocked;
+    v740RestorePassedFlags(s.passed || {});
+
+    const m1=s.mission1||{}, m2=s.mission2||{}, m3=s.mission3||{}, m4=s.mission4||{};
+    const m5=s.mission5||{}, m6=s.mission6||{}, m7=s.mission7||{};
+
+    // Mission 1 — Repair Rush: preserve both counters AND remaining forced R blocks.
+    challengeActive = id===1 && !!m1.active;
+    challenge1Done = !!m1.done;
+    challengeHeartCount = v740NonNeg(m1.repairCount);
+    challengeBlockCounter = v740NonNeg(m1.blockCounter);
+    challengeHeartOverrideCounter = v740NonNeg(m1.repairOverrideCounter);
+    preventHeartReward = challengeActive ? !!m1.preventRepairReward : false;
+    challengeRewardGiven = !!m1.rewardGiven;
+    challenge1Success = !!m1.success;
+
+    // Mission 2 — Multicolor: the modulo-3 schedule continues from the restored counter.
+    challenge2Active = id===2 && !!m2.active;
+    challenge2Done = !!m2.done;
+    challenge2MultiCount = v740NonNeg(m2.multiCount);
+    challenge2BlockCounter = v740NonNeg(m2.blockCounter);
+    challenge2PendingMulticolors = v740NonNeg(m2.pendingMulticolors);
+    challenge2RewardGiven = !!m2.rewardGiven;
+    challenge2Success = !!m2.success;
+    challenge2SuccessImageShown = !!m2.successImageShown;
+
+    // Mission 3 — protect the Barrier: Barrier itself is restored separately.
+    challenge3Active = id===3 && !!m3.active;
+    challenge3Started = !!m3.started || challenge3Active;
+    challenge3Done = !!m3.done;
+    challenge3Failed = !!m3.failed;
+    challenge3Success = !!m3.success;
+    challenge3Count = v740NonNeg(m3.count);
+    challenge3RewardGiven = !!m3.rewardGiven;
+
+    // Mission 4 — full-field moments + elapsed block counter.
+    challenge4Active = id===4 && !!m4.active;
+    challenge4Done = !!m4.done;
+    challenge4Count = v740NonNeg(m4.count);
+    challenge4FullFieldMoments = v740NonNeg(m4.fullFieldMoments);
+    challenge4Success = !!m4.success;
+    challenge4RewardGiven = !!m4.rewardGiven;
+
+    // Mission 5 — do NOT reconvert the field. savedField already contains the Diva state.
+    challenge5Active = id===5 && !!m5.active;
+    challenge5Done = !!m5.done;
+    challenge5Success = !!m5.success;
+    challenge5BlockCounter = v740NonNeg(m5.blockCounter);
+    challenge5StartImageShown = !!m5.startImageShown;
+    challenge5SuccessImageShown = !!m5.successImageShown;
+    challenge5Started = !!m5.started || challenge5Active;
+    challenge5RewardGiven = !!m5.rewardGiven;
+
+    // Mission 6 — 6+ groups within the block limit.
+    challenge6Active = id===6 && !!m6.active;
+    challenge6Done = !!m6.done;
+    challenge6Success = !!m6.success;
+    challenge6BlockCounter = v740NonNeg(m6.blockCounter);
+    challenge6SixGroupCount = v740NonNeg(m6.sixGroupCount);
+    challenge6RewardGiven = !!m6.rewardGiven;
+
+    // Mission 7 — group/block counters plus its live accelerated BPM.
+    challenge7Active = id===7 && !!m7.active;
+    challenge7Done = !!m7.done;
+    challenge7Success = !!m7.success;
+    challenge7BlockCount = v740NonNeg(m7.blockCount);
+    challenge7GroupCount = v740NonNeg(m7.groupCount);
+    challenge7RewardGiven = !!m7.rewardGiven;
+    fallSpeedBeforeChallenge7 = Math.max(1, v740Num(m7.fallSpeedBefore, fallSpeedBeforeChallenge7));
+    if (challenge7Active) {
+      fallSpeed = Math.max(1, v740Num(m7.fallSpeed, fallSpeed));
+    }
+
+    // Resume directly in the mission: never replay its start card or Mission 5 field conversion.
+    gamePaused = false;
+    isPaused = false;
+    if (typeof updatePauseDisplay === 'function') updatePauseDisplay();
+
+    if (typeof updateChallengeStatusCell === 'function') updateChallengeStatusCell();
+    if (typeof updateChallenge2StatusCell === 'function') updateChallenge2StatusCell();
+    if (typeof updateChallenge3StatusCell === 'function') updateChallenge3StatusCell();
+    if (typeof updateChallenge4StatusCell === 'function') updateChallenge4StatusCell();
+    if (typeof updateChallenge5StatusCell === 'function') updateChallenge5StatusCell();
+    if (typeof updateChallenge6StatusCell === 'function') updateChallenge6StatusCell();
+    if (typeof updateChallenge7StatusCell === 'function') updateChallenge7StatusCell();
+    if (typeof updateChallengeInfoText === 'function') updateChallengeInfoText();
+    if (typeof updateLevelDisplay === 'function') updateLevelDisplay();
+    if (typeof updateLevelAndBpmDisplay === 'function') updateLevelAndBpmDisplay();
+
+    // Base resume already created a collision-safe falling set. Keep it rather than replaying
+    // a spawn (which would double-increment mission counters). From the next spawn onward,
+    // Mission 1/2 forcing uses the restored counters exactly.
+    if (typeof v625StopFallLoop === 'function') v625StopFallLoop();
+    if (typeof v625StartFallLoop === 'function') fallInterval = v625StartFallLoop(fallSpeed);
+    if (typeof drawGrid === 'function') drawGrid();
+    if (fallingBlock && typeof drawFallingBlock === 'function') drawFallingBlock();
+
+    return true;
+  }
+
+  // Capture mission state BEFORE legacy saveTestScore mutates passedChallengeX from the level number.
+  const v740BaseSaveTestScore = saveTestScore;
+  saveTestScore = function(){
+    const missionSnapshot = v740CaptureMission();
+    const passedBefore = missionSnapshot ? missionSnapshot.passed : null;
+
+    const result = v740BaseSaveTestScore.apply(this, arguments);
+
+    v740PersistBarrierAndProgress();
+    try {
+      if (missionSnapshot) {
+        localStorage.setItem(V740_MISSION_KEY, JSON.stringify(missionSnapshot));
+        // An active mission is reached, not passed. Undo the legacy level-based mutation.
+        v740RestorePassedFlags(passedBefore);
+      } else {
+        localStorage.removeItem(V740_MISSION_KEY);
+      }
+    } catch (e) {
+      console.error('V740 Party Mission save failed:', e);
+    }
+    return result;
+  };
+
+  // Restore AFTER the existing loader has reset all challenge runtime values.
+  const v740BaseContinueWithScore = continueWithScore;
+  continueWithScore = function(){
+    const missionSnapshot = v740ReadMission();
+    const result = v740BaseContinueWithScore.apply(this, arguments);
+
+    v740RestoreBarrierAndProgress();
+    if (missionSnapshot) v740ApplyMissionSnapshot(missionSnapshot);
+
+    return result;
+  };
+})();
+</script>
+
+
+<!-- ===== v741 PARTY OVER / GAME OVER EXPERIENCE ===== -->
+<style id="v741-game-over-style">
+  #gameOverOverlay.bp741-game-over {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1100000;
+    box-sizing: border-box;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    background:
+      radial-gradient(circle at 50% 22%, rgba(232,138,45,.20), transparent 38%),
+      rgba(8,6,5,.94);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    font-family: 'Baloo Bhaina 2', sans-serif;
+  }
+
+  #gameOverOverlay .bp741-game-over-card {
+    width: min(92vw, 460px);
+    box-sizing: border-box;
+    padding: 17px 16px 15px;
+    border: 3px solid #e88a2d;
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(53,39,27,.98), rgba(28,20,15,.99));
+    box-shadow: 0 0 28px rgba(232,138,45,.35), 0 18px 50px rgba(0,0,0,.55);
+    text-align: center;
+    color: #FFE680;
+  }
+
+  #gameOverOverlay .bp741-game-over-title {
+    margin-top: 1px;
+    color: #f4c644;
+    font-size: clamp(1.85rem, 8.6vw, 2.75rem);
+    font-weight: 900;
+    line-height: .98;
+    letter-spacing: .015em;
+    text-shadow: 0 3px 0 #6f3510, 0 0 16px rgba(232,138,45,.38);
+  }
+
+  #gameOverOverlay .bp741-game-over-reason {
+    margin: 8px auto 10px;
+    max-width: 360px;
+    color: #fff2c9;
+    font-size: clamp(.82rem, 3.5vw, 1rem);
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  #gameOverOverlay .bp741-game-over-image {
+    display: block;
+    width: 100%;
+    max-height: 112px;
+    margin: 0 auto 11px;
+    object-fit: cover;
+    object-position: center;
+    border: 2px solid rgba(232,138,45,.72);
+    border-radius: 16px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,.28), 0 5px 16px rgba(0,0,0,.30);
+  }
+
+  #gameOverOverlay .bp741-tutorial-message {
+    display: grid;
+    gap: 1px;
+    margin: 2px 0 12px;
+    padding: 10px 12px 8px;
+    border: 2px solid rgba(244,198,68,.72);
+    border-radius: 14px;
+    background: rgba(244,198,68,.09);
+    color: #fff2c9;
+    line-height: 1.08;
+  }
+  #gameOverOverlay .bp741-tutorial-message[hidden] { display: none !important; }
+  #gameOverOverlay .bp741-tutorial-message strong {
+    color: #f4c644;
+    font-size: .98rem;
+    letter-spacing: .03em;
+  }
+  #gameOverOverlay .bp741-tutorial-message span { font-size: .78rem; }
+
+  #gameOverOverlay .bp741-game-over-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin: 2px 0 9px;
+  }
+  #gameOverOverlay .bp741-game-over-stats[hidden] { display: none !important; }
+
+  #gameOverOverlay .bp741-stat-card {
+    min-width: 0;
+    padding: 9px 7px 7px;
+    border: 2px solid #e88a2d;
+    border-radius: 15px;
+    background: rgba(8,6,5,.48);
+  }
+  #gameOverOverlay .bp741-stat-label,
+  #gameOverOverlay .bp741-stat-best {
+    display: block;
+    color: #f4c644;
+    font-weight: 800;
+    line-height: 1;
+  }
+  #gameOverOverlay .bp741-stat-label { font-size: clamp(.68rem, 2.9vw, .84rem); }
+  #gameOverOverlay .bp741-stat-value {
+    display: block;
+    margin: 4px 0 1px;
+    color: #fff8dc;
+    font-size: clamp(1.75rem, 8vw, 2.45rem);
+    font-weight: 900;
+    line-height: .95;
+    text-shadow: 0 2px 0 #5b351b;
+    font-variant-numeric: tabular-nums;
+  }
+  #gameOverOverlay .bp741-stat-best {
+    color: #d9bd66;
+    font-size: clamp(.58rem, 2.5vw, .72rem);
+  }
+
+  #gameOverOverlay .bp741-record-badge {
+    width: fit-content;
+    margin: 0 auto 9px;
+    padding: 5px 12px 3px;
+    border-radius: 999px;
+    background: #f4c644;
+    color: #3b210d;
+    font-size: .78rem;
+    font-weight: 900;
+    line-height: 1.15;
+    box-shadow: 0 0 14px rgba(244,198,68,.35);
+  }
+  #gameOverOverlay .bp741-record-badge[hidden] { display: none !important; }
+
+  #gameOverOverlay .bp741-game-over-actions {
+    display: grid;
+    gap: 7px;
+  }
+
+  #gameOverOverlay .bp741-game-over-btn,
+  #gameOverOverlay .bp741-game-over-menu {
+    width: 100%;
+    min-height: 49px;
+    box-sizing: border-box;
+    border-radius: 14px;
+    font-family: 'Baloo Bhaina 2', sans-serif;
+    font-weight: 900;
+    line-height: 1.02;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  #gameOverOverlay .bp741-game-over-primary {
+    border: 3px solid #f4c644;
+    background: linear-gradient(180deg, #ffb833, #e88a2d);
+    color: #2f1c0e;
+    font-size: clamp(.94rem, 4vw, 1.1rem);
+    box-shadow: 0 0 15px rgba(232,138,45,.42);
+  }
+
+  #gameOverOverlay .bp741-game-over-secondary {
+    border: 2px solid #e88a2d;
+    background: rgba(232,138,45,.11);
+    color: #FFE680;
+    font-size: clamp(.86rem, 3.7vw, 1rem);
+  }
+
+  #gameOverOverlay .bp741-game-over-menu {
+    min-height: 36px;
+    border: 0;
+    background: transparent;
+    color: #c9ad67;
+    font-size: .74rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  #gameOverOverlay .bp741-game-over-btn[hidden] { display: none !important; }
+
+  @media (max-height: 690px) {
+    #gameOverOverlay .bp741-game-over-card { padding-top: 11px; padding-bottom: 10px; }
+    #gameOverOverlay .bp741-game-over-image { max-height: 86px; margin-bottom: 8px; }
+    #gameOverOverlay .bp741-game-over-title { font-size: 1.75rem; }
+    #gameOverOverlay .bp741-game-over-reason { margin: 5px auto 7px; }
+    #gameOverOverlay .bp741-game-over-btn { min-height: 43px; }
+  }
+</style>
+
+<script id="v741-game-over-script">
+(() => {
+  'use strict';
+
+  let runBestScoreAtStart = Number(localStorage.getItem('allTimeHighScore') || 0) || 0;
+  let runBestLevelAtStart = Number(localStorage.getItem('allTimeHighestLevel') || 0) || 0;
+
+  function captureRunBaselines() {
+    runBestScoreAtStart = Number(localStorage.getItem('allTimeHighScore') || 0) || 0;
+    runBestLevelAtStart = Number(localStorage.getItem('allTimeHighestLevel') || 0) || 0;
+  }
+
+  // Every explicit game-start/resume choice marks the baseline for record detection.
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target.closest(
+      '#firstUseStartButton, #continueTutorialButton, #startPartyButton, #resumeSavedGameButton'
+    ) : null;
+    if (target) captureRunBaselines();
+  }, true);
+
+  function setButton(button, { label = '', sub = '', hidden = false, action = null } = {}) {
+    if (!button) return;
+    button.hidden = !!hidden;
+    button.onclick = null;
+    if (hidden) return;
+
+    button.innerHTML = sub
+      ? `<span style="display:block">${label}</span><span style="display:block;font-size:.68em;font-weight:800;opacity:.82;margin-top:2px">${sub}</span>`
+      : label;
+    if (typeof action === 'function') button.onclick = action;
+  }
+
+  function hideGameOver() {
+    const overlay = document.getElementById('gameOverOverlay');
+    if (!overlay) return;
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  function continueOnboarding() {
+    hideGameOver();
+    captureRunBaselines();
+    if (typeof firstUseGameStarted !== 'undefined') firstUseGameStarted = false;
+
+    if (typeof continueTutorialProgress === 'function') {
+      continueTutorialProgress();
+      return;
+    }
+
+    // Safety fallback for very old checkpoints.
+    if (typeof resumeTutorialCheckpoint === 'function' && typeof getSavedTutorialLevel === 'function') {
+      resumeTutorialCheckpoint(getSavedTutorialLevel());
+    }
+  }
+
+  function restartOnboarding() {
+    hideGameOver();
+    captureRunBaselines();
+    if (typeof firstUseGameStarted !== 'undefined') firstUseGameStarted = false;
+    if (typeof startTutorialFromBeginning === 'function') startTutorialFromBeginning();
+  }
+
+  function continueSavedParty() {
+    hideGameOver();
+    captureRunBaselines();
+    if (typeof firstUseGameStarted !== 'undefined') firstUseGameStarted = false;
+
+    if (typeof restoreManualPartySnapshot === 'function' && restoreManualPartySnapshot()) {
+      if (typeof continueWithScore === 'function') continueWithScore();
+      return;
+    }
+
+    // Save disappeared/corrupted between render and click: return to the normal menu.
+    if (typeof returnToMenu1 === 'function') returnToMenu1();
+  }
+
+  function startNewParty() {
+    hideGameOver();
+    captureRunBaselines();
+    if (typeof firstUseGameStarted !== 'undefined') firstUseGameStarted = false;
+
+    if (typeof startFreshPartyAtLevel11 === 'function') {
+      startFreshPartyAtLevel11();
+      return;
+    }
+
+    if (typeof requestedNewGameStartLevel !== 'undefined' && typeof EXPERIENCED_PLAYER_START_LEVEL !== 'undefined') {
+      requestedNewGameStartLevel = EXPERIENCED_PLAYER_START_LEVEL;
+    }
+    if (typeof startNormalGame === 'function') startNormalGame();
+  }
+
+  function renderGameOver() {
+    const overlay = document.getElementById('gameOverOverlay');
+    if (!overlay) return;
+
+    const completed = typeof hasEverCompletedTutorial === 'function'
+      ? hasEverCompletedTutorial()
+      : Number(level || 1) >= 11;
+    const onboarding = !completed;
+    const onboardingProgress = onboarding && (
+      typeof v468HasOnboardingProgress === 'function'
+        ? v468HasOnboardingProgress()
+        : Number(localStorage.getItem('tutorialLevelV3') || 1) > 1
+    );
+    const savedPartyAvailable = completed && typeof hasSavedParty === 'function' && hasSavedParty();
+
+    const currentScore = Math.max(0, Number(typeof score !== 'undefined' ? score : 0) || 0);
+    const currentLevel = Math.max(1, Math.floor(Number(typeof level !== 'undefined' ? level : 1) || 1));
+    const storedBestScore = Number(localStorage.getItem('allTimeHighScore') || 0) || 0;
+    const storedBestLevel = Number(localStorage.getItem('allTimeHighestLevel') || 0) || 0;
+    const bestScore = Math.max(storedBestScore, currentScore);
+    const bestLevel = Math.max(storedBestLevel, currentLevel);
+
+    // Keep records safe even when the performance layer has not flushed idle storage yet.
+    if (bestScore > storedBestScore) localStorage.setItem('allTimeHighScore', String(bestScore));
+    if (bestLevel > storedBestLevel) localStorage.setItem('allTimeHighestLevel', String(bestLevel));
+
+    const fatalBarrierEscape = !!(
+      typeof fallingBlock !== 'undefined' && fallingBlock &&
+      (fallingBlock._fatalBarrierWallSide || (fallingBlock._fatalBarrierIndices && fallingBlock._fatalBarrierIndices.length))
+    );
+
+    const reason = document.getElementById('bp741GameOverReason');
+    if (reason) {
+      reason.textContent = fatalBarrierEscape
+        ? 'A block escaped through the Party Barrier.'
+        : 'The party couldn’t continue.';
+    }
+
+    const tutorialMessage = document.getElementById('bp741TutorialMessage');
+    const stats = document.getElementById('bp741GameOverStats');
+    if (tutorialMessage) tutorialMessage.hidden = !onboarding;
+    if (stats) stats.hidden = onboarding;
+
+    const scoreEl = document.getElementById('bp741GameOverScore');
+    const levelEl = document.getElementById('bp741GameOverLevel');
+    const bestScoreEl = document.getElementById('bp741GameOverBestScore');
+    const bestLevelEl = document.getElementById('bp741GameOverBestLevel');
+    if (scoreEl) scoreEl.textContent = currentScore.toLocaleString('en-US');
+    if (levelEl) levelEl.textContent = String(currentLevel);
+    if (bestScoreEl) bestScoreEl.textContent = `BEST ${bestScore.toLocaleString('en-US')}`;
+    if (bestLevelEl) bestLevelEl.textContent = `BEST ${bestLevel}`;
+
+    const record = document.getElementById('bp741GameOverRecord');
+    if (record) {
+      const newScoreRecord = !onboarding && currentScore > runBestScoreAtStart;
+      const newLevelRecord = !onboarding && currentLevel > runBestLevelAtStart;
+      record.hidden = !(newScoreRecord || newLevelRecord);
+      record.textContent = newScoreRecord ? 'NEW PARTY RECORD!' : 'NEW HIGHEST LEVEL!';
+    }
+
+    const primary = document.getElementById('bp741GameOverPrimary');
+    const secondary = document.getElementById('bp741GameOverSecondary');
+
+    if (onboarding) {
+      if (tutorialMessage) {
+        tutorialMessage.querySelector('strong').textContent = onboardingProgress
+          ? 'YOUR PROGRESS IS SAVED.'
+          : 'READY TO TRY AGAIN?';
+        tutorialMessage.querySelector('span').textContent = onboardingProgress
+          ? 'Jump back in from your latest checkpoint.'
+          : 'Restart the discovery from the beginning.';
+      }
+
+      setButton(primary, onboardingProgress
+        ? { label: 'CONTINUE PARTY', sub: 'Continue from your latest checkpoint', action: continueOnboarding }
+        : { label: 'START GAME', sub: 'Restart from level 1', action: restartOnboarding }
+      );
+      setButton(secondary, { hidden: true });
+    } else if (savedPartyAvailable) {
+      setButton(primary, {
+        label: 'CONTINUE SAVED GAME',
+        sub: 'Return to your last save',
+        action: continueSavedParty
+      });
+      setButton(secondary, {
+        label: 'START NEW GAME',
+        sub: 'Start again from level 11',
+        action: startNewParty
+      });
+    } else {
+      setButton(primary, {
+        label: 'START NEW GAME',
+        sub: 'Start again from level 11',
+        action: startNewParty
+      });
+      setButton(secondary, { hidden: true });
+    }
+
+    const menuButton = document.getElementById('bp741GameOverMenu');
+    if (menuButton) {
+      menuButton.onclick = () => {
+        hideGameOver();
+        if (typeof returnToMenu1 === 'function') returnToMenu1();
+      };
+    }
+
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+
+  // Replace the old image-only overlay while preserving every existing caller.
+  showGameOverScreen = function() {
+    if (typeof gamePaused !== 'undefined') gamePaused = true;
+    if (typeof v625StopFallLoop === 'function') v625StopFallLoop();
+    renderGameOver();
+  };
+
+  window.bp741ShowGameOverScreen = renderGameOver;
+})();
+</script>
+
+
+<!-- v745:
+     SCORE and LEVEL remain perfectly symmetrical in the lower HUD.
+     Their numeric typography is reduced so 3-digit values have comfortable
+     breathing room; SCORE still shrinks further automatically at 4+ digits.
+     No geometry, score-flight targeting, level-border animation or gameplay changed. -->
+
+<!-- v744:
+     - Restores the original post-tutorial Party Goal recipe colors in the TOP mirrored Party Goal:
+       each of the five circles again uses the requested block color; completed targets are filled.
+     - Fresh experienced games at level 11 no longer keep REPAIRS locked when the Repair lesson
+       did not happen during levels 1-10. Repair is considered discovered once onboarding is over.
+     - No gameplay/scoring/level-border logic changed. -->
+
+<!-- v743: lower authoritative Party Goal host is now truly state-only: its panel is display:none so older hard-visibility rules cannot bleed through behind SCORE/LEVEL; bottom SCORE/LEVEL anchoring uses that exact host geometry. -->
+
+<!-- v742:
+     HUD hierarchy refinement.
+     - PARTY GOAL moves from the lower control stack to the two former SCORE/LEVEL positions in the upper HUD.
+     - SCORE and LEVEL remain two distinct live cells and move together into the former lower PARTY GOAL slot.
+     - The actual SCORE and LEVEL DOM nodes are moved, not cloned, so score-flight targeting and the segmented LEVEL border keep working unchanged.
+     - The original lower Party Goal host stays in the DOM, hidden but live, so all existing Party Goal state/progress logic remains authoritative.
+     - A mirrored, non-clickable Party Goal view is rendered in the upper HUD.
+     - Bottom geometry is taken from the existing Party Goal slot, so arrow and Drop hit areas are not reduced or moved. -->
+<style id="v742-party-goal-top-score-level-bottom-style">
+  /* ===== Upper HUD ===== */
+  #v742PartyGoalTop {
+    grid-column: 2 / span 2 !important;
+    grid-row: 1 / span 2 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    cursor: default !important;
+    pointer-events: none !important;
+    border: 2px solid var(--v692-hud-border, #e88a2d) !important;
+    border-radius: 10px !important;
+    background: rgba(0,0,0,.68) !important;
+    box-shadow: 0 0 6px var(--v692-hud-border, #e88a2d) !important;
+  }
+
+  /* Repairs + Next Set remain directly below the Party Goal. */
+  #livesDisplay {
+    grid-column: 2 !important;
+    grid-row: 3 / span 2 !important;
+  }
+  #nextBlockDisplay {
+    grid-column: 3 !important;
+    grid-row: 3 / span 2 !important;
+  }
+
+  /* SCORE + LEVEL no longer participate in the top grid after JS reparents them. */
+  .info-container > #scoreDisplay,
+  .info-container > #extraCell1 {
+    display: none !important;
+  }
+
+  /* ===== Top Party Goal mirror ===== */
+  #v742PartyGoalTop > .v606-party-goal-panel {
+    position: relative !important;
+    isolation: isolate !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    padding: 4px 54px 3px !important;
+    overflow: hidden !important;
+    color: #f4c644 !important;
+    background:
+      linear-gradient(120deg, rgba(37,25,23,.97), rgba(73,45,29,.95), rgba(40,27,27,.97)) !important;
+  }
+
+  #v742PartyGoalTop > .v606-party-goal-panel::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    opacity: .92 !important;
+    pointer-events: none !important;
+    background:
+      radial-gradient(circle at 9% 22%, rgba(255,207,101,.22) 0 2px, transparent 2.2px),
+      radial-gradient(circle at 22% 73%, rgba(232,138,45,.20) 0 1.7px, transparent 1.9px),
+      radial-gradient(circle at 72% 18%, rgba(93,216,199,.16) 0 1.9px, transparent 2.1px),
+      radial-gradient(circle at 88% 69%, rgba(255,187,94,.18) 0 1.5px, transparent 1.8px),
+      linear-gradient(32deg, transparent 0 47%, rgba(255,196,83,.14) 47% 53%, transparent 53% 100%);
+  }
+
+  #v742PartyGoalTop .v606-party-goal-label {
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.70rem, 2.8vw, .94rem) !important;
+    line-height: 1 !important;
+    font-weight: 1000 !important;
+    letter-spacing: .025em !important;
+    color: #f4c644 !important;
+    margin: 0 0 1px !important;
+    white-space: nowrap !important;
+  }
+
+  #v742PartyGoalTop .v606-party-goal-sub {
+    min-height: 0 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.48rem, 1.9vw, .66rem) !important;
+    line-height: 1 !important;
+    font-weight: 850 !important;
+    color: rgba(255,230,128,.88) !important;
+    margin: 0 0 3px !important;
+    white-space: nowrap !important;
+  }
+
+  #v742PartyGoalTop .v606-party-goal-dots {
+    width: 100% !important;
+    min-height: 17px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(4px, 1.2vw, 7px) !important;
+  }
+
+  #v742PartyGoalTop .v606-party-goal-dot,
+  #v742PartyGoalTop .v606-party-goal-panel[data-total="6"] .v606-party-goal-dot,
+  #v742PartyGoalTop .v606-party-goal-panel[data-total="7"] .v606-party-goal-dot {
+    width: clamp(15px, 4.2vw, 20px) !important;
+    height: clamp(15px, 4.2vw, 20px) !important;
+    min-width: clamp(15px, 4.2vw, 20px) !important;
+    min-height: clamp(15px, 4.2vw, 20px) !important;
+    max-width: clamp(15px, 4.2vw, 20px) !important;
+    max-height: clamp(15px, 4.2vw, 20px) !important;
+    flex: 0 0 clamp(15px, 4.2vw, 20px) !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    border-width: 1.6px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #v742PartyGoalTop .v606-party-goal-panel[data-total="7"] .v606-party-goal-dots {
+    gap: clamp(2px, .7vw, 4px) !important;
+  }
+
+
+  /* V744: the original V619 recipe-color rules were scoped only to the old
+     lower .button-wrapper host. The top Party Goal is a mirror outside that
+     host, so explicitly reproduce the same visual rules here. */
+  #v742PartyGoalTop .v606-party-goal-dot.v619-color-target {
+    background: rgba(24,17,20,.88) !important;
+    border-color: var(--v730-goal-display-color, var(--v619-goal-color)) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.07),
+      0 0 4px var(--v730-goal-display-color, var(--v619-goal-color)) !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  #v742PartyGoalTop .v606-party-goal-dot.v619-color-target.done {
+    background: var(--v730-goal-display-color, var(--v619-goal-color)) !important;
+    border-color: rgba(255,244,210,.92) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.34),
+      0 0 7px var(--v730-goal-display-color, var(--v619-goal-color)) !important;
+  }
+
+  #v742PartyGoalTop .v606-party-goal-dot.v619-color-target.v614-new-dot {
+    animation: v614NewDotPop 520ms cubic-bezier(.18,.89,.32,1.28) 1 !important;
+  }
+
+  #v742PartyGoalTop .v619-color-target.v634-last-target {
+    animation: v634LastTarget 1.05s ease-in-out infinite !important;
+    transform-origin: center !important;
+  }
+
+  #v742PartyGoalTop .v614-party-goal-image {
+    position: absolute !important;
+    top: 50% !important;
+    width: clamp(31px, 8vw, 42px) !important;
+    height: clamp(31px, 8vw, 42px) !important;
+    transform: translateY(-50%) !important;
+    border-radius: 8px !important;
+    z-index: 12 !important;
+  }
+  #v742PartyGoalTop .v614-party-goal-image.v615-left  { left: 8px !important; right: auto !important; }
+  #v742PartyGoalTop .v614-party-goal-image.v615-right { right: 8px !important; left: auto !important; }
+  #v742PartyGoalTop .v614-party-goal-image img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    object-fit: contain !important;
+    transform: none !important;
+  }
+
+  /* Mirror the existing "one more" / complete emphasis without adding permanent movement. */
+  #v742PartyGoalTop.v614-one-more {
+    box-shadow: 0 0 8px #e88a2d, 0 0 15px rgba(255,205,86,.34) !important;
+  }
+  #v742PartyGoalTop.v614-complete,
+  #v742PartyGoalTop.v606-goal-hit,
+  #v742PartyGoalTop.v606-new-goal {
+    animation: v742TopGoalHit 560ms cubic-bezier(.2,.85,.25,1) 1 !important;
+  }
+  @keyframes v742TopGoalHit {
+    0%,100% { transform: scale(1); }
+    42% { transform: scale(1.025); }
+    72% { transform: scale(.994); }
+  }
+
+  /* ===== Preserve the old lower slot as geometry/state only =====
+     V743: keep the host in the layout, but hide the authoritative Party Goal
+     panel itself. Older V607/V614 rules explicitly force that panel back to
+     visibility:visible, which caused it to show faintly behind SCORE/LEVEL. */
+  .button-wrapper .reset-btn.v606-party-goal-host {
+    visibility: visible !important;
+    pointer-events: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    color: transparent !important;
+  }
+
+  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel,
+  .button-wrapper .reset-btn.v606-party-goal-host > img,
+  .button-wrapper .reset-btn.v606-party-goal-host > .tutorial-color-tracker {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* ===== Actual SCORE + LEVEL cells, moved into that exact freed slot ===== */
+  #v742BottomCoreStats {
+    position: fixed !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 7px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    z-index: 2000 !important;
+    pointer-events: none !important;
+  }
+
+  #v742BottomCoreStats > #scoreDisplay {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+  #v742BottomCoreStats > #extraCell1 {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  #v742BottomCoreStats > #scoreDisplay,
+  #v742BottomCoreStats > #extraCell1 {
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+    background: var(--v692-hud-bg, rgba(0,0,0,.68)) !important;
+    cursor: default !important;
+    pointer-events: none !important;
+  }
+
+  #v742BottomCoreStats .v685-shell {
+    grid-template-rows: 43% 57% !important;
+  }
+  #v742BottomCoreStats .v685-top {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2px 1px 0 !important;
+  }
+  #v742BottomCoreStats .v685-title {
+    font-size: clamp(.52rem, 2.15vw, .72rem) !important;
+    line-height: .95 !important;
+    transform: none !important;
+  }
+  #v742BottomCoreStats .v685-bottom {
+    padding: 0 2px 3px !important;
+  }
+
+  #v742BottomCoreStats #scoreValue,
+  #v742BottomCoreStats #levelDisplayExtra {
+    font-size: clamp(1.22rem, 5.5vw, 1.72rem) !important;
+    line-height: .9 !important;
+    transform: none !important;
+  }
+
+  #v742BottomCoreStats #extraCell1 #levelStatusValues,
+  #v742BottomCoreStats #extraCell1 #levelStatusValues > div:first-child {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Keep the existing segmented SVG borders fully visible in the smaller cards. */
+  #v742BottomCoreStats .v686-border-overlay {
+    inset: 1px !important;
+    width: calc(100% - 2px) !important;
+    height: calc(100% - 2px) !important;
+  }
+
+  /* These are information cards, not touch targets. */
+  #v742BottomCoreStats .info-cell:active {
+    transform: none !important;
+  }
+
+  /* Repair modal still visually de-emphasizes the moved passive information. */
+  body.barrier-repair-mode #v742BottomCoreStats {
+    opacity: .42 !important;
+  }
+
+  @media (max-width: 390px) {
+    #v742PartyGoalTop > .v606-party-goal-panel {
+      padding-left: 44px !important;
+      padding-right: 44px !important;
+    }
+    #v742PartyGoalTop .v614-party-goal-image {
+      width: 29px !important;
+      height: 29px !important;
+    }
+    #v742BottomCoreStats {
+      gap: 5px !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #v742PartyGoalTop.v614-complete,
+    #v742PartyGoalTop.v606-goal-hit,
+    #v742PartyGoalTop.v606-new-goal {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script id="v742-party-goal-top-score-level-bottom-runtime">
+(() => {
+  'use strict';
+
+  const SYNC_HOST_CLASSES = [
+    'v614-one-more',
+    'v614-complete',
+    'v606-goal-hit',
+    'v606-new-goal',
+    'v634-first-goal-intro',
+    'v634-one-left',
+    'v634-complete-payoff',
+    'v643-party-progress-pop'
+  ];
+
+  let topHost = null;
+  let bottomStats = null;
+  let sourceHost = null;
+  let sourcePanel = null;
+  let panelObserver = null;
+  let hostObserver = null;
+  let placementRaf = 0;
+
+  function ensureTopHost() {
+    if (topHost && topHost.isConnected) return topHost;
+    const hud = document.querySelector('.info-container');
+    if (!hud) return null;
+
+    topHost = document.getElementById('v742PartyGoalTop');
+    if (!topHost) {
+      topHost = document.createElement('div');
+      topHost.id = 'v742PartyGoalTop';
+      topHost.className = 'info-cell v742-party-goal-top';
+      topHost.setAttribute('aria-label', 'Party Goal');
+      topHost.innerHTML = `
+        <div class="v606-party-goal-panel" data-total="0">
+          <div class="v606-party-goal-label">PARTY GOAL</div>
+          <div class="v606-party-goal-sub">SOON</div>
+          <div class="v606-party-goal-dots" aria-label="Party Goal progress"></div>
+        </div>`;
+      hud.appendChild(topHost);
+    }
+    return topHost;
+  }
+
+  function ensureBottomStats() {
+    if (bottomStats && bottomStats.isConnected) return bottomStats;
+
+    bottomStats = document.getElementById('v742BottomCoreStats');
+    if (!bottomStats) {
+      bottomStats = document.createElement('div');
+      bottomStats.id = 'v742BottomCoreStats';
+      bottomStats.setAttribute('aria-label', 'Current score and level');
+      document.body.appendChild(bottomStats);
+    }
+
+    const scoreCell = document.getElementById('scoreDisplay');
+    const levelCell = document.getElementById('extraCell1');
+
+    /* Move the real nodes: every existing getElementById target, score flight,
+       score pulse and segmented level-progress border keeps pointing here. */
+    if (scoreCell && scoreCell.parentElement !== bottomStats) bottomStats.appendChild(scoreCell);
+    if (levelCell && levelCell.parentElement !== bottomStats) bottomStats.appendChild(levelCell);
+
+    return bottomStats;
+  }
+
+  function visibleGoalPlaceholder() {
+    /* V743: anchor SCORE/LEVEL to the real former Party Goal host itself.
+       Its content is hidden, but its geometry remains authoritative. */
+    const found = findSourceGoal();
+    const preferred = found && found.host;
+    if (preferred) {
+      const r = preferred.getBoundingClientRect();
+      const cs = getComputedStyle(preferred);
+      if (r.width > 8 && r.height > 8 && cs.display !== 'none') return preferred;
+    }
+
+    const candidates = Array.from(document.querySelectorAll('.button-wrapper .reset-btn'));
+    return candidates.find((el) => {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return r.width > 8 && r.height > 8 && cs.display !== 'none';
+    }) || null;
+  }
+
+  function placeBottomStats() {
+    placementRaf = 0;
+    const holder = ensureBottomStats();
+    const placeholder = visibleGoalPlaceholder();
+    if (!holder || !placeholder) return;
+
+    const r = placeholder.getBoundingClientRect();
+    holder.style.left = `${r.left}px`;
+    holder.style.top = `${r.top}px`;
+    holder.style.width = `${r.width}px`;
+    holder.style.height = `${r.height}px`;
+  }
+
+  function schedulePlacement() {
+    if (placementRaf) return;
+    placementRaf = requestAnimationFrame(placeBottomStats);
+  }
+
+  function findSourceGoal() {
+    const hosts = Array.from(document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host'));
+    for (const host of hosts) {
+      const panel = host.querySelector(':scope > .v606-party-goal-panel');
+      if (panel) return { host, panel };
+    }
+    return null;
+  }
+
+  function syncTopGoal() {
+    const target = ensureTopHost();
+    if (!target) return;
+
+    const found = findSourceGoal();
+    if (!found) return;
+
+    sourceHost = found.host;
+    sourcePanel = found.panel;
+
+    let targetPanel = target.querySelector(':scope > .v606-party-goal-panel');
+    if (!targetPanel) {
+      targetPanel = document.createElement('div');
+      targetPanel.className = 'v606-party-goal-panel';
+      target.appendChild(targetPanel);
+    }
+
+    /* Copy the already-rendered authoritative Party Goal state. */
+    if (targetPanel.innerHTML !== sourcePanel.innerHTML) {
+      targetPanel.innerHTML = sourcePanel.innerHTML;
+    }
+    targetPanel.dataset.total = sourcePanel.dataset.total || '0';
+
+    SYNC_HOST_CLASSES.forEach((cls) => {
+      target.classList.toggle(cls, sourceHost.classList.contains(cls));
+    });
+
+    const progressAccent = sourceHost.style.getPropertyValue('--v643-party-accent');
+    if (progressAccent) {
+      target.style.setProperty('--v643-party-accent', progressAccent);
+    } else {
+      target.style.removeProperty('--v643-party-accent');
+    }
+  }
+
+  function bindGoalObservers() {
+    const found = findSourceGoal();
+    if (!found) {
+      setTimeout(bindGoalObservers, 120);
+      return;
+    }
+
+    sourceHost = found.host;
+    sourcePanel = found.panel;
+
+    if (panelObserver) panelObserver.disconnect();
+    if (hostObserver) hostObserver.disconnect();
+
+    panelObserver = new MutationObserver(() => {
+      syncTopGoal();
+      schedulePlacement();
+    });
+    panelObserver.observe(sourcePanel, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      characterData: true
+    });
+
+    hostObserver = new MutationObserver(() => syncTopGoal());
+    hostObserver.observe(sourceHost, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    syncTopGoal();
+  }
+
+  function keepRealCellsInBottomSlot() {
+    ensureBottomStats();
+    schedulePlacement();
+  }
+
+  ensureTopHost();
+  ensureBottomStats();
+  bindGoalObservers();
+  schedulePlacement();
+
+  /* Some earlier HUD scripts rebuild contents asynchronously, but not the outer nodes.
+     Reasserting the parent at low frequency makes the layout robust against future wrappers. */
+  setInterval(() => {
+    keepRealCellsInBottomSlot();
+    syncTopGoal();
+  }, 500);
+
+  window.addEventListener('resize', schedulePlacement, { passive: true });
+  window.addEventListener('orientationchange', () => setTimeout(schedulePlacement, 180), { passive: true });
+
+  if (typeof ResizeObserver === 'function') {
+    const ro = new ResizeObserver(schedulePlacement);
+    document.querySelectorAll('.button-wrapper').forEach((wrapper) => ro.observe(wrapper));
+  }
+
+  /* Public lightweight hook for test builds. */
+  window.v742RefreshHudLayout = () => {
+    ensureTopHost();
+    ensureBottomStats();
+    syncTopGoal();
+    schedulePlacement();
+  };
+})();
+</script>
+
+
+<style id="v745-bottom-score-level-number-sizing">
+  /*
+    Keep SCORE and LEVEL visually equal.
+    0-999 SCORE uses exactly the same size as LEVEL.
+    1000+ SCORE may still use the existing automatic shrink logic.
+  */
+  :root {
+    --v745-core-number-size: clamp(1.18rem, 4.75vw, 1.52rem);
+
+    --v697-score-size-3: var(--v745-core-number-size);
+    --v697-score-size-4: clamp(1.06rem, 4.10vw, 1.30rem);
+    --v697-score-size-5: clamp(.96rem, 3.55vw, 1.13rem);
+    --v697-score-size-6: clamp(.88rem, 3.10vw, 1.00rem);
+  }
+
+  #v742BottomCoreStats #scoreValue,
+  #v742BottomCoreStats #levelDisplayExtra {
+    font-size: var(--v745-core-number-size) !important;
+    line-height: .90 !important;
+    white-space: nowrap !important;
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+  }
+</style>
 
 </body>
 </html>

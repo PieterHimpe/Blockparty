@@ -71253,6 +71253,21 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </style>
 
 
+<!-- v813:
+     Party Goal takeover refinement, still built ONLY on v812/v807 Party Goal code.
+     - Large takeover now clones the ACTUAL current Party Goal panel DOM, so it is
+       literally the same current cell content/state, only enlarged.
+     - The feedback line is then temporarily replaced by GOOD JOB!,
+       ONLY ONE MORE TO GO!, or PARTY GOAL COMPLETE!.
+     - The unreliable 3x flicker is no longer relied upon.
+     - The newly earned circle is visibly emphasized for the ENTIRE takeover:
+       ~1.4x larger, bright white/gold double ring, strong glow; all other circles
+       are slightly dimmed. This remains obvious even when mobile animation frames
+       are dropped or reduced-motion settings are active.
+     - On completion all five remain filled; the fifth/newest keeps the highlight
+       and +100 POINTS WON is shown.
+     - No start/menu/intro code is touched. -->
+
 <!-- v812:
      CLEAN PARTY GOAL TAKEOVER rebuilt directly from the user-supplied v807.
      IMPORTANT SCOPE:
@@ -71467,30 +71482,43 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
   /*
-    EXACTLY THREE flashes: one full dim->bright cycle per animation iteration,
-    repeated 3 times.
+    V813: persistent highlight instead of relying on rapid flicker.
+    This is deliberately visible for the complete takeover lifetime.
   */
-  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned {
-    animation: v812EarnedCircleFlash 330ms ease-in-out 3 !important;
-    transform-origin: center center !important;
+  #v812PartyGoalTakeover .v606-party-goal-dot {
+    transition: none !important;
   }
 
-  @keyframes v812EarnedCircleFlash {
-    0% {
-      opacity: 1;
-      transform: scale(1);
-      filter: brightness(1) saturate(1);
-    }
-    48% {
-      opacity: .14;
-      transform: scale(.82);
-      filter: brightness(.62) saturate(.78);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1.16);
-      filter: brightness(1.45) saturate(1.22);
-    }
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-not-new {
+    opacity: .64 !important;
+    filter: brightness(.84) saturate(.90) !important;
+    transform: scale(.92) !important;
+  }
+
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned {
+    z-index: 8 !important;
+    opacity: 1 !important;
+    transform: scale(1.42) !important;
+    filter: brightness(1.22) saturate(1.14) !important;
+    border: 3px solid #ffffff !important;
+    box-shadow:
+      0 0 0 4px rgba(255,214,88,.96),
+      0 0 18px 7px color-mix(
+        in srgb,
+        var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) 70%,
+        white 30%
+      ),
+      inset 0 0 0 2px rgba(255,255,255,.34) !important;
+  }
+
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: -9px !important;
+    border-radius: 50% !important;
+    border: 2px solid rgba(255,255,255,.72) !important;
+    box-shadow: 0 0 13px rgba(255,255,255,.34) !important;
+    pointer-events: none !important;
   }
 
   /* Much larger flanking figures for the larger version of the cell. */
@@ -71551,11 +71579,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned {
-      animation: none !important;
-    }
-  }
 </style>
 
 <script id="v812-party-goal-takeover-runtime">
@@ -71835,40 +71858,89 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       ? 'PARTY GOAL COMPLETE!'
       : (remaining === 1 ? 'ONLY ONE MORE TO GO!' : 'GOOD JOB!');
 
-    const dotsHtml = recipe.map((color, index) => {
-      const classes = [
-        'v606-party-goal-dot',
-        'v619-color-target'
-      ];
+    /*
+      V813: clone the ACTUAL current Party Goal panel instead of rebuilding
+      a lookalike. This keeps the same five target circles, classes, colors,
+      side figures and all current state exactly in sync with the small cell.
+    */
+    const clonedPanel = panel.cloneNode(true);
+    clonedPanel.classList.add('v812-panel');
+    clonedPanel.dataset.total = String(total);
 
-      if (completed[index]) classes.push('done');
-      if (index === earnedIndex) classes.push('v812-newly-earned');
+    const clonedLabel = clonedPanel.querySelector('.v606-party-goal-label');
+    const clonedSub = clonedPanel.querySelector('.v606-party-goal-sub');
+    const clonedDotsHost = clonedPanel.querySelector('.v606-party-goal-dots');
 
-      return (
-        '<span class="' + classes.join(' ') + '"' +
-        ' style="--v619-goal-color:' + color + ';--v730-goal-display-color:' + color + '"' +
-        ' aria-label="' + (completed[index] ? 'completed' : 'still needed') + '">' +
-        '</span>'
+    if (clonedLabel) clonedLabel.textContent = 'PARTY GOAL';
+    if (clonedSub) clonedSub.textContent = feedbackText;
+
+    /*
+      Re-assert authoritative completion data on the cloned dots.
+      We keep each existing dot's actual target-color variables from the real cell.
+    */
+    let clonedDots = Array.from(
+      clonedDotsHost?.querySelectorAll('.v606-party-goal-dot.v619-color-target') || []
+    );
+
+    /*
+      Safety fallback only: if the source mirror is temporarily one render behind,
+      create only the missing target circles from authoritative recipe data.
+    */
+    if (clonedDotsHost && clonedDots.length !== total) {
+      clonedDotsHost.innerHTML = '';
+      recipe.forEach((color) => {
+        const dot = document.createElement('span');
+        dot.className = 'v606-party-goal-dot v619-color-target';
+        dot.style.setProperty('--v619-goal-color', color);
+        dot.style.setProperty('--v730-goal-display-color', color);
+        clonedDotsHost.appendChild(dot);
+      });
+      clonedDots = Array.from(
+        clonedDotsHost.querySelectorAll('.v606-party-goal-dot.v619-color-target')
       );
-    }).join('');
+    }
 
-    const rewardHtml = complete
-      ? '<div class="v812-reward">+' + (Number(reward) || 100) + ' POINTS WON</div>'
-      : '';
+    clonedDots.forEach((dot, index) => {
+      dot.classList.remove(
+        'v614-new-dot',
+        'v614-next-dot',
+        'v812-newly-earned',
+        'v812-not-new'
+      );
 
-    overlay.innerHTML =
-      '<div class="v812-shell">' +
-        '<div class="v812-panel v606-party-goal-panel" data-total="' + total + '">' +
-          '<div class="v606-party-goal-label">PARTY GOAL</div>' +
-          '<div class="v606-party-goal-sub">' + feedbackText + '</div>' +
-          '<div class="v606-party-goal-dots" aria-label="' + current + ' of ' + total + ' matched">' +
-            dotsHtml +
-          '</div>' +
-          rewardHtml +
-          cloneSideImage(panel, 'v615-left') +
-          cloneSideImage(panel, 'v615-right') +
-        '</div>' +
-      '</div>';
+      dot.classList.toggle('done', !!completed[index]);
+
+      if (index === earnedIndex) {
+        dot.classList.add('v812-newly-earned');
+      } else {
+        dot.classList.add('v812-not-new');
+      }
+    });
+
+    /* Remove any transient confetti layer copied from the small live panel. */
+    clonedPanel.querySelectorAll('.v614-party-goal-confetti').forEach(node => node.remove());
+
+    const rewardNode = clonedPanel.querySelector('.v812-reward');
+    if (rewardNode) rewardNode.remove();
+
+    if (complete) {
+      const rewardEl = document.createElement('div');
+      rewardEl.className = 'v812-reward';
+      rewardEl.textContent = `+${Number(reward) || 100} POINTS WON`;
+
+      const dotsEl = clonedPanel.querySelector('.v606-party-goal-dots');
+      if (dotsEl && dotsEl.parentElement) {
+        dotsEl.insertAdjacentElement('afterend', rewardEl);
+      } else {
+        clonedPanel.appendChild(rewardEl);
+      }
+    }
+
+    overlay.innerHTML = '';
+    const shell = document.createElement('div');
+    shell.className = 'v812-shell';
+    shell.appendChild(clonedPanel);
+    overlay.appendChild(shell);
 
     overlay.style.setProperty('--v812-earned-color', earnedColor);
 

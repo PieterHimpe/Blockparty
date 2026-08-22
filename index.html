@@ -67762,6 +67762,17 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v790:
+     SCORE and LEVEL bottom HUD positioning refined after visual review.
+     - Removed the v788 "true geometric center" approach.
+     - SCORE and LEVEL now use fixed visual anchor positions:
+         * title in a compact top band
+         * number on a fixed shared visual-center line lower in the card
+     - This matches the perceived good position during score gain better than a pure 50% center.
+     - SCORE and LEVEL use exactly the same anchor line.
+     - SCORE pulse/hit animations remain; LEVEL still has no animation.
+     - REPAIRS, locked orange borders, Party Goal and gameplay logic are unchanged. -->
+
 <!-- v789:
      Locked REPAIRS / NEXT SET now keep their full orange border visible.
      - The central cells use the v686 SVG border instead of a normal CSS border.
@@ -70772,132 +70783,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     transform-origin: center center !important;
   }
 </style>
-
-
-<style id="v788-score-level-fixed-true-center">
-  /*
-    SCORE + LEVEL:
-    title positioning and number positioning are now independent.
-    The numeric layer spans the FULL card, so its center is always the real
-    center of the cell in both normal and animated SCORE states.
-  */
-
-  #v742BottomCoreStats > #scoreDisplay .v685-shell,
-  #v742BottomCoreStats > #extraCell1 .v685-shell {
-    position: relative !important;
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Keep SCORE / LEVEL titles independently anchored at the top. */
-  #v742BottomCoreStats > #scoreDisplay .v685-top,
-  #v742BottomCoreStats > #extraCell1 .v685-top {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    height: 41% !important;
-    min-height: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 1px 1px 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    z-index: 45 !important;
-    pointer-events: none !important;
-  }
-
-  /*
-    The value layer is no longer a "bottom row".
-    It is an overlay covering the whole card, centered at exactly 50% / 50%.
-  */
-  #v742BottomCoreStats > #scoreDisplay .v685-bottom,
-  #v742BottomCoreStats > #extraCell1 .v685-bottom {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    transform: none !important;
-    z-index: 42 !important;
-    pointer-events: none !important;
-  }
-
-  /* SCORE value itself occupies the full overlay and centers its text. */
-  #v742BottomCoreStats > #scoreDisplay #scoreValue {
-    position: relative !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    text-align: center !important;
-  }
-
-  /*
-    LEVEL has two legacy wrappers. Make both full-size centering layers so the
-    numeral lands on the exact same center as SCORE.
-  */
-  #v742BottomCoreStats > #extraCell1 #levelStatusValues,
-  #v742BottomCoreStats > #extraCell1 #levelStatusValues > div:first-child {
-    position: relative !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  #v742BottomCoreStats > #extraCell1 #levelDisplayExtra {
-    position: relative !important;
-    width: 100% !important;
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    text-align: center !important;
-    transform: none !important;
-  }
-
-  /*
-    Explicitly preserve exactly the same geometry while SCORE is pulsing/hit.
-    Only the existing scale animation is allowed to change; vertical position
-    stays locked because the value starts at the card's true center.
-  */
-  #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-bottom,
-  #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-bottom {
-    inset: 0 !important;
-    transform: none !important;
-  }
-</style>
-
-
 <style id="v789-locked-core-orange-border">
   /*
     REPAIRS + NEXT SET use an SVG border. Generic .feature-locked > * rules dim
@@ -70928,6 +70813,97 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   #livesDisplay.info-cell.feature-locked,
   #nextBlockDisplay.info-cell.feature-locked {
     border: 0 !important;
+  }
+</style>
+
+
+<style id="v790-score-level-visual-center">
+  /*
+    SCORE + LEVEL bottom cards:
+    use a visual center, not a strict mathematical full-card center.
+    This keeps the number where it looks right in the scoring state too.
+  */
+  #v742BottomCoreStats > #scoreDisplay .v685-shell,
+  #v742BottomCoreStats > #extraCell1 .v685-shell {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Compact title band near the top */
+  #v742BottomCoreStats > #scoreDisplay .v685-top,
+  #v742BottomCoreStats > #extraCell1 .v685-top {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 7% !important;
+    height: 22% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    z-index: 45 !important;
+    pointer-events: none !important;
+  }
+
+  /*
+    Shared value line for SCORE + LEVEL.
+    The value box is anchored visually slightly below the true middle.
+  */
+  #v742BottomCoreStats > #scoreDisplay .v685-bottom,
+  #v742BottomCoreStats > #extraCell1 .v685-bottom {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 58% !important;
+    height: 34% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    transform: translateY(-50%) !important;
+    z-index: 42 !important;
+    pointer-events: none !important;
+  }
+
+  #v742BottomCoreStats > #scoreDisplay #scoreValue,
+  #v742BottomCoreStats > #extraCell1 #levelDisplayExtra {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-align: center !important;
+    transform: none !important;
+  }
+
+  /* Keep LEVEL's wrapper chain from introducing extra vertical bias */
+  #v742BottomCoreStats > #extraCell1 #levelStatusValues,
+  #v742BottomCoreStats > #extraCell1 #levelStatusValues > div:first-child {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Preserve the same placement while SCORE is animating */
+  #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-bottom,
+  #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-bottom {
+    top: 58% !important;
+    transform: translateY(-50%) !important;
   }
 </style>
 

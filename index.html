@@ -64619,10 +64619,9 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     --v689-big-number-size: 2.10rem;
   }
 
-  /* Force the 3 big values to the same visual system. */
-  #livesText,
-  #scoreValue,
-  #levelDisplayExtra {
+  /* V807: this legacy pass may only own the REPAIRS counter.
+     SCORE and LEVEL are owned exclusively by the later v807 authority. */
+  #livesText {
     font-size: var(--v689-big-number-size) !important;
     line-height: .88 !important;
     font-weight: 900 !important;
@@ -64682,7 +64681,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   'use strict';
 
   function v689NormalizeNumbers() {
-    ['livesText', 'scoreValue', 'levelDisplayExtra'].forEach(id => {
+    // V807: never rewrite SCORE/LEVEL from this old HUD normalizer.
+    ['livesText'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.style.fontSize = 'var(--v689-big-number-size)';
@@ -64784,10 +64784,9 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     --v690-big-number-size: 2.22rem;
   }
 
-  /* Use selectors that are at least as specific as the old conflicting rules. */
-  #scoreDisplay.info-cell #scoreValue,
-  #livesDisplay.info-cell #livesText,
-  #extraCell1.info-cell #levelStatusValues #levelDisplayExtra {
+  /* V807: this old cleanup may only style the REPAIRS value.
+     It must never be able to revive the obsolete 2.22rem SCORE/LEVEL size. */
+  #livesDisplay.info-cell #livesText {
     font-size: var(--v690-big-number-size) !important;
     line-height: 0.9 !important;
     font-weight: 900 !important;
@@ -64836,9 +64835,9 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
   function v690NormalizeNumbers() {
     const map = [
-      ['livesText', '#livesDisplay.info-cell #livesText'],
-      ['scoreValue', '#scoreDisplay.info-cell #scoreValue'],
-      ['levelDisplayExtra', '#extraCell1.info-cell #levelStatusValues #levelDisplayExtra']
+      // V807: SCORE/LEVEL intentionally excluded. This function is triggered by
+      // Repair and NEXT SET refreshes and used to be the exact source of the jump.
+      ['livesText', '#livesDisplay.info-cell #livesText']
     ];
 
     map.forEach(([id]) => {
@@ -65324,7 +65323,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const digitCount = rawText.replace(/[^0-9]/g, '').length || rawText.length || 1;
     scoreValue.style.setProperty('font-size', v697ChooseScoreSize(digitCount), 'important');
 
-    /* v704: 0-999 must stay exactly the same size as LEVEL (2.22rem).
+    /* v807: 0-999 stays exactly the same canonical size as LEVEL.
        Only 4+ digit scores are allowed to shrink further to fit the cell. */
     if (digitCount <= 3) return;
 
@@ -67893,6 +67892,47 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v808:
+     Party Goal progress spotlight corrected.
+     Problem in v803/v805:
+     - the top takeover had the correct PAUSE-sized geometry,
+       but did NOT show an enlarged version of the actual PARTY GOAL cell.
+     - it showed a custom disc/copy card instead.
+     Requested behavior:
+     - when 1 Party Goal color is earned (level 11+, not tutorial),
+       show the WHOLE PARTY GOAL cell enlarged in the full top PAUSE space;
+     - keep the same card concept: label + message line + 5 goal discs + two side figures;
+     - flash the newly earned colored disc 3 times;
+     - message line becomes GOOD JOB! or ONLY ONE MORE TO GO! in the earned color;
+     - on the 5th disc, show PARTY GOAL HIT! and +100 POINTS WON in the enlarged card;
+       the old separate completion balloon remains suppressed.
+     Implementation:
+     - keep the v805 top-overlay geometry;
+     - wrap the already-installed v803 onProgress/onComplete once more,
+       immediately replacing its custom content with a large cloned PARTY GOAL card;
+     - style the cloned card explicitly inside #v803GoalSpotlight so it behaves like
+       a big version of the real cell instead of a different widget. -->
+
+<!-- v807:
+     SCORE / LEVEL digit-size race fixed after full audit.
+     Root cause found:
+     - old v689/v690 HUD normalizers still rewrote SCORE and LEVEL after
+       updateLivesDisplay and updateNextBlockDisplay;
+     - v690 specifically wrote inline !important font-size: 2.22rem;
+     - Repair use calls updateLivesDisplay, and Multicolor use rebuilds NEXT SET,
+       so both could revive that obsolete large value;
+     - v750 then mirrored the wrongly enlarged SCORE size into LEVEL.
+     Fix:
+     - v689/v690 no longer touch SCORE or LEVEL at all; they may only normalize
+       the REPAIRS counter that those old passes were originally still useful for.
+     - one final v807 authority owns SCORE/LEVEL digit sizing and reasserts it after
+       every relevant HUD/resource update.
+     - style/class mutation protection corrects any future stale inline write.
+     - 0-999 SCORE and LEVEL remain exactly equal at the intended v745 size;
+       4+ digit SCORE keeps the existing shrink-to-fit behavior, mirrored to LEVEL.
+     - SCORE/LEVEL label sizing/placement from v801 and value placement from v793
+       are unchanged. -->
 
 <!-- v806:
      Multicolor USE behavior corrected precisely.
@@ -71716,6 +71756,594 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
   window.addEventListener('pageshow', v803HideOverlay);
+})();
+</script>
+
+
+<style id="v807-score-level-digits-single-authority-final">
+  /*
+    V807 FINAL AUTHORITY.
+    These selectors intentionally beat all historical stylesheet selectors.
+    Runtime inline !important sizing below remains the final source of truth.
+  */
+  :root {
+    --v807-core-number-size: clamp(1.18rem, 4.75vw, 1.52rem);
+    --v807-score-size-4: clamp(1.06rem, 4.10vw, 1.30rem);
+    --v807-score-size-5: clamp(.96rem, 3.55vw, 1.13rem);
+    --v807-score-size-6: clamp(.88rem, 3.10vw, 1.00rem);
+  }
+
+  #v742BottomCoreStats > #scoreDisplay.info-cell #scoreValue,
+  #v742BottomCoreStats > #extraCell1.info-cell #levelStatusValues #levelDisplayExtra {
+    line-height: .90 !important;
+    font-weight: 900 !important;
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+    letter-spacing: -0.02em !important;
+    transition: none !important;
+  }
+
+  #v742BottomCoreStats > #scoreDisplay.info-cell #scoreValue.v747-score-3,
+  #v742BottomCoreStats > #extraCell1.info-cell #levelStatusValues #levelDisplayExtra {
+    font-size: var(--v807-core-number-size) !important;
+  }
+
+  #v742BottomCoreStats > #scoreDisplay.info-cell #scoreValue.v747-score-4 {
+    font-size: var(--v807-score-size-4) !important;
+  }
+  #v742BottomCoreStats > #scoreDisplay.info-cell #scoreValue.v747-score-5 {
+    font-size: var(--v807-score-size-5) !important;
+  }
+  #v742BottomCoreStats > #scoreDisplay.info-cell #scoreValue.v747-score-6 {
+    font-size: var(--v807-score-size-6) !important;
+  }
+</style>
+
+<script id="v807-score-level-digits-single-authority-runtime">
+(() => {
+  'use strict';
+
+  let v807Applying = false;
+  let v807Raf = 0;
+  let v807Timers = [];
+  let v807Observer = null;
+
+  function v807DigitCount(node) {
+    const raw = String(node?.textContent || '').trim();
+    return raw.replace(/[^0-9]/g, '').length || raw.length || 1;
+  }
+
+  function v807ClassForDigits(digits) {
+    if (digits <= 3) return 'v747-score-3';
+    if (digits === 4) return 'v747-score-4';
+    if (digits === 5) return 'v747-score-5';
+    return 'v747-score-6';
+  }
+
+  function v807BaseSizeForDigits(digits) {
+    if (digits <= 3) return 'var(--v807-core-number-size)';
+    if (digits === 4) return 'var(--v807-score-size-4)';
+    if (digits === 5) return 'var(--v807-score-size-5)';
+    return 'var(--v807-score-size-6)';
+  }
+
+  function v807SetImportantIfDifferent(el, property, value) {
+    if (!el) return false;
+    const currentValue = String(el.style.getPropertyValue(property) || '').trim();
+    const currentPriority = String(el.style.getPropertyPriority(property) || '').trim();
+    if (currentValue === value && currentPriority === 'important') return false;
+    el.style.setProperty(property, value, 'important');
+    return true;
+  }
+
+  function v807SetScoreClass(scoreValue, digits) {
+    if (!scoreValue) return;
+    const wanted = v807ClassForDigits(digits);
+    const all = ['v747-score-3','v747-score-4','v747-score-5','v747-score-6'];
+    let changed = false;
+    all.forEach(cls => {
+      if (cls !== wanted && scoreValue.classList.contains(cls)) {
+        scoreValue.classList.remove(cls);
+        changed = true;
+      }
+    });
+    if (!scoreValue.classList.contains(wanted)) {
+      scoreValue.classList.add(wanted);
+      changed = true;
+    }
+    return changed;
+  }
+
+  function v807ApplyCanonicalSizing() {
+    if (v807Applying) return;
+    const scoreCell = document.getElementById('scoreDisplay');
+    const scoreValue = document.getElementById('scoreValue');
+    const levelValue = document.getElementById('levelDisplayExtra');
+    if (!scoreCell || !scoreValue || !levelValue) return;
+
+    v807Applying = true;
+    try {
+      const digits = v807DigitCount(scoreValue);
+      v807SetScoreClass(scoreValue, digits);
+
+      const baseSize = v807BaseSizeForDigits(digits);
+      v807SetImportantIfDifferent(scoreValue, 'font-size', baseSize);
+
+      if (digits <= 3) {
+        // The stable intended state: SCORE and LEVEL are exactly identical.
+        v807SetImportantIfDifferent(levelValue, 'font-size', 'var(--v807-core-number-size)');
+        return;
+      }
+
+      // Preserve the established 4+ digit shrink-to-fit behavior.
+      requestAnimationFrame(() => {
+        if (!scoreValue.isConnected || !levelValue.isConnected) return;
+        v807Applying = true;
+        try {
+          let px = parseFloat(getComputedStyle(scoreValue).fontSize || '16');
+          const maxWidth = Math.max(10, Math.floor(scoreCell.clientWidth * 0.88));
+
+          while (scoreValue.scrollWidth > maxWidth && px > 14) {
+            px -= 1;
+          }
+
+          const finalPx = px + 'px';
+          v807SetImportantIfDifferent(scoreValue, 'font-size', finalPx);
+          v807SetImportantIfDifferent(levelValue, 'font-size', finalPx);
+        } finally {
+          v807Applying = false;
+        }
+      });
+    } finally {
+      v807Applying = false;
+    }
+  }
+
+  function v807ScheduleCanonicalSizing() {
+    if (v807Raf) cancelAnimationFrame(v807Raf);
+    v807Raf = requestAnimationFrame(() => {
+      v807Raf = 0;
+      v807ApplyCanonicalSizing();
+    });
+
+    v807Timers.forEach(clearTimeout);
+    v807Timers = [
+      setTimeout(v807ApplyCanonicalSizing, 0),
+      setTimeout(v807ApplyCanonicalSizing, 80),
+      setTimeout(v807ApplyCanonicalSizing, 210),
+      // Older v747 has delayed sizing at 180ms. Win after every old delayed pass.
+      setTimeout(v807ApplyCanonicalSizing, 280)
+    ];
+  }
+
+  /*
+    Cover EVERY path found in the audit that can cause a HUD/resource redraw.
+    Repair -> updateLivesDisplay.
+    Multicolor -> updateNextBlockDisplay + updateMulticolorDisplay.
+    Other resource updates are included so this cannot reappear elsewhere.
+  */
+  [
+    'updateLivesDisplay',
+    'updateScoreDisplay',
+    'updateLevelDisplay',
+    'updateLevelAndBpmDisplay',
+    'updateNextBlockDisplay',
+    'updateMulticolorDisplay',
+    'updateFreePictureDisplay',
+    'updateRenewDisplay',
+    'updateFeatureAvailability'
+  ].forEach(name => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      v807ScheduleCanonicalSizing();
+      return result;
+    };
+  });
+
+  /*
+    Last defensive layer: if any forgotten legacy script writes an old inline
+    font-size/class later, correct it. The setter above avoids mutation loops by
+    writing only when the canonical value/priority is actually different.
+  */
+  if (window.MutationObserver) {
+    const root = document.getElementById('v742BottomCoreStats') || document.body;
+    v807Observer = new MutationObserver((mutations) => {
+      if (v807Applying) return;
+      const relevant = mutations.some(m => {
+        const target = m.target;
+        return target && (
+          target.id === 'scoreValue' ||
+          target.id === 'levelDisplayExtra' ||
+          target.id === 'scoreDisplay' ||
+          target.id === 'extraCell1'
+        );
+      });
+      if (relevant) v807ScheduleCanonicalSizing();
+    });
+    v807Observer.observe(root, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['style','class']
+    });
+  }
+
+  window.v807NormalizeScoreLevelDigits = v807ScheduleCanonicalSizing;
+
+  v807ScheduleCanonicalSizing();
+})();
+</script>
+
+
+<style id="v808-party-goal-full-cell-overlay-style">
+  /*
+    V808: same full-width / 22vh takeover area as v805,
+    but content is now a LARGE version of the actual PARTY GOAL cell.
+  */
+  body > #v803GoalSpotlight.v808-full-panel {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 8px 7px !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v808-shell {
+    width: min(94vw, 760px) !important;
+    height: min(18.1vh, 154px) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v808-big-panel {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+    border: 3px solid #e88a2d !important;
+    overflow: hidden !important;
+
+    background:
+      radial-gradient(circle at 50% 45%, rgba(255,179,56,.20) 0%, rgba(255,179,56,0) 36%),
+      linear-gradient(135deg,
+        rgba(49,19,24,.99) 0%,
+        rgba(88,35,26,.98) 28%,
+        rgba(120,54,22,.97) 50%,
+        rgba(86,34,43,.98) 72%,
+        rgba(39,18,28,.99) 100%) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,210,120,.06),
+      inset 0 8px 24px rgba(255,149,35,.06) !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(4px, 1.05vh, 8px) !important;
+    padding: 8px 78px 10px !important;
+    text-align: center !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v808-big-panel::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+    background:
+      radial-gradient(circle at 7% 18%, rgba(255,221,102,.30) 0 2.6px, transparent 2.9px),
+      radial-gradient(circle at 12% 72%, rgba(232,138,45,.26) 0 2.3px, transparent 2.6px),
+      radial-gradient(circle at 17% 33%, rgba(255,87,163,.24) 0 2.1px, transparent 2.4px),
+      radial-gradient(circle at 84% 22%, rgba(255,216,57,.28) 0 2.5px, transparent 2.8px),
+      radial-gradient(circle at 89% 66%, rgba(155,81,224,.22) 0 2.2px, transparent 2.5px),
+      radial-gradient(circle at 94% 38%, rgba(80,227,194,.22) 0 2.2px, transparent 2.5px),
+      linear-gradient(26deg, transparent 0 46%, rgba(255,177,74,.18) 46% 48.2%, transparent 48.2% 100%) 8% 27% / 26px 26px no-repeat,
+      linear-gradient(142deg, transparent 0 40%, rgba(255,92,163,.16) 40% 42.4%, transparent 42.4% 100%) 19% 78% / 22px 22px no-repeat,
+      linear-gradient(64deg, transparent 0 55%, rgba(80,227,194,.15) 55% 57.4%, transparent 57.4% 100%) 24% 18% / 23px 23px no-repeat,
+      linear-gradient(118deg, transparent 0 41%, rgba(255,214,104,.18) 41% 43.4%, transparent 43.4% 100%) 78% 72% / 24px 24px no-repeat,
+      linear-gradient(18deg, transparent 0 38%, rgba(155,81,224,.14) 38% 40.4%, transparent 40.4% 100%) 87% 26% / 23px 23px no-repeat,
+      linear-gradient(150deg, transparent 0 44%, rgba(255,171,77,.16) 44% 46.4%, transparent 46.4% 100%) 92% 58% / 24px 24px no-repeat !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v808-big-panel::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    opacity: .92 !important;
+    mix-blend-mode: screen !important;
+    background:
+      linear-gradient(90deg, transparent 0 44%, rgba(255,214,104,.92) 44% 47%, transparent 47% 100%) 10% 58% / 12px 12px no-repeat,
+      linear-gradient(36deg, transparent 0 42%, rgba(255,87,163,.88) 42% 45%, transparent 45% 100%) 15% 16% / 11px 11px no-repeat,
+      linear-gradient(138deg, transparent 0 40%, rgba(80,227,194,.88) 40% 43%, transparent 43% 100%) 21% 64% / 11px 11px no-repeat,
+      linear-gradient(112deg, transparent 0 42%, rgba(255,171,77,.90) 42% 45%, transparent 45% 100%) 78% 16% / 12px 12px no-repeat,
+      linear-gradient(24deg, transparent 0 42%, rgba(155,81,224,.86) 42% 45%, transparent 45% 100%) 86% 70% / 11px 11px no-repeat,
+      linear-gradient(152deg, transparent 0 43%, rgba(255,216,57,.90) 43% 46%, transparent 46% 100%) 91% 32% / 12px 12px no-repeat !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v808-big-panel > * {
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-label {
+    margin: 0 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(1.02rem, 4.55vw, 1.72rem) !important;
+    line-height: .92 !important;
+    font-weight: 1000 !important;
+    letter-spacing: .02em !important;
+    color: #ffe680 !important;
+    text-shadow: 0 1px 0 rgba(0,0,0,.50), 0 0 9px rgba(255,214,104,.18) !important;
+    white-space: nowrap !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-sub {
+    margin: 0 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.82rem, 3.2vw, 1.16rem) !important;
+    line-height: .95 !important;
+    font-weight: 1000 !important;
+    color: var(--v808-goal-color, #ffe680) !important;
+    text-shadow:
+      0 1px 0 rgba(0,0,0,.50),
+      0 0 9px color-mix(in srgb, var(--v808-goal-color, #ffe680) 36%, black 64%) !important;
+    white-space: nowrap !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v808-rewardline {
+    display: none;
+    margin-top: -1px !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.70rem, 2.9vw, 1.02rem) !important;
+    line-height: .96 !important;
+    font-weight: 1000 !important;
+    color: #7ef7dd !important;
+    text-shadow: 0 0 8px rgba(80,227,194,.28) !important;
+    white-space: nowrap !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel.v808-complete .v808-rewardline {
+    display: block !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-dots {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(5px, 1.8vw, 10px) !important;
+    margin: 0 !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-dot {
+    width: clamp(18px, 4.4vw, 28px) !important;
+    height: clamp(18px, 4.4vw, 28px) !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+    border: 2px solid #e88a2d !important;
+    background: rgba(27,19,23,.90) !important;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.07) !important;
+    opacity: 1 !important;
+    position: relative !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-dot.v619-color-target {
+    background: color-mix(in srgb, var(--v730-goal-display-color, var(--v619-goal-color, #888)) 60%, #171318 40%) !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-dot.done {
+    background: var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) !important;
+    border-color: color-mix(in srgb, var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) 74%, white 26%) !important;
+    box-shadow:
+      inset 0 0 0 2px rgba(255,255,255,.26),
+      0 0 12px color-mix(in srgb, var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) 68%, black 32%) !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-dot.done::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 18% !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.62), rgba(255,255,255,0) 55%) !important;
+    pointer-events: none !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v606-party-goal-dot.v808-flash-dot {
+    animation: v808GoalDotFlash 1320ms ease-in-out 1 !important;
+  }
+
+  @keyframes v808GoalDotFlash {
+    0%, 7%, 24%, 41%, 58%, 100% {
+      opacity: 1;
+      transform: scale(1);
+      filter: brightness(1) saturate(1);
+    }
+    15%, 32%, 49% {
+      opacity: .28;
+      transform: scale(.88);
+      filter: brightness(.72) saturate(.82);
+    }
+    11%, 28%, 45% {
+      opacity: 1;
+      transform: scale(1.10);
+      filter: brightness(1.34) saturate(1.20);
+    }
+    66% {
+      opacity: 1;
+      transform: scale(1.03);
+      filter: brightness(1.12) saturate(1.05);
+    }
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v614-party-goal-image {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: clamp(44px, 10vw, 66px) !important;
+    height: clamp(44px, 10vw, 66px) !important;
+    z-index: 3 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v614-party-goal-image.v615-left {
+    left: 10px !important;
+    right: auto !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v614-party-goal-image.v615-right {
+    right: 10px !important;
+    left: auto !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v614-party-goal-image::before,
+  body > #v803GoalSpotlight.v808-full-panel .v614-party-goal-image::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  body > #v803GoalSpotlight.v808-full-panel .v614-party-goal-image img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    object-fit: contain !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    background: transparent !important;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.18)) !important;
+  }
+</style>
+
+<script id="v808-party-goal-full-cell-overlay-runtime">
+(() => {
+  'use strict';
+
+  function v808SafeLevel() {
+    try { return Number(level) || 1; } catch (_) { return 1; }
+  }
+
+  function v808IsFullParty() {
+    return v808SafeLevel() >= 11;
+  }
+
+  function v808DisplayColor(color) {
+    try {
+      if (typeof v730DisplayGameColor === 'function') {
+        return String(v730DisplayGameColor(color) || color || '#e88a2d');
+      }
+    } catch (_) {}
+    return String(color || '#e88a2d');
+  }
+
+  function v808TopPanel() {
+    return document.querySelector('#v742PartyGoalTop > .v606-party-goal-panel');
+  }
+
+  function v808EnsureOverlay() {
+    let overlay = document.body.querySelector(':scope > #v803GoalSpotlight');
+    if (!overlay) return null;
+    overlay.classList.add('v808-full-panel');
+    return overlay;
+  }
+
+  function v808CloneImage(panel, sideClass) {
+    const wrap = panel?.querySelector('.v614-party-goal-image.' + sideClass);
+    if (!wrap) return '';
+    const img = wrap.querySelector('img');
+    const src = img?.currentSrc || img?.getAttribute('src') || img?.src || '';
+    if (!src) return '';
+    return '<div class="v614-party-goal-image ' + sideClass + '"><img src="' + src + '" alt=""></div>';
+  }
+
+  function v808RenderOverlay({ color, current, total, complete = false, reward = 100 }) {
+    if (!v808IsFullParty()) return;
+    const panel = v808TopPanel();
+    const overlay = v808EnsureOverlay();
+    if (!panel || !overlay) return;
+
+    const shownColor = v808DisplayColor(color);
+    const dotsSource = panel.querySelector('.v606-party-goal-dots');
+    const labelText = String(panel.querySelector('.v606-party-goal-label')?.textContent || 'PARTY GOAL').trim() || 'PARTY GOAL';
+    const dotsHtml = dotsSource ? dotsSource.innerHTML : '';
+
+    let message = 'GOOD JOB!';
+    if (complete) {
+      message = 'PARTY GOAL HIT!';
+    } else if ((Number(total) || 5) - (Number(current) || 0) === 1) {
+      message = 'ONLY ONE MORE TO GO!';
+    }
+
+    overlay.innerHTML =
+      '<div class="v808-shell">' +
+        '<div class="v808-big-panel v606-party-goal-panel" data-total="' + String(Number(total) || 5) + '">' +
+          '<div class="v606-party-goal-label">' + labelText + '</div>' +
+          '<div class="v606-party-goal-sub">' + message + '</div>' +
+          '<div class="v606-party-goal-dots" aria-label="Party Goal progress enlarged">' + dotsHtml + '</div>' +
+          '<div class="v808-rewardline">+' + String(Number(reward) || 100) + ' POINTS WON</div>' +
+          v808CloneImage(panel, 'v615-left') +
+          v808CloneImage(panel, 'v615-right') +
+        '</div>' +
+      '</div>';
+
+    overlay.style.setProperty('--v808-goal-color', shownColor);
+    overlay.classList.toggle('v808-complete', !!complete);
+
+    const dots = overlay.querySelectorAll('.v606-party-goal-dot');
+    const earnedIndex = Math.max(0, Math.min(dots.length - 1, (Number(current) || 1) - 1));
+    dots.forEach((dot, idx) => {
+      dot.classList.remove('v808-flash-dot');
+      if (idx === earnedIndex) dot.classList.add('v808-flash-dot');
+    });
+  }
+
+  if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onProgress === 'function') {
+    const baseOnProgress = window.bpPartyGoalV634.onProgress;
+    window.bpPartyGoalV634.onProgress = function(payload) {
+      const result = baseOnProgress.apply(this, arguments);
+      try {
+        if (v808IsFullParty()) {
+          v808RenderOverlay({
+            color: payload && payload.color,
+            current: payload && payload.current,
+            total: payload && payload.total,
+            complete: false
+          });
+        }
+      } catch (_) {}
+      return result;
+    };
+  }
+
+  if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
+    const baseOnComplete = window.bpPartyGoalV634.onComplete;
+    window.bpPartyGoalV634.onComplete = function(payload) {
+      const result = baseOnComplete.apply(this, arguments);
+      try {
+        if (v808IsFullParty() && !(payload && payload.muted)) {
+          v808RenderOverlay({
+            color: '#50e3c2',
+            current: 5,
+            total: 5,
+            complete: true,
+            reward: payload && payload.reward
+          });
+        }
+      } catch (_) {}
+      return result;
+    };
+  }
 })();
 </script>
 

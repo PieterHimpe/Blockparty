@@ -34334,7 +34334,7 @@ tutorialNextButton.addEventListener("click", function() {
 </script>
 
 <!-- GAME OVER OVERLAY — v741 -->
-<div id="gameOverOverlay" class="bp741-game-over" aria-hidden="true">
+<div id="gameOverOverlay" class="bp741-game-over" aria-hidden="true" style="display:none">
   <section class="bp741-game-over-card" role="dialog" aria-modal="true" aria-labelledby="bp741GameOverTitle">
     <div id="bp741GameOverTitle" class="bp741-game-over-title">PARTY OVER!</div>
     <div id="bp741GameOverReason" class="bp741-game-over-reason">A block escaped through the Party Barrier.</div>
@@ -68162,6 +68162,37 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v755:
+     Party Goal visual refresh.
+     - The top Party Goal now reads as one festive continuous panel.
+     - Stronger warm party background + richer confetti in Block Party colors.
+     - The two progress figures are now fully freestanding:
+       no border, no dark/black mini-card background, no inner frame.
+     - The outer Party Goal panel border/layout remains consistent with the rest of the HUD.
+     - This style block is intentionally appended at the very end so it cannot be
+       overridden by earlier Party Goal rules. -->
+
+<!-- v754:
+     Startup flash fix for PARTY OVER / Game Over artwork.
+     Root cause: the Game Over HTML (including fig107.png) is parsed before the
+     later v741 CSS rule that hides the overlay, so a browser/WebView can paint
+     one frame of the artwork during startup.
+     Fix: gameOverOverlay is now hidden inline from the instant its markup is parsed.
+     Existing Game Over code can still show it normally by setting display:flex.
+     No Game Over logic, image, buttons, records or gameplay changed. -->
+
+<!-- v753:
+     Detailed SCORE-size audit + hard visual lock.
+     - SCORE font sizing itself was already stable in v747/v750.
+     - Three older SCORE-card animations could still make the number LOOK larger
+       because they scaled the entire SCORE cell (group score pulse, score hit,
+       Party Goal +100 payoff).
+     - Those scale transforms are now removed while keeping non-size feedback/glow.
+     - SCORE and LEVEL font-size transitions are disabled so there is no visible
+       intermediate size during a digit-count change.
+     - SCORE/LEVEL exact size sync from v750 remains active.
+     No scoring, score-flight target, Party Goal reward or level-border logic changed. -->
+
 <!-- v752:
      Barrier / bounce tutorial copy and pacing simplified.
      - Short, one-line sentences only.
@@ -69337,6 +69368,176 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 })();
 </script>
+
+
+<style id="v753-score-size-hard-lock">
+  /*
+    V753 — SCORE may change VALUE, but it must never visually grow because
+    of a SCORE-only scale animation. Keep feedback via light/glow only.
+  */
+
+  /* No animated interpolation between font sizes. */
+  #v742BottomCoreStats #scoreValue,
+  #v742BottomCoreStats #levelDisplayExtra {
+    transition: none !important;
+  }
+
+  /* Normal scoring celebration: retain the existing coloured card/ring,
+     but never scale the SCORE card or its number. */
+  #scoreDisplay.score-party-active {
+    transform: none !important;
+    transform-origin: center center !important;
+    animation: v753ScoreGlowOnly 420ms ease-in-out infinite alternate !important;
+  }
+
+  /* Arrival "hit": light pulse only, no scale. */
+  #scoreDisplay.score-party-hit {
+    transform: none !important;
+    animation: v753ScoreHitGlowOnly 170ms ease-out !important;
+  }
+
+  /* Party Goal +100 payoff: green glow only, no scale. */
+  #scoreDisplay.v634-score-goal-payoff {
+    transform: none !important;
+    animation: v753ScoreGoalPayoffGlowOnly 900ms cubic-bezier(.18,.88,.26,1) 1 !important;
+  }
+
+  @keyframes v753ScoreGlowOnly {
+    from {
+      transform: none;
+      filter: brightness(1);
+    }
+    to {
+      transform: none;
+      filter: brightness(1.08);
+    }
+  }
+
+  @keyframes v753ScoreHitGlowOnly {
+    0%,100% {
+      transform: none;
+      filter: brightness(1);
+    }
+    48% {
+      transform: none;
+      filter: brightness(1.18);
+    }
+  }
+
+  @keyframes v753ScoreGoalPayoffGlowOnly {
+    0%,100% {
+      transform: none;
+      box-shadow: 0 0 0 rgba(80,227,194,0);
+    }
+    32% {
+      transform: none;
+      box-shadow: 0 0 14px rgba(80,227,194,.62);
+    }
+  }
+</style>
+
+
+<style id="v755-party-goal-festive-final">
+  /*
+    V755 — final authoritative Party Goal styling.
+    Appended after all previous Party Goal CSS, with high specificity + !important,
+    so earlier v742/v747 rules cannot win anymore.
+  */
+
+  /* One warm festive panel, still coherent with the rest of the HUD. */
+  #v742PartyGoalTop > .v606-party-goal-panel {
+    background:
+      radial-gradient(circle at 50% 45%, rgba(255,179,56,.20) 0%, rgba(255,179,56,0) 36%),
+      linear-gradient(135deg,
+        rgba(49,19,24,.99) 0%,
+        rgba(88,35,26,.98) 28%,
+        rgba(120,54,22,.97) 50%,
+        rgba(86,34,43,.98) 72%,
+        rgba(39,18,28,.99) 100%) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,210,120,.06),
+      inset 0 8px 24px rgba(255,149,35,.06) !important;
+  }
+
+  /* Richer festive confetti, concentrated more on the left and right so the
+     center text and goal dots remain readable. */
+  #v742PartyGoalTop > .v606-party-goal-panel::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+    background:
+      radial-gradient(circle at 7% 18%, rgba(255,221,102,.30) 0 2.6px, transparent 2.9px),
+      radial-gradient(circle at 12% 72%, rgba(232,138,45,.26) 0 2.3px, transparent 2.6px),
+      radial-gradient(circle at 17% 33%, rgba(255,87,163,.24) 0 2.1px, transparent 2.4px),
+      radial-gradient(circle at 84% 22%, rgba(255,216,57,.28) 0 2.5px, transparent 2.8px),
+      radial-gradient(circle at 89% 66%, rgba(155,81,224,.22) 0 2.2px, transparent 2.5px),
+      radial-gradient(circle at 94% 38%, rgba(80,227,194,.22) 0 2.2px, transparent 2.5px),
+      linear-gradient(26deg, transparent 0 46%, rgba(255,177,74,.18) 46% 48.2%, transparent 48.2% 100%) 8% 27% / 26px 26px no-repeat,
+      linear-gradient(142deg, transparent 0 40%, rgba(255,92,163,.16) 40% 42.4%, transparent 42.4% 100%) 19% 78% / 22px 22px no-repeat,
+      linear-gradient(64deg, transparent 0 55%, rgba(80,227,194,.15) 55% 57.4%, transparent 57.4% 100%) 24% 18% / 23px 23px no-repeat,
+      linear-gradient(118deg, transparent 0 41%, rgba(255,214,104,.18) 41% 43.4%, transparent 43.4% 100%) 78% 72% / 24px 24px no-repeat,
+      linear-gradient(18deg, transparent 0 38%, rgba(155,81,224,.14) 38% 40.4%, transparent 40.4% 100%) 87% 26% / 23px 23px no-repeat,
+      linear-gradient(150deg, transparent 0 44%, rgba(255,171,77,.16) 44% 46.4%, transparent 46.4% 100%) 92% 58% / 24px 24px no-repeat !important;
+    background-repeat: no-repeat !important;
+  }
+
+  /* Extra celebratory layer: short streamers / sparkle bars. */
+  #v742PartyGoalTop > .v606-party-goal-panel::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    opacity: .92 !important;
+    mix-blend-mode: screen !important;
+    background:
+      linear-gradient(90deg, transparent 0 44%, rgba(255,214,104,.92) 44% 47%, transparent 47% 100%) 10% 58% / 12px 12px no-repeat,
+      linear-gradient(36deg, transparent 0 42%, rgba(255,87,163,.88) 42% 45%, transparent 45% 100%) 15% 16% / 11px 11px no-repeat,
+      linear-gradient(138deg, transparent 0 40%, rgba(80,227,194,.88) 40% 43%, transparent 43% 100%) 21% 64% / 11px 11px no-repeat,
+      linear-gradient(112deg, transparent 0 42%, rgba(255,171,77,.90) 42% 45%, transparent 45% 100%) 78% 16% / 12px 12px no-repeat,
+      linear-gradient(24deg, transparent 0 42%, rgba(155,81,224,.86) 42% 45%, transparent 45% 100%) 86% 70% / 11px 11px no-repeat,
+      linear-gradient(152deg, transparent 0 43%, rgba(255,216,57,.90) 43% 46%, transparent 46% 100%) 91% 32% / 12px 12px no-repeat !important;
+  }
+
+  /* Ensure content sits above the festive background layers. */
+  #v742PartyGoalTop > .v606-party-goal-panel > * {
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  /* Progress figures become freestanding.
+     No border, no mini-card background, no dark backing, no framed box shadow. */
+  #v742PartyGoalTop .v614-party-goal-image {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  #v742PartyGoalTop .v614-party-goal-image::before,
+  #v742PartyGoalTop .v614-party-goal-image::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  #v742PartyGoalTop .v614-party-goal-image img {
+    background: transparent !important;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.18)) !important;
+  }
+
+  /* Safety net: if a missing-image fallback ever appears, keep it clean. */
+  #v742PartyGoalTop .v614-party-goal-image.image-missing {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+</style>
 
 </body>
 </html>

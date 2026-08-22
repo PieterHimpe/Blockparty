@@ -68003,6 +68003,88 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     }
   }
 
+  function continueOnboardingWithEmptyFloor() {
+    hideGameOver();
+    captureRunBaselines();
+    if (typeof firstUseGameStarted !== 'undefined') firstUseGameStarted = false;
+
+    const makeEmptyTutorialField = () =>
+      Array.from({ length: gridRows }, () => Array(gridCols).fill(null));
+
+    // Preferred path: use the latest onboarding autosave, but remove only
+    // the landed 10x10 field. All other saved tutorial progress is preserved.
+    if (typeof v468ReadAutosave === 'function' && typeof v468ResumeAutosave === 'function') {
+      const snapshot = v468ReadAutosave();
+      if (snapshot) {
+        let cleanSnapshot = null;
+        try {
+          cleanSnapshot = JSON.parse(JSON.stringify(snapshot));
+        } catch (_) {
+          cleanSnapshot = { ...snapshot };
+        }
+
+        cleanSnapshot.field = makeEmptyTutorialField();
+        cleanSnapshot.gridOffsetX = 0;
+        cleanSnapshot.gridOffsetY = 0;
+
+        // Make the clean state the new onboarding autosave immediately.
+        // If the app closes during the resume transition, it will not restore
+        // the old crowded dance floor again.
+        try {
+          if (typeof V468_ONBOARDING_AUTOSAVE_KEY !== 'undefined') {
+            localStorage.setItem(
+              V468_ONBOARDING_AUTOSAVE_KEY,
+              JSON.stringify(cleanSnapshot)
+            );
+          }
+        } catch (_) {}
+
+        if (v468ResumeAutosave(cleanSnapshot)) {
+          // V545 already does this on every resume; keep an explicit final
+          // safety net for this special recovery choice.
+          if (typeof gridOffsetX !== 'undefined') gridOffsetX = 0;
+          if (typeof gridOffsetY !== 'undefined') gridOffsetY = 0;
+          if (typeof drawGrid === 'function') drawGrid();
+          if (typeof drawFallingBlock === 'function' &&
+              typeof fallingBlock !== 'undefined' && fallingBlock) {
+            drawFallingBlock();
+          }
+          if (typeof v468ScheduleAutosave === 'function') v468ScheduleAutosave(0);
+          return;
+        }
+      }
+    }
+
+    // Backward-compatible fallback for an older level checkpoint.
+    const savedLevel = typeof getSavedTutorialLevel === 'function'
+      ? getSavedTutorialLevel()
+      : 1;
+
+    if (
+      savedLevel >= 4 &&
+      typeof getTutorialCheckpoint === 'function' &&
+      typeof resumeTutorialCheckpoint === 'function'
+    ) {
+      const checkpoint = getTutorialCheckpoint(savedLevel);
+      checkpoint.field = makeEmptyTutorialField();
+
+      try {
+        if (typeof TUTORIAL_CHECKPOINT_KEY !== 'undefined') {
+          localStorage.setItem(TUTORIAL_CHECKPOINT_KEY, JSON.stringify(checkpoint));
+        }
+      } catch (_) {}
+
+      resumeTutorialCheckpoint(savedLevel);
+      if (typeof gridOffsetX !== 'undefined') gridOffsetX = 0;
+      if (typeof gridOffsetY !== 'undefined') gridOffsetY = 0;
+      if (typeof drawGrid === 'function') drawGrid();
+      return;
+    }
+
+    // Very old/basic tutorial state: safest fallback is a fresh discovery.
+    if (typeof restartOnboarding === 'function') restartOnboarding();
+  }
+
   function restartOnboarding() {
     hideGameOver();
     captureRunBaselines();
@@ -68109,15 +68191,18 @@ triggerPromoGroupCelebration = function(group, groupColor) {
           ? 'YOUR PROGRESS IS SAVED.'
           : 'READY TO TRY AGAIN?';
         tutorialMessage.querySelector('span').textContent = onboardingProgress
-          ? 'Jump back in from your latest checkpoint.'
+          ? 'Continue your saved party or restart with an empty dance floor.'
           : 'Restart the discovery from the beginning.';
       }
 
       setButton(primary, onboardingProgress
-        ? { label: 'CONTINUE PARTY', sub: 'Continue from your latest checkpoint', action: continueOnboarding }
+        ? { label: 'CONTINUE PARTY', sub: 'Continue from your latest save', action: continueOnboarding }
         : { label: 'START GAME', sub: 'Restart from level 1', action: restartOnboarding }
       );
-      setButton(secondary, { hidden: true });
+      setButton(secondary, onboardingProgress
+        ? { label: 'CLEAR DANCE FLOOR', sub: 'Keep progress, empty the 10x10', action: continueOnboardingWithEmptyFloor }
+        : { hidden: true }
+      );
     } else if (savedPartyAvailable) {
       setButton(primary, {
         label: 'CONTINUE SAVED GAME',
@@ -68161,6 +68246,29 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v757:
+     Critical Party Goal layout fix after v755.
+     Root cause: v755 applied position:relative !important to EVERY direct child
+     of the Party Goal panel. That unintentionally overrode the two progress-image
+     wrappers' position:absolute, pushed them into the flex flow, displaced the
+     text/dots and made the images overlap near the center.
+     Fix:
+     - only label/subtitle/dots are raised above the festive background;
+     - both progress figures are explicitly absolute again, left and right;
+     - figures remain borderless, transparent and frameless;
+     - festive background from v755 is retained.
+     This final CSS is appended after all prior Party Goal styles. -->
+
+<!-- v756:
+     Tutorial PARTY OVER gets a second recovery choice.
+     - CONTINUE PARTY: resume the latest onboarding autosave exactly as before.
+     - CLEAR DANCE FLOOR: keep the saved tutorial progress/resources/barrier state,
+       but resume with the landed 10x10 field empty.
+     - The dance floor is explicitly centered in the clean-floor snapshot and again
+       after resume as a safety net.
+     - Existing v545 resume logic already centers normal tutorial resumes too.
+     - Outside onboarding, Game Over options remain unchanged. -->
 
 <!-- v755:
      Party Goal visual refresh.
@@ -69536,6 +69644,75 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
+  }
+</style>
+
+
+<style id="v757-party-goal-layout-authoritative-fix">
+  /*
+    FINAL authoritative Party Goal geometry.
+    Important: DO NOT apply position:relative to every child here.
+  */
+
+  /* Undo the v755 broad child-position rule. */
+  #v742PartyGoalTop > .v606-party-goal-panel > * {
+    z-index: auto !important;
+  }
+
+  /* Only the real text/progress content belongs in normal flex flow. */
+  #v742PartyGoalTop .v606-party-goal-label,
+  #v742PartyGoalTop .v606-party-goal-sub,
+  #v742PartyGoalTop .v606-party-goal-dots {
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  /* Restore BOTH state figures to their intended fixed flanking positions. */
+  #v742PartyGoalTop .v614-party-goal-image {
+    position: absolute !important;
+    top: 50% !important;
+    width: clamp(31px, 8vw, 42px) !important;
+    height: clamp(31px, 8vw, 42px) !important;
+    transform: translateY(-50%) !important;
+    z-index: 3 !important;
+
+    /* Keep the v755 visual agreement: no little black/framed cards. */
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #v742PartyGoalTop .v614-party-goal-image.v615-left {
+    left: 8px !important;
+    right: auto !important;
+  }
+
+  #v742PartyGoalTop .v614-party-goal-image.v615-right {
+    right: 8px !important;
+    left: auto !important;
+  }
+
+  #v742PartyGoalTop .v614-party-goal-image img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    object-fit: contain !important;
+    transform: none !important;
+    background: transparent !important;
+  }
+
+  @media (max-width: 390px) {
+    #v742PartyGoalTop .v614-party-goal-image {
+      width: 29px !important;
+      height: 29px !important;
+    }
   }
 </style>
 

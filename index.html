@@ -8867,7 +8867,7 @@ drop cell
     <div class="record-stat">
       <img class="record-stat-icon" src="images/fig7.png" alt="Score">
       <div class="record-stat-copy">
-        <span class="record-stat-label">LONGEST PARTY</span>
+        <span class="record-stat-label">BEST PARTY</span>
         <span class="record-stat-value" data-record="party">0</span>
       </div>
     </div>
@@ -8937,7 +8937,7 @@ drop cell
     <div class="record-stat">
       <img class="record-stat-icon" src="images/fig7.png" alt="Score">
       <div class="record-stat-copy">
-        <span class="record-stat-label">LONGEST PARTY</span>
+        <span class="record-stat-label">BEST PARTY</span>
         <span class="record-stat-value" data-record="party">0</span>
       </div>
     </div>
@@ -46122,7 +46122,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
       card.classList.remove('v746-barrier-damaged','v746-barrier-open','v746-earn-repair','v746-repair-earned');
       const v746TitleKey=String(title||'').trim().toUpperCase();
       if(v746TitleKey==='BARRIER DAMAGED') card.classList.add('v746-barrier-damaged');
-      else if(v746TitleKey==='BARRIER OPEN') card.classList.add('v746-barrier-open');
+      else if(v746TitleKey.startsWith('BARRIER OPEN')) card.classList.add('v746-barrier-open');
       else if(v746TitleKey==='EARN A REPAIR') card.classList.add('v746-earn-repair');
       else if(v746TitleKey==='REPAIR +1') card.classList.add('v746-repair-earned');
     }
@@ -46277,7 +46277,7 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     if(v421ClockwiseIntroShown||level!==3||v408Level3MasteryStage!=='direction_cycle'||!fallingBlock||fallingBlock.direction!=='up')return;
     v421ClockwiseIntroShown=true;
     if(v421ClockwiseIntroTimer){clearTimeout(v421ClockwiseIntroTimer);v421ClockwiseIntroTimer=null;}
-    v471ShowHint('THE NEXT SIDE IS ALWAYS CLOCKWISE ↻','',V471_ICONS.clockwise,1450);
+    v471ShowHint('THE NEXT SIDE IS ALWAYS CLOCKWISE ↻','',V471_ICONS.clockwise,2175);
     gamePaused=false; v408RestartFallLoop(); v468ScheduleAutosave(0);
   };
 
@@ -46452,16 +46452,17 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     const resolvedDirection=v453FinishBarrierHitWithoutSpawning(block);v453StoreDeferredBarrierSpawn(resolvedDirection);
     v410BarrierLessonShown=true;drawGrid();
     const becameOpen=indices.some(i=>barrierWallStates[side][i]===BARRIER_STATE_OPEN);
-    const v746BarrierTitle=becameOpen?'BARRIER OPEN':'BARRIER DAMAGED';
+    const v746BarrierTitle=becameOpen?'BARRIER OPEN!':'BARRIER DAMAGED';
+    const v752HasRepair=(typeof repairCount!=='undefined'&&Number(repairCount)>0);
     const v746BarrierCopy=becameOpen
-      ? 'This hit <span class="v746-danger">opened a gap</span> in the Party Barrier.<br>If a block escapes through a gap, <span class="v746-danger">the party ends</span>.'
-      : 'One hit damages the Party Barrier.<br>A second hit <span class="v746-warn">opens a gap</span>.<br>If a block escapes through a gap, <span class="v746-danger">the party ends</span>.';
-    v471ShowHint(v746BarrierTitle,v746BarrierCopy,becameOpen?V471_ICONS.barrierOpen:V471_ICONS.barrier,5200,()=>{
+      ? `A gap is now <span class="v746-danger">open</span>.<br>A block through it <span class="v746-danger">ends the party</span>.<br>${v752HasRepair?'Use a Repair now.':'Earn a Repair to close it.'}`
+      : 'One hit damages the Party Barrier.<br>A second hit <span class="v746-warn">opens a gap</span>.';
+    // V752 durations are base values; V501 scales them x1.5 to ~6 s / ~5 s.
+    v471ShowHint(v746BarrierTitle,v746BarrierCopy,becameOpen?V471_ICONS.barrierOpen:V471_ICONS.barrier,becameOpen?4000:3333,()=>{
       if(!repairStarted||!firstBarrierRepairTutorialActive)return;
       firstBarrierRepairTutorialStage='repair_intro';
       gamePaused=true;v625StopFallLoop();
-      // V746: explain one simple action in sentence case; key concepts carry the emphasis.
-      v471ShowHint('EARN A REPAIR','Clear the <span class="v746-repair">R Block</span> in a group of <span class="v746-match">5+ matching blocks</span> to earn a Repair.',(document.querySelector('#livesDisplay img')?.getAttribute('src')||'images/fig4.png'),4700,()=>{
+      v471ShowHint('EARN A REPAIR','Clear the <span class="v746-repair">R Block</span> in a <span class="v746-match">5+ group</span>.<br>That earns 1 Repair.',(document.querySelector('#livesDisplay img')?.getAttribute('src')||'images/fig4.png'),3333,()=>{
         if(!firstBarrierRepairTutorialActive)return;
         firstBarrierRepairTutorialStage='waiting_for_repair';
         v453SpawnDeferredBarrierSet();gamePaused=false;v408RestartFallLoop();v468ScheduleAutosave(0);
@@ -68161,6 +68162,40 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v752:
+     Barrier / bounce tutorial copy and pacing simplified.
+     - Short, one-line sentences only.
+     - First bounce: IT BOUNCED BACK OUT (~3.5 s).
+     - Later bounce: NO WAY IN (~3 s), then no more bounce reminders.
+     - Natural side-pass reminder: IT PASSED BESIDE (~4 s), only once.
+     - First Barrier damage: 5 s; Barrier open: 6 s.
+     - Later Barrier impact no longer repeats the bounce/side cause.
+     - BARRIER OPEN dynamically says "Use a Repair now." only when repairCount > 0;
+       otherwise it says "Earn a Repair to close it."
+     - Repair earning copy shortened to two one-line sentences.
+     Gameplay, Barrier damage states, Repair rewards and Game Over rules unchanged. -->
+
+<!-- v751:
+     The 7 tutorial color discs at the right side of Party Mission keep their
+     orange ring, but that ring is now thinner so the disc color itself is more visible.
+     No unlock order, colors, locks or Party Mission logic changed. -->
+
+<!-- v750:
+     LEVEL numeral now always mirrors the actual rendered SCORE numeral size.
+     If SCORE shrinks for 4+ digits or because of fitting, LEVEL follows exactly.
+     SCORE and LEVEL boxes stay symmetrical; level-progress border logic is unchanged. -->
+
+<!-- v749:
+     Bottom all-time score label changed from BEST PARTY to BEST PARTY.
+     Stored value and record logic remain exactly the same. -->
+
+<!-- v748:
+     The Level-3 CLOCKWISE observation card stays visible 1.5× longer.
+     Base hint duration changed from 1450 ms to 2175 ms; the existing global
+     tutorial-duration scaling remains untouched, so the actual on-screen
+     duration is likewise exactly 1.5× the previous one.
+     No direction logic, fall timing or tutorial sequence changed. -->
+
 <!-- v747:
      - SCORE sizing stabilised in the lower symmetric SCORE/LEVEL pair:
        0-999 always uses one fixed size, 1000+ uses controlled smaller sizes,
@@ -68971,6 +69006,335 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   requestAnimationFrame(v747ScheduleStableScoreSizing);
   setTimeout(v747ScheduleStableScoreSizing, 120);
   setTimeout(v747ScheduleStableScoreSizing, 300);
+})();
+</script>
+
+
+<style id="v750-score-level-exact-size-sync-style">
+  #v742BottomCoreStats #levelDisplayExtra {
+    transition: font-size 100ms ease !important;
+    line-height: .90 !important;
+    white-space: nowrap !important;
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: 'lnum' 1, 'tnum' 1 !important;
+  }
+</style>
+
+<script id="v750-score-level-exact-size-sync-runtime">
+(() => {
+  'use strict';
+
+  let v750ObservedScore = null;
+  let v750ScoreObserver = null;
+  let v750ResizeObserver = null;
+
+  function v750SyncLevelSizeToScore() {
+    const scoreValue = document.getElementById('scoreValue');
+    const levelValue = document.getElementById('levelDisplayExtra');
+    if (!scoreValue || !levelValue) return;
+
+    const scoreSize = getComputedStyle(scoreValue).fontSize;
+    if (!scoreSize) return;
+
+    levelValue.style.setProperty('font-size', scoreSize, 'important');
+  }
+
+  function v750AttachObservers() {
+    const scoreValue = document.getElementById('scoreValue');
+    const scoreCell = document.getElementById('scoreDisplay');
+
+    if (scoreValue && scoreValue !== v750ObservedScore) {
+      if (v750ScoreObserver) v750ScoreObserver.disconnect();
+
+      v750ScoreObserver = new MutationObserver(() => {
+        requestAnimationFrame(v750SyncLevelSizeToScore);
+      });
+
+      v750ScoreObserver.observe(scoreValue, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        childList: true,
+        characterData: true,
+        subtree: true
+      });
+
+      v750ObservedScore = scoreValue;
+    }
+
+    if (window.ResizeObserver && scoreCell && !v750ResizeObserver) {
+      v750ResizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(v750SyncLevelSizeToScore);
+      });
+      v750ResizeObserver.observe(scoreCell);
+    }
+
+    v750SyncLevelSizeToScore();
+  }
+
+  /* The V747 score fitter can update its font size over several frames.
+     Re-sync after those same layout moments as an extra safety net. */
+  function v750ScheduleSync() {
+    v750AttachObservers();
+    requestAnimationFrame(v750SyncLevelSizeToScore);
+    setTimeout(v750SyncLevelSizeToScore, 0);
+    setTimeout(v750SyncLevelSizeToScore, 80);
+    setTimeout(v750SyncLevelSizeToScore, 200);
+  }
+
+  ['updateScoreDisplay', 'updateLevelDisplay', 'updateLevelAndBpmDisplay', 'updateFeatureAvailability'].forEach((name) => {
+    if (typeof window[name] !== 'function') return;
+    const base = window[name];
+    window[name] = function() {
+      const result = base.apply(this, arguments);
+      v750ScheduleSync();
+      return result;
+    };
+  });
+
+  if (window.MutationObserver) {
+    const root = document.getElementById('v742BottomCoreStats') || document.body;
+    new MutationObserver(v750ScheduleSync).observe(root, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  v750ScheduleSync();
+})();
+</script>
+
+
+<style id="v751-thinner-tutorial-disc-rings">
+  /* V751: keep the orange ring, but make it thinner so the fill color reads better. */
+  .tutorial-color-slot,
+  .tutorial-color-slot.unlocked {
+    border-width: 1px !important;
+  }
+</style>
+
+
+<script id="v752-barrier-bounce-copy-runtime">
+(() => {
+  'use strict';
+
+  const v752TargetToBaseMs = (targetMs) => {
+    const scale =
+      (typeof window.v501TutorialTimeScale === 'number' && window.v501TutorialTimeScale > 0)
+        ? window.v501TutorialTimeScale
+        : 1.5;
+    return Math.max(650, Math.round(Number(targetMs) / scale));
+  };
+
+  const v752BarrierIcon = (title) => {
+    const icons = window.V471_ICONS || {};
+    const t = String(title || '').toUpperCase();
+    if (t.includes('OPEN')) return icons.barrierOpen || icons.barrier || icons.directions;
+    if (t.includes('BARRIER')) return icons.barrier || icons.directions;
+    return icons.directions || icons.barrier;
+  };
+
+  // Exact, short Barrier popup using the active V471 tutorial card.
+  showBarrierGuidancePopup = function(title, text, options = {}) {
+    const danger = options.danger === true;
+    const side = options.side || null;
+    const indices = Array.isArray(options.indices) ? options.indices : [];
+    const highlightRepair = options.highlightRepair === true;
+    const quietAfter = options.quietAfter === true;
+    const targetDurationMs = Math.max(1500, Number(options.durationMs) || 3500);
+
+    if (barrierReminderPreviousPauseState === null) {
+      barrierReminderPreviousPauseState = gamePaused;
+    }
+    gamePaused = true;
+
+    pulseBarrierGuidanceTarget(side, indices);
+    if (highlightRepair) pulseTutorialInfoCell('livesDisplay');
+
+    const done = () => {
+      clearBarrierReminderStyling();
+      if (quietAfter) startTutorialQuietPeriod(3);
+    };
+
+    if (typeof window.v471ShowHint === 'function') {
+      window.v471ShowHint(
+        title,
+        text,
+        v752BarrierIcon(title),
+        v752TargetToBaseMs(targetDurationMs),
+        done
+      );
+
+      const overlay = document.getElementById('movementTutorialOverlay');
+      const card = document.getElementById('movementTutorialCard');
+      if (overlay) {
+        overlay.classList.add('barrier-reminder-overlay');
+        overlay.classList.toggle('barrier-reminder-danger', danger);
+      }
+      if (card && String(title || '').toUpperCase().includes('BARRIER OPEN')) {
+        card.classList.add('v746-barrier-open');
+      }
+      return;
+    }
+
+    // Safe fallback if the V471 card is unavailable.
+    showDismissibleTutorialPopup(
+      title,
+      text,
+      Math.max(1500, Math.round(targetDurationMs / 1.4)),
+      done
+    );
+  };
+
+  // Barrier impact now explains only the Barrier consequence.
+  // Bounce/side cause feedback is shown earlier, while it is happening.
+  showPostTutorialBarrierDamageGuidance = function(cause, side, indices, newlyOpened) {
+    if (!firstBarrierRepairTutorialCompleted) return;
+
+    barrierGuidancePostTutorialHits += 1;
+    const reminderNumber = barrierGuidancePostTutorialHits;
+
+    if (newlyOpened && !barrierGuidanceOpenWarningShown) {
+      barrierGuidanceOpenWarningShown = true;
+
+      const hasRepair =
+        typeof repairCount !== 'undefined' &&
+        Number(repairCount) > 0;
+
+      showBarrierGuidancePopup(
+        'BARRIER OPEN!',
+        `A gap is now open.<br>A block through it ends the party.<br>${hasRepair ? 'Use a Repair now.' : 'Earn a Repair to close it.'}`,
+        {
+          danger: true,
+          side,
+          indices,
+          highlightRepair: hasRepair,
+          quietAfter: true,
+          durationMs: 6000
+        }
+      );
+      return;
+    }
+
+    // Two short reminders at most after the first Repair lesson.
+    if (reminderNumber > 2) return;
+
+    showBarrierGuidancePopup(
+      'BARRIER HIT',
+      'Catch them before they hit it.',
+      {
+        side,
+        indices,
+        quietAfter: true,
+        durationMs: 3500
+      }
+    );
+  };
+
+  // First genuine bounce + one shorter follow-up.
+  if (typeof v410MaybeShowBounceGuidanceAfterVisibleStep === 'function') {
+    v410MaybeShowBounceGuidanceAfterVisibleStep = function(block) {
+      if (
+        !block ||
+        fallingBlock !== block ||
+        !block._v410BounceGuidancePending ||
+        !block._returningToOuterWall
+      ) return;
+
+      if ((Number(block._v410BounceGuidanceWaitSteps) || 0) > 0) {
+        block._v410BounceGuidanceWaitSteps -= 1;
+        return;
+      }
+
+      block._v410BounceGuidancePending = false;
+      if (v410BounceGuidanceCount >= 2) return;
+
+      v410BounceGuidanceCount += 1;
+
+      if (typeof window.v471ShowHint !== 'function') return;
+
+      if (v410BounceGuidanceCount === 1) {
+        window.v471ShowHint(
+          'IT BOUNCED BACK OUT',
+          'No clear way into the dance floor.',
+          (window.V471_ICONS || {}).directions,
+          v752TargetToBaseMs(3500)
+        );
+      } else {
+        window.v471ShowHint(
+          'NO WAY IN',
+          'Move the dance floor earlier.',
+          (window.V471_ICONS || {}).directions,
+          v752TargetToBaseMs(3000)
+        );
+      }
+    };
+  }
+
+  // Keep one natural side-pass reminder only; it stays non-blocking.
+  let v752SideReminderTimer = null;
+
+  const v752EnableMovementArrows = () => {
+    if (typeof v408SetMovementButtonsEnabled === 'function') {
+      v408SetMovementButtonsEnabled(true);
+    }
+    if (typeof getMovementArrowButtons === 'function') {
+      const buttons = getMovementArrowButtons() || {};
+      Object.values(buttons).forEach(btn => {
+        if (!btn) return;
+        btn.disabled = false;
+        btn.classList.remove('tutorial-arrow-dimmed', 'v448-auto-input-locked');
+      });
+    }
+  };
+
+  if (typeof v410MaybeShowNaturalSideGuidance === 'function') {
+    v410MaybeShowNaturalSideGuidance = function(block) {
+      if (!v410CanShowNaturalGuidance()) return;
+      if (!level3ExpandedPassageUnlocked || !block || fallingBlock !== block) return;
+      if (!v410IsBlockFullyBesideWhileAlongside(block)) return;
+      if (block._v410SideGuidanceHandled) return;
+
+      // The guided Level-3 exercise itself counts as the first exposure.
+      if (level3SideLaneTutorialCompleted && v410SideGuidanceCount < 1) {
+        v410SideGuidanceCount = 1;
+      }
+
+      // Only one natural reminder after discovery.
+      if (v410SideGuidanceCount >= 2) return;
+      if (v410SideGuidanceCount >= 1 && !v411CanFullyCatchNaturalSideBlock(block)) return;
+
+      block._v410SideGuidanceHandled = true;
+      v410SideGuidanceCount = 2;
+
+      if (v410ContextGuidancePopupActive) return;
+      v410ContextGuidancePopupActive = true;
+
+      v752EnableMovementArrows();
+
+      if (typeof setMovementTutorialMessage === 'function') {
+        setMovementTutorialMessage(
+          'IT PASSED BESIDE',
+          'Move the dance floor sideways.\nBring the blocks back in.',
+          null,
+          { durationMs: 4000 }
+        );
+      }
+
+      gamePaused = false;
+      if (typeof v408RestartFallLoop === 'function') {
+        v408RestartFallLoop();
+      } else {
+        v625StopFallLoop();
+        fallInterval = v625StartFallLoop(fallSpeed);
+      }
+
+      if (v752SideReminderTimer) clearTimeout(v752SideReminderTimer);
+      v752SideReminderTimer = setTimeout(() => {
+        v752SideReminderTimer = null;
+        v410ContextGuidancePopupActive = false;
+      }, 4000);
+    };
+  }
 })();
 </script>
 

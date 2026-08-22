@@ -26408,46 +26408,35 @@ document.getElementById("multicolorDisplay").addEventListener("click", () => {
     multicolorDisplay.textContent = multicolorCount;
 
     showColorChoice((selectedColor) => {
-      // V800: Multicolor is a COLOR power-up, not a Free Picture-style
-      // replacement set. The next formation has already had its normal
-      // length/special rolls. Preserve those rolls and change only its color.
+      // V806: the Multicolor RESOURCE converts the actual NEXT SET into one
+      // ordinary single block of the chosen color.
       //
-      // Priority mirrors the real next-spawn/preview order:
-      // forcedNextBlock -> queued Goal-7 Multicolor preview -> nextBlock.
-      const queuedGoal7Multicolor =
-        (typeof window.v542NextMulticolorPreviewBlock !== 'undefined')
-          ? window.v542NextMulticolorPreviewBlock
-          : null;
+      // Important distinction:
+      // - chosen color: YES
+      // - length 1: YES
+      // - chosen block itself Multicolor: NO
+      // - following generated sets: normal RNG, including normal Multicolor chance
+      nextBlock = {
+        color: selectedColor,
+        length: 1,
+        isSpecial: false,
+        isMulticolor: false,
+        isFreePicture: false,
+        isDiva: false,
+        divaCountdown: null
+      };
 
-      const selectedNextFormation =
-        forcedNextBlock ||
-        queuedGoal7Multicolor ||
-        nextBlock;
-
-      if (selectedNextFormation) {
-        selectedNextFormation.color = selectedColor;
-      }
-
-      // Keep nextBlockColor only as a legacy compatibility value; it must never
-      // force Multicolor status. The selected formation keeps whatever type it
-      // already rolled naturally.
       nextBlockColor = selectedColor;
       nextBlockIsMulticolor = false;
+      nextBlockIsFreePicture = false;
 
-      const previewFormation =
-        forcedNextBlock ||
-        queuedGoal7Multicolor ||
-        nextBlock;
-
-      if (previewFormation) {
-        updateNextBlockDisplay(
-          previewFormation.color,
-          previewFormation.length,
-          previewFormation.isDiva,
-          previewFormation.isSpecial,
-          previewFormation.isMulticolor
-        );
-      }
+      updateNextBlockDisplay(
+        nextBlock.color,
+        nextBlock.length,
+        nextBlock.isDiva,
+        nextBlock.isSpecial,
+        nextBlock.isMulticolor
+      );
 
       onLevel7ColorSelected(selectedColor);
 
@@ -47629,8 +47618,8 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
   onLevel7ColorSelected=function(color){
     if(!level7MulticolorTutorialActive||level!==7||level7MulticolorStage!=='choosing_color')return;
     level7ColorSelected=true;level7SelectedColor=color;level7MulticolorStage='complete';level7DeployedJokerCleared=true;level7BlocksAfterMastery=0;
-    // Tutorial master rule: the first taught use still demonstrates a GEWONE set in the chosen color.
-    // V800's generic handler already preserves normal rolled status outside the tutorial.
+    // Tutorial master rule: the taught use is exactly one GEWONE block in the chosen color.
+    // V806's generic handler already created length 1 and cleared every special flag.
     if(nextBlock){nextBlock.color=color;nextBlock.isMulticolor=false;nextBlock.isSpecial=false;nextBlock.isFreePicture=false;nextBlock.isDiva=false;nextBlock.divaCountdown=null;}
     nextBlockIsMulticolor=false;
     if(nextBlock)updateNextBlockDisplay(nextBlock.color,nextBlock.length,nextBlock.isDiva,nextBlock.isSpecial,nextBlock.isMulticolor);
@@ -67905,6 +67894,33 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v806:
+     Multicolor USE behavior corrected precisely.
+     - Using an earned Multicolor and choosing a color now makes the NEXT SET:
+         * exactly 1 block long
+         * exactly the chosen color
+         * an ordinary block (NOT Multicolor, NOT Repair, NOT Diva, NOT Free Picture)
+     - After that one chosen-color block has been used, normal generation resumes
+       with the normal random Multicolor chance.
+     - This restores the intended pre-v800 one-block behavior while fixing the old
+       bug that incorrectly marked that chosen block itself as Multicolor.
+     - NEXT SET Multicolor preview size remains one third smaller (52%).
+     - Free Picture remains a different mechanic. -->
+
+<!-- v805:
+     Party Goal celebration geometry corrected after auditing the real PAUSE modal.
+     - V804 incorrectly measured a HUD grid row. The Party Goal host itself spans
+       two grid rows and the HUD is max-width 600px, so that could never equal PAUSE.
+     - The temporary level-11+ Party Goal celebration is now a BODY-level overlay
+       with the exact same outer geometry as #pauseModal:
+         position:absolute; top:0; left:0; width:100%; height:22vh.
+     - It therefore truly occupies the entire top screen area used by PAUSE,
+       independent of HUD column/row sizing.
+     - Gameplay is NOT paused; this is only the requested visual takeover.
+     - The earned color disc still flashes exactly 3 times.
+     - GOOD JOB / ONLY ONE MORE TO GO / final +100 completion copy is preserved.
+     - The separate old full-party completion toast remains suppressed. -->
+
 <!-- v804:
      V803 follow-up: the Party Goal spotlight now truly fills the whole top HUD row.
      - From level 11 onward, a matched Party Goal color no longer only fills the
@@ -71431,6 +71447,83 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 </style>
 
+<style id="v805-party-goal-exact-pause-geometry-final">
+  /*
+    FINAL geometry source of truth:
+    match #pauseModal exactly.
+    #pauseModal = absolute / top 0 / left 0 / width 100% / height 22vh.
+  */
+  body > #v803GoalSpotlight {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: 22vh !important;
+    min-height: 0 !important;
+    max-height: 22vh !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-bottom: 3px solid #e88a2d !important;
+    z-index: 9998 !important;
+  }
+
+  body > #v803GoalSpotlight::before {
+    inset: 4px 8px 5px !important;
+    border-radius: 10px !important;
+  }
+
+  /* This takeover replaces the visible top Party Goal while active.
+     It does not resize or move any real HUD cell underneath. */
+  body.v805-party-goal-takeover #v742PartyGoalTop > .v606-party-goal-panel {
+    opacity: 0 !important;
+  }
+
+  body > #v803GoalSpotlight .v803-content {
+    width: min(94vw, 760px) !important;
+    height: 100% !important;
+    margin: 0 auto !important;
+    grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) !important;
+    gap: clamp(12px, 4vw, 34px) !important;
+  }
+
+  body > #v803GoalSpotlight .v803-disc-wrap {
+    width: clamp(48px, 12vw, 82px) !important;
+    height: clamp(48px, 12vw, 82px) !important;
+  }
+
+  body > #v803GoalSpotlight.v803-complete .v803-disc {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  body > #v803GoalSpotlight .v803-title {
+    font-size: clamp(1.05rem, 4.8vw, 1.75rem) !important;
+    line-height: .94 !important;
+  }
+
+  body > #v803GoalSpotlight .v803-sub {
+    font-size: clamp(.68rem, 2.8vw, 1.02rem) !important;
+    line-height: 1 !important;
+  }
+
+  body > #v803GoalSpotlight .v803-reward {
+    font-size: clamp(.72rem, 3vw, 1.08rem) !important;
+    line-height: 1 !important;
+  }
+
+  /* The old V804 HUD-row positioning class must have zero geometric effect. */
+  .info-container.v803-goal-row-host {
+    position: static !important;
+    overflow: visible !important;
+  }
+</style>
+
 <script id="v803-party-goal-progress-spotlight-runtime">
 (() => {
   'use strict';
@@ -71445,56 +71538,15 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     return document.querySelector('.info-container');
   }
 
-  function v803SameHudRowBounds() {
-    const host = v803TopGoal();
-    const hud = v803HudContainer();
-    if (!host || !hud) return null;
-
-    const hostRect = host.getBoundingClientRect();
-    const hudRect = hud.getBoundingClientRect();
-    const hostTop = hostRect.top;
-
-    const rowCells = Array.from(hud.children).filter((el) => {
-      if (!(el instanceof HTMLElement)) return false;
-      const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden') return false;
-      const r = el.getBoundingClientRect();
-      return r.width > 4 && r.height > 4 && Math.abs(r.top - hostTop) <= 6;
-    });
-
-    if (!rowCells.length) {
-      return {
-        left: hostRect.left - hudRect.left,
-        top: hostRect.top - hudRect.top,
-        width: hostRect.width,
-        height: hostRect.height
-      };
-    }
-
-    const left = Math.min(...rowCells.map((el) => el.getBoundingClientRect().left)) - hudRect.left;
-    const top = Math.min(...rowCells.map((el) => el.getBoundingClientRect().top)) - hudRect.top;
-    const right = Math.max(...rowCells.map((el) => el.getBoundingClientRect().right)) - hudRect.left;
-    const bottom = Math.max(...rowCells.map((el) => el.getBoundingClientRect().bottom)) - hudRect.top;
-
-    return {
-      left,
-      top,
-      width: right - left,
-      height: bottom - top
-    };
-  }
-
   function v803PositionOverlay(host, overlay) {
-    const hud = v803HudContainer();
-    if (!hud || !overlay) return;
-    const bounds = v803SameHudRowBounds();
-    if (!bounds) return;
-
-    hud.classList.add('v803-goal-row-host');
-    overlay.style.left = `${bounds.left}px`;
-    overlay.style.top = `${bounds.top}px`;
-    overlay.style.width = `${bounds.width}px`;
-    overlay.style.height = `${bounds.height}px`;
+    // V805: do NOT derive geometry from the HUD.
+    // The requested reference is the real PAUSE top-space:
+    // absolute top:0 / left:0 / width:100% / height:22vh.
+    if (!overlay) return;
+    overlay.style.removeProperty('left');
+    overlay.style.removeProperty('top');
+    overlay.style.removeProperty('width');
+    overlay.style.removeProperty('height');
   }
 
   function v803SafeLevel() {
@@ -71516,9 +71568,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
   function v803EnsureOverlay(host) {
     if (!host) return null;
-    const hud = v803HudContainer();
-    if (!hud) return null;
-    let overlay = hud.querySelector('#v803GoalSpotlight');
+    let overlay = document.body.querySelector(':scope > #v803GoalSpotlight');
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.id = 'v803GoalSpotlight';
@@ -71532,18 +71582,20 @@ triggerPromoGroupCelebration = function(group, groupColor) {
             '<div class="v803-reward">+100 POINTS WON</div>' +
           '</div>' +
         '</div>';
-      hud.appendChild(overlay);
+      document.body.appendChild(overlay);
     }
     return overlay;
   }
 
   function v803HideOverlay() {
     const host = v803TopGoal();
-    const hud = v803HudContainer();
     if (host) host.classList.remove('v803-goal-spotlight-host');
+    document.body.classList.remove('v805-party-goal-takeover');
+
+    const hud = v803HudContainer();
     if (hud) hud.classList.remove('v803-goal-row-host');
-    if (!hud) return;
-    const overlay = hud.querySelector('#v803GoalSpotlight');
+
+    const overlay = document.body.querySelector(':scope > #v803GoalSpotlight');
     if (!overlay) return;
     overlay.classList.remove('v803-visible', 'v803-complete');
     overlay.style.removeProperty('--v803-goal-color');
@@ -71590,6 +71642,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       : '<div class="v803-title" style="font-size:clamp(.60rem,2.45vw,.88rem)!important;line-height:.94!important;">PARTY</div><div class="v803-sub" style="margin-top:-2px;">GOAL</div>';
 
     host.classList.add('v803-goal-spotlight-host');
+    document.body.classList.add('v805-party-goal-takeover');
     overlay.style.setProperty('--v803-goal-color', shownColor);
     overlay.classList.remove('v803-visible', 'v803-complete');
     void overlay.offsetWidth;
@@ -71661,15 +71714,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       return result;
     };
   }
-
-  window.addEventListener('resize', () => {
-    const hud = v803HudContainer();
-    const overlay = hud ? hud.querySelector('#v803GoalSpotlight') : null;
-    const host = v803TopGoal();
-    if (overlay && overlay.classList.contains('v803-visible')) {
-      v803PositionOverlay(host, overlay);
-    }
-  });
 
   window.addEventListener('pageshow', v803HideOverlay);
 })();

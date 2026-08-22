@@ -18488,6 +18488,13 @@ function updateNextBlockDisplay(color, length = 1, isDiva = false, isSpecial = f
 
     previewContainer.appendChild(blockPreview);
   }
+
+  // V763: v519 keeps a reference to this original renderer. Calling the
+  // authoritative normalizer here guarantees that even that direct path
+  // cannot leave one entire NEXT SET preview in a flattened state.
+  if (typeof window.v763NormalizeNextSetPreview === "function") {
+    window.v763NormalizeNextSetPreview();
+  }
 }
 
 // Hulpfunctie om hex- of rgb-kleur om te zetten naar RGB-object
@@ -23735,6 +23742,17 @@ if (bigGroupCount >= levelProgressThreshold) {
     if (previousLevel === 10 && level === 11) {
       localStorage.setItem("tutorialCompletedV1", "true");
       localStorage.setItem("tutorialLevelV3", "11");
+
+      // V761: prevent the first Party Goal from appearing together with the
+      // SAVE explanation. Hold goal counting for the 5.0 s toast (+ small margin),
+      // then require five complete ordinary sets before the first Party Goal.
+      if (
+        window.bpPartyGoalV761 &&
+        typeof window.bpPartyGoalV761.delayFirstGoalAfterTutorial === "function"
+      ) {
+        window.bpPartyGoalV761.delayFirstGoalAfterTutorial(5300);
+      }
+
       // V551: onboarding autosave ends here. Manual SAVE becomes the player's responsibility.
       localStorage.setItem(FEATURE_DISCOVERY_KEYS.save, "true");
       if (typeof clearTutorialCheckpoint === "function") {
@@ -34358,6 +34376,8 @@ tutorialNextButton.addEventListener("click", function() {
         <span id="bp741GameOverBestLevel" class="bp741-stat-best">BEST 1</span>
       </div>
     </div>
+
+    <div id="bp762GameOverVerdict" class="bp762-game-over-verdict" aria-live="polite"></div>
 
     <div id="bp741GameOverRecord" class="bp741-record-badge" hidden>NEW PARTY RECORD!</div>
 
@@ -55461,6 +55481,7 @@ body.v546-onboarding-levels #levelProgressBar {
     current: 0,
     cooldownRemaining: 0,
     pendingStartRemaining: 0, // v636: fresh level-11 start waits this many set starts before the first Party Goal
+    pendingStartHoldUntil: 0, // v761: during tutorial->11, do not count sets until SAVE explanation is finished
     ignoreNextSpawn: false,
     introShown: false,
     targets: [],
@@ -55494,6 +55515,7 @@ body.v546-onboarding-levels #levelProgressBar {
         Math.min(POST_GOAL_COOLDOWN_SETS, Number(parsed.cooldownRemaining) || 0)
       );
       postGoal.pendingStartRemaining = Math.max(0, Math.min(5, Number(parsed.pendingStartRemaining) || 0));
+      postGoal.pendingStartHoldUntil = Math.max(0, Number(parsed.pendingStartHoldUntil) || 0);
       postGoal.ignoreNextSpawn = !!parsed.ignoreNextSpawn;
       postGoal.introShown = !!parsed.introShown;
 
@@ -55518,11 +55540,13 @@ body.v546-onboarding-levels #levelProgressBar {
 
   function resetPostGoal(options = {}){
     const pendingStartRemaining = Math.max(0, Math.min(5, Number(options.pendingStartRemaining) || 0));
+    const pendingStartHoldUntil = Math.max(0, Number(options.pendingStartHoldUntil) || 0);
     postGoal = {
       mode: 'inactive',
       current: 0,
       cooldownRemaining: 0,
       pendingStartRemaining,
+      pendingStartHoldUntil,
       // v723: level 11 creates its first set immediately. Do not count that
       // creation as one of the five sets between Party Goals.
       ignoreNextSpawn: pendingStartRemaining > 0,
@@ -55532,6 +55556,18 @@ body.v546-onboarding-levels #levelProgressBar {
     };
     savePostGoal();
   }
+
+  // V761: natural onboarding completion has a SAVE explanation first.
+  // While that message is on screen, Party Goal set-counting is held.
+  window.bpPartyGoalV761 = window.bpPartyGoalV761 || {};
+  window.bpPartyGoalV761.delayFirstGoalAfterTutorial = function(holdMs = 5200){
+    const safeHold = Math.max(0, Number(holdMs) || 0);
+    resetPostGoal({
+      pendingStartRemaining: 5,
+      pendingStartHoldUntil: Date.now() + safeHold
+    });
+    renderPendingStartGoal();
+  };
 
   function normalizePostGoalColor(color){
     return String(color || '').trim().toUpperCase();
@@ -55974,6 +56010,7 @@ body.v546-onboarding-levels #levelProgressBar {
     postGoal.mode = 'active';
     postGoal.current = 0;
     postGoal.cooldownRemaining = 0;
+    postGoal.pendingStartHoldUntil = 0;
     postGoal.ignoreNextSpawn = false;
     postGoal.targets = generatePostGoalTargets(previousRecipe);
     postGoal.completed = Array(POST_GOAL_TARGET).fill(false);
@@ -56095,6 +56132,21 @@ body.v546-onboarding-levels #levelProgressBar {
     if (!inFullParty()) return;
 
     if (postGoal.mode === 'inactive' && (Number(postGoal.pendingStartRemaining) || 0) > 0) {
+      const holdUntil = Math.max(0, Number(postGoal.pendingStartHoldUntil) || 0);
+
+      // During the SAVE explanation, do not consume any of the five ordinary sets.
+      if (holdUntil > Date.now()) {
+        renderPendingStartGoal();
+        return;
+      }
+
+      // The first set that starts after the SAVE explanation becomes ordinary set #1.
+      // Ignore its creation now; when the next set starts, #1 has fully passed.
+      if (holdUntil > 0) {
+        postGoal.pendingStartHoldUntil = 0;
+        postGoal.ignoreNextSpawn = true;
+      }
+
       if (postGoal.ignoreNextSpawn) {
         postGoal.ignoreNextSpawn = false;
         savePostGoal();
@@ -68224,7 +68276,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const tutorialMessage = document.getElementById('bp741TutorialMessage');
     const stats = document.getElementById('bp741GameOverStats');
     if (tutorialMessage) tutorialMessage.hidden = !onboarding;
-    if (stats) stats.hidden = onboarding;
+    if (stats) stats.hidden = false;
 
     const scoreEl = document.getElementById('bp741GameOverScore');
     const levelEl = document.getElementById('bp741GameOverLevel');
@@ -68232,15 +68284,39 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const bestLevelEl = document.getElementById('bp741GameOverBestLevel');
     if (scoreEl) scoreEl.textContent = currentScore.toLocaleString('en-US');
     if (levelEl) levelEl.textContent = String(currentLevel);
-    if (bestScoreEl) bestScoreEl.textContent = `BEST ${bestScore.toLocaleString('en-US')}`;
-    if (bestLevelEl) bestLevelEl.textContent = `BEST ${bestLevel}`;
+    if (bestScoreEl) bestScoreEl.textContent = `BEST PARTY ${bestScore.toLocaleString('en-US')}`;
+    if (bestLevelEl) bestLevelEl.textContent = `HIGHEST LEVEL ${bestLevel}`;
+
+    const newScoreRecord = currentScore > runBestScoreAtStart;
+    const newLevelRecord = currentLevel > runBestLevelAtStart;
+    const tiedScoreRecord = !newScoreRecord && runBestScoreAtStart > 0 && currentScore === runBestScoreAtStart;
+    const tiedLevelRecord = !newLevelRecord && runBestLevelAtStart > 0 && currentLevel === runBestLevelAtStart;
+
+    const verdict = document.getElementById('bp762GameOverVerdict');
+    if (verdict) {
+      if (newScoreRecord && newLevelRecord) {
+        verdict.textContent = 'DOUBLE RECORD — YOUR BEST PARTY YET!';
+      } else if (newScoreRecord) {
+        verdict.textContent = 'NEW BEST PARTY!';
+      } else if (newLevelRecord) {
+        verdict.textContent = 'NEW HIGHEST LEVEL!';
+      } else if (tiedScoreRecord && tiedLevelRecord) {
+        verdict.textContent = 'YOU MATCHED BOTH RECORDS!';
+      } else if (tiedScoreRecord) {
+        verdict.textContent = 'YOU MATCHED YOUR BEST PARTY!';
+      } else if (tiedLevelRecord) {
+        verdict.textContent = 'YOU MATCHED YOUR HIGHEST LEVEL!';
+      } else {
+        verdict.textContent = 'NEXT PARTY: BEAT YOUR BEST.';
+      }
+    }
 
     const record = document.getElementById('bp741GameOverRecord');
     if (record) {
-      const newScoreRecord = !onboarding && currentScore > runBestScoreAtStart;
-      const newLevelRecord = !onboarding && currentLevel > runBestLevelAtStart;
       record.hidden = !(newScoreRecord || newLevelRecord);
-      record.textContent = newScoreRecord ? 'NEW PARTY RECORD!' : 'NEW HIGHEST LEVEL!';
+      record.textContent = newScoreRecord && newLevelRecord
+        ? 'TWO NEW RECORDS!'
+        : (newScoreRecord ? 'NEW PARTY RECORD!' : 'NEW HIGHEST LEVEL!');
     }
 
     const primary = document.getElementById('bp741GameOverPrimary');
@@ -68307,6 +68383,37 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 })();
 </script>
 
+
+<!-- v763:
+     NEXT SET preview consolidated around one authoritative square normalizer.
+     Fixes the case where one complete preview could remain visually flat until
+     the following set.
+     - Every preview tile is normalized immediately after it is created.
+     - Width and height always come from the same single size value.
+     - Size is based on preview WIDTH only (never transient/incorrect height).
+     - 1/2/3-block formations use the same tile size; length changes quantity only.
+     - A final MutationObserver also catches legacy wrappers that rewrite inline
+       styles after rendering and restores the square before the next paint.
+     - Resize/orientation changes reuse the same normalizer.
+     - Diva / Repair / Multicolor identity rendering is unchanged. -->
+
+<!-- v762:
+     PARTY OVER now always shows run results, including during onboarding.
+     - Current SCORE and LEVEL REACHED are always visible.
+     - The same cards explicitly show BEST PARTY and HIGHEST LEVEL.
+     - A short dynamic result message reacts to new records, tied records,
+       or encourages another attempt.
+     - Existing tutorial recovery and normal Game Over actions are unchanged. -->
+
+<!-- v761:
+     Tutorial -> Full Party handoff sequencing fixed.
+     Natural level 10 -> 11 now follows:
+       1) show the SAVE YOUR GAME message,
+       2) only after that message is finished, play 5 ordinary sets,
+       3) only then introduce the first 5-colour Party Goal.
+     This prevents the SAVE tutorial and NEW PARTY GOAL artwork/toast from
+     using the same announcement area at the same time.
+     Fresh level-11 starts keep their existing five-set delay. -->
 
 <!-- v760:
      SCORE celebration enlargement restored, but numeric size is locked.
@@ -69891,6 +69998,255 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     32%     { transform: scale(.91743119); }
   }
 </style>
+
+
+<style id="v762-game-over-stats-feedback-final">
+  #gameOverOverlay .bp762-game-over-verdict {
+    min-height: 1.05em;
+    margin: -1px auto 8px;
+    color: #fff0b6;
+    font-size: clamp(.66rem, 2.8vw, .79rem);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: .015em;
+    text-transform: uppercase;
+  }
+
+  /* The stats now also appear during tutorial PARTY OVER, so keep them compact. */
+  #gameOverOverlay .bp741-game-over-stats {
+    margin-top: 3px !important;
+  }
+
+  #gameOverOverlay .bp741-stat-best {
+    margin-top: 3px;
+    line-height: 1.05 !important;
+  }
+
+  @media (max-height: 690px) {
+    #gameOverOverlay .bp741-game-over-stats {
+      gap: 7px;
+      margin-bottom: 6px !important;
+    }
+    #gameOverOverlay .bp741-stat-card {
+      padding-top: 7px;
+      padding-bottom: 6px;
+    }
+    #gameOverOverlay .bp762-game-over-verdict {
+      margin-bottom: 6px;
+    }
+  }
+</style>
+
+
+<style id="v763-next-set-single-square-system-style">
+  /*
+    V763 final geometry contract:
+    every direct NEXT SET tile is a true square.
+    JavaScript writes --v763-next-tile-size from preview width only.
+  */
+  #nextBlockDisplay.info-cell #nextBlockPreview {
+    --v763-next-tile-size: 18px;
+  }
+
+  #nextBlockDisplay.info-cell #nextBlockPreview > div {
+    width: var(--v763-next-tile-size) !important;
+    height: var(--v763-next-tile-size) !important;
+    min-width: var(--v763-next-tile-size) !important;
+    min-height: var(--v763-next-tile-size) !important;
+    max-width: var(--v763-next-tile-size) !important;
+    max-height: var(--v763-next-tile-size) !important;
+    flex: 0 0 var(--v763-next-tile-size) !important;
+    aspect-ratio: 1 / 1 !important;
+    box-sizing: border-box !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+    transform: none !important;
+    align-self: center !important;
+    justify-self: center !important;
+    overflow: hidden !important;
+  }
+</style>
+
+<script id="v763-next-set-single-square-system-runtime">
+(() => {
+  'use strict';
+
+  /*
+    There are several historical NEXT SET resizers in the file. Most already
+    try to make squares, but they can run in different orders and v519 can call
+    an older renderer directly. V763 therefore defines one final invariant:
+    after ANY render/style mutation, every outer preview tile gets the same
+    width and height from ONE computed size.
+  */
+
+  const previewId = 'nextBlockPreview';
+  let observedPreview = null;
+  let mutationObserver = null;
+  let resizeObserver = null;
+  let normalizing = false;
+
+  function previewElement() {
+    return document.getElementById(previewId);
+  }
+
+  function desiredSize(preview) {
+    /*
+      Deliberately ignore preview height.
+      A hidden/rebuilt HUD or WebView can temporarily report an incorrect height;
+      using it was the original source of the rare "flat for one whole preview"
+      state. Width is stable enough and the cell is designed for three tiles.
+    */
+    const cs = window.getComputedStyle(preview);
+    const gap = parseFloat(cs.columnGap || cs.gap || '4') || 4;
+    const rectWidth = preview.getBoundingClientRect().width;
+    const width = rectWidth || preview.clientWidth || 0;
+
+    let size = 18;
+    if (width > 0) {
+      const fitThree = Math.floor((width - gap * 2) / 3);
+      if (Number.isFinite(fitThree) && fitThree > 0) {
+        size = Math.min(22, fitThree);
+      }
+    }
+
+    return Math.max(14, Math.min(22, size));
+  }
+
+  function setImportantIfDifferent(el, property, value) {
+    const current = el.style.getPropertyValue(property);
+    const priority = el.style.getPropertyPriority(property);
+    if (current === value && priority === 'important') return false;
+    el.style.setProperty(property, value, 'important');
+    return true;
+  }
+
+  function normalize() {
+    if (normalizing) return;
+    const preview = previewElement();
+    if (!preview) return;
+
+    const tiles = Array.from(preview.children)
+      .filter(el => el instanceof HTMLElement);
+
+    if (!tiles.length) return;
+
+    normalizing = true;
+    try {
+      const size = desiredSize(preview);
+      const px = size + 'px';
+
+      preview.style.setProperty('--v763-next-tile-size', px);
+
+      tiles.forEach(tile => {
+        tile.dataset.v763NextTile = '1';
+
+        // ONE value drives every dimension. No independent height calculation.
+        setImportantIfDifferent(tile, 'width', px);
+        setImportantIfDifferent(tile, 'height', px);
+        setImportantIfDifferent(tile, 'min-width', px);
+        setImportantIfDifferent(tile, 'min-height', px);
+        setImportantIfDifferent(tile, 'max-width', px);
+        setImportantIfDifferent(tile, 'max-height', px);
+        setImportantIfDifferent(tile, 'flex', '0 0 ' + px);
+        setImportantIfDifferent(tile, 'aspect-ratio', '1 / 1');
+        setImportantIfDifferent(tile, 'box-sizing', 'border-box');
+        setImportantIfDifferent(tile, 'margin', '0px');
+        setImportantIfDifferent(tile, 'transform', 'none');
+        setImportantIfDifferent(tile, 'align-self', 'center');
+        setImportantIfDifferent(tile, 'justify-self', 'center');
+      });
+    } finally {
+      normalizing = false;
+    }
+  }
+
+  function bind() {
+    const preview = previewElement();
+    if (!preview) return;
+
+    if (preview !== observedPreview) {
+      if (mutationObserver) {
+        try { mutationObserver.disconnect(); } catch (_) {}
+      }
+      if (resizeObserver) {
+        try { resizeObserver.disconnect(); } catch (_) {}
+      }
+
+      observedPreview = preview;
+
+      /*
+        Watch child creation AND direct-tile style changes.
+        This is the key difference from v736: if an older wrapper changes a
+        tile's inline size after creation, V763 immediately restores the square.
+      */
+      if (window.MutationObserver) {
+        mutationObserver = new MutationObserver(() => normalize());
+        mutationObserver.observe(preview, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['style', 'class']
+        });
+      }
+
+      if (window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(() => normalize());
+        resizeObserver.observe(preview);
+      }
+    }
+
+    normalize();
+  }
+
+  // Expose the one authoritative normalizer. The original renderer (far above)
+  // calls this too, so v519's saved base-renderer path is covered synchronously.
+  window.v763NormalizeNextSetPreview = normalize;
+  window.v763NextSetSizingAuthoritative = true;
+
+  // Also normalize after the current public renderer, regardless of wrapper chain.
+  if (typeof window.updateNextBlockDisplay === 'function') {
+    const baseUpdate = window.updateNextBlockDisplay;
+    window.updateNextBlockDisplay = function() {
+      const result = baseUpdate.apply(this, arguments);
+      bind();
+      normalize();
+      return result;
+    };
+  }
+
+  // v519 exposes an explicit sync helper; keep that path covered too.
+  if (typeof window.v519SyncNextSetPreview === 'function') {
+    const baseSync = window.v519SyncNextSetPreview;
+    window.v519SyncNextSetPreview = function() {
+      const result = baseSync.apply(this, arguments);
+      bind();
+      normalize();
+      return result;
+    };
+  }
+
+  // Catch rare complete HUD replacement/reparent operations.
+  if (window.MutationObserver && document.body) {
+    new MutationObserver(() => bind()).observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  window.addEventListener('resize', normalize, { passive: true });
+  window.addEventListener('orientationchange', () => {
+    normalize();
+    setTimeout(normalize, 100);
+  }, { passive: true });
+
+  // Normalize anything that was rendered earlier during page startup.
+  bind();
+  normalize();
+  requestAnimationFrame(normalize);
+  setTimeout(normalize, 50);
+  setTimeout(normalize, 180);
+})();
+</script>
 
 </body>
 </html>

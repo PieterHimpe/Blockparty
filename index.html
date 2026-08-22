@@ -71253,226 +71253,30 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </style>
 
 
-<style id="v803-party-goal-progress-spotlight-style">
-  /*
-    V803 — Stronger level-11+ Party Goal progress spotlight.
-    The overlay fully occupies the mirrored top Party Goal card for a short time,
-    without touching tutorial Party Goals or underlying gameplay logic.
-  */
-  #v742PartyGoalTop.v803-goal-spotlight-host {
-    z-index: 130 !important;
-    overflow: visible !important;
-  }
+<!-- v812:
+     CLEAN PARTY GOAL TAKEOVER rebuilt directly from the user-supplied v807.
+     IMPORTANT SCOPE:
+     - No start-screen/menu/intro/start-button code is changed or wrapped.
+     - Only the old v803/v805 post-tutorial Party Goal takeover is replaced.
+     BEHAVIOR:
+     - Level 11+ only and never during a Party Mission.
+     - Uses the same whole top area as Pause: top 0 / width 100% / height 22vh.
+     - Shows a LARGE CLONE of the real current Party Goal cell, not a different card.
+     - Reads the authoritative postGoal recipe/completion state, so each of the 5
+       target circles keeps its real target color and only completed circles are filled.
+     - The newly earned circle flashes exactly 3 times.
+     - The feedback line is GOOD JOB! in the earned color, or ONLY ONE MORE TO GO!
+       when 4/5 are complete.
+     - The fifth match shows PARTY GOAL COMPLETE! and +100 POINTS WON.
+     - The old separate PARTY GOAL COMPLETE / +100 toast is suppressed.
+     - Gameplay and music pause WITHOUT score penalty while the takeover is visible.
+     - It auto-closes and resumes only if this takeover itself paused the game.
+     - Tap/click can also dismiss it after a short anti-accidental-tap delay.
+-->
 
-  #v742PartyGoalTop.v803-goal-spotlight-host > .v606-party-goal-panel {
-    opacity: 0 !important;
-  }
-
-  .info-container.v803-goal-row-host {
-    position: relative !important;
-    overflow: visible !important;
-  }
-
-  #v803GoalSpotlight {
-    position: absolute !important;
-    inset: auto !important;
-    z-index: 160 !important;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 6px 10px 7px !important;
-    box-sizing: border-box !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-    background:
-      radial-gradient(circle at 18% 18%, rgba(255,255,255,.14) 0 7%, transparent 7.5%),
-      radial-gradient(circle at 82% 26%, rgba(255,255,255,.12) 0 6%, transparent 6.5%),
-      radial-gradient(circle at 28% 82%, rgba(255,255,255,.08) 0 5%, transparent 5.5%),
-      linear-gradient(180deg, rgba(39,26,20,.98), rgba(18,14,21,.98)) !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(255,244,200,.12),
-      0 0 12px rgba(232,138,45,.30) !important;
-    pointer-events: none !important;
-    isolation: isolate !important;
-    box-sizing: border-box !important;
-  }
-
-  #v803GoalSpotlight::before {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    border-radius: 8px;
-    pointer-events: none;
-    border: 1px solid color-mix(in srgb, var(--v803-goal-color, #e88a2d) 58%, white 42%);
-    opacity: .34;
-  }
-
-  #v803GoalSpotlight.v803-visible {
-    display: flex !important;
-    animation: v803GoalSpotlightFade 2200ms ease both;
-  }
-
-  #v803GoalSpotlight.v803-complete {
-    animation-duration: 2600ms !important;
-  }
-
-  #v803GoalSpotlight .v803-content {
-    position: relative;
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    justify-items: center;
-    gap: 8px;
-  }
-
-  #v803GoalSpotlight .v803-side {
-    width: 100%;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #v803GoalSpotlight .v803-copy {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-  }
-
-  #v803GoalSpotlight .v803-title {
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-size: clamp(.82rem, 3.45vw, 1.16rem) !important;
-    line-height: .96 !important;
-    font-weight: 1000 !important;
-    letter-spacing: .018em !important;
-    color: var(--v803-goal-color, #ffe680) !important;
-    text-shadow:
-      0 0 8px color-mix(in srgb, var(--v803-goal-color, #ffe680) 52%, black 48%),
-      0 1px 0 rgba(0,0,0,.55);
-    white-space: nowrap;
-  }
-
-  #v803GoalSpotlight .v803-sub {
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-size: clamp(.52rem, 2.2vw, .76rem) !important;
-    line-height: .98 !important;
-    font-weight: 900 !important;
-    color: color-mix(in srgb, var(--v803-goal-color, #ffe680) 86%, white 14%) !important;
-    text-shadow: 0 0 7px rgba(0,0,0,.36);
-    white-space: nowrap;
-  }
-
-  #v803GoalSpotlight .v803-reward {
-    margin-top: 1px;
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-size: clamp(.54rem, 2.25vw, .78rem) !important;
-    line-height: .98 !important;
-    font-weight: 1000 !important;
-    color: #7ef7dd !important;
-    text-shadow: 0 0 8px rgba(80,227,194,.28);
-    white-space: nowrap;
-    display: none;
-  }
-
-  #v803GoalSpotlight.v803-complete .v803-reward {
-    display: block;
-  }
-
-  #v803GoalSpotlight .v803-disc-wrap {
-    position: relative;
-    width: clamp(30px, 7vw, 44px);
-    height: clamp(30px, 7vw, 44px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-  }
-
-  #v803GoalSpotlight .v803-disc-wrap::before,
-  #v803GoalSpotlight .v803-disc-wrap::after {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    border: 1px solid color-mix(in srgb, var(--v803-goal-color, #ffe680) 72%, white 28%);
-    opacity: .18;
-  }
-
-  #v803GoalSpotlight .v803-disc-wrap::after {
-    inset: -8px;
-    opacity: .08;
-  }
-
-  #v803GoalSpotlight .v803-disc {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: var(--v803-goal-color, #e88a2d);
-    border: 3px solid rgba(255,255,255,.96);
-    box-shadow:
-      inset 0 0 0 2px rgba(0,0,0,.18),
-      0 0 12px color-mix(in srgb, var(--v803-goal-color, #e88a2d) 74%, white 26%);
-    animation: v803DiscFlash 1320ms ease-in-out 1;
-  }
-
-  #v803GoalSpotlight.v803-complete .v803-disc {
-    width: clamp(34px, 8vw, 48px);
-    height: clamp(34px, 8vw, 48px);
-    box-shadow:
-      inset 0 0 0 2px rgba(0,0,0,.16),
-      0 0 14px color-mix(in srgb, var(--v803-goal-color, #e88a2d) 74%, white 26%);
-  }
-
-  @keyframes v803GoalSpotlightFade {
-    0%   { opacity: 0; transform: scale(.96); }
-    10%  { opacity: 1; transform: scale(1.015); }
-    84%  { opacity: 1; transform: scale(1); }
-    100% { opacity: 0; transform: scale(.985); }
-  }
-
-  @keyframes v803DiscFlash {
-    0%, 7%, 24%, 41%, 58%, 100% {
-      opacity: 1;
-      filter: brightness(1) saturate(1);
-      transform: scale(1);
-    }
-    15%, 32%, 49% {
-      opacity: .30;
-      filter: brightness(.72) saturate(.82);
-      transform: scale(.92);
-    }
-    11%, 28%, 45% {
-      opacity: 1;
-      filter: brightness(1.3) saturate(1.2);
-      transform: scale(1.08);
-    }
-    66% {
-      opacity: 1;
-      filter: brightness(1.14) saturate(1.08);
-      transform: scale(1.02);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    #v803GoalSpotlight.v803-visible,
-    #v803GoalSpotlight .v803-disc {
-      animation: none !important;
-    }
-  }
-</style>
-
-<style id="v805-party-goal-exact-pause-geometry-final">
-  /*
-    FINAL geometry source of truth:
-    match #pauseModal exactly.
-    #pauseModal = absolute / top 0 / left 0 / width 100% / height 22vh.
-  */
-  body > #v803GoalSpotlight {
+<style id="v812-party-goal-takeover-style">
+  /* Exact outer geometry of the existing Pause top area. */
+  #v812PartyGoalTakeover {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -71484,99 +71288,308 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     height: 22vh !important;
     min-height: 0 !important;
     max-height: 22vh !important;
-    margin: 0 !important;
     box-sizing: border-box !important;
-    border-radius: 0 !important;
+    z-index: 9998 !important;
+
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 7px 9px 8px !important;
+
+    background:
+      linear-gradient(180deg, rgba(17,15,19,.98), rgba(22,16,17,.985)) !important;
     border: 0 !important;
     border-bottom: 3px solid #e88a2d !important;
-    z-index: 9998 !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
   }
 
-  body > #v803GoalSpotlight::before {
-    inset: 4px 8px 5px !important;
-    border-radius: 10px !important;
+  #v812PartyGoalTakeover.v812-visible {
+    display: flex !important;
   }
 
-  /* This takeover replaces the visible top Party Goal while active.
-     It does not resize or move any real HUD cell underneath. */
-  body.v805-party-goal-takeover #v742PartyGoalTop > .v606-party-goal-panel {
-    opacity: 0 !important;
+  #v812PartyGoalTakeover .v812-shell {
+    width: min(95vw, 790px) !important;
+    height: min(18.4vh, 160px) !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
-  body > #v803GoalSpotlight .v803-content {
-    width: min(94vw, 760px) !important;
-    height: 100% !important;
-    margin: 0 auto !important;
-    grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) !important;
-    gap: clamp(12px, 4vw, 34px) !important;
-  }
-
-  body > #v803GoalSpotlight .v803-disc-wrap {
-    width: clamp(48px, 12vw, 82px) !important;
-    height: clamp(48px, 12vw, 82px) !important;
-  }
-
-  body > #v803GoalSpotlight.v803-complete .v803-disc {
+  /*
+    This is deliberately the same Party Goal panel structure/classes as the live cell,
+    enlarged to use the extra space.
+  */
+  #v812PartyGoalTakeover .v812-panel.v606-party-goal-panel {
+    position: relative !important;
+    isolation: isolate !important;
     width: 100% !important;
     height: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    border: 3px solid #e88a2d !important;
+    border-radius: 15px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(4px, .95vh, 8px) !important;
+    padding: 8px clamp(88px, 18vw, 122px) 9px !important;
+
+    color: #f4c644 !important;
+    background:
+      radial-gradient(circle at 50% 45%, rgba(255,179,56,.20) 0%, rgba(255,179,56,0) 36%),
+      linear-gradient(135deg,
+        rgba(49,19,24,.99) 0%,
+        rgba(88,35,26,.98) 28%,
+        rgba(120,54,22,.97) 50%,
+        rgba(86,34,43,.98) 72%,
+        rgba(39,18,28,.99) 100%) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,210,120,.07),
+      inset 0 8px 24px rgba(255,149,35,.06),
+      0 0 12px rgba(232,138,45,.22) !important;
   }
 
-  body > #v803GoalSpotlight .v803-title {
-    font-size: clamp(1.05rem, 4.8vw, 1.75rem) !important;
-    line-height: .94 !important;
+  #v812PartyGoalTakeover .v812-panel.v606-party-goal-panel::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+    background:
+      radial-gradient(circle at 7% 18%, rgba(255,221,102,.30) 0 2.6px, transparent 2.9px),
+      radial-gradient(circle at 12% 72%, rgba(232,138,45,.26) 0 2.3px, transparent 2.6px),
+      radial-gradient(circle at 17% 33%, rgba(255,87,163,.24) 0 2.1px, transparent 2.4px),
+      radial-gradient(circle at 84% 22%, rgba(255,216,57,.28) 0 2.5px, transparent 2.8px),
+      radial-gradient(circle at 89% 66%, rgba(155,81,224,.22) 0 2.2px, transparent 2.5px),
+      radial-gradient(circle at 94% 38%, rgba(80,227,194,.22) 0 2.2px, transparent 2.5px),
+      linear-gradient(26deg, transparent 0 46%, rgba(255,177,74,.18) 46% 48.2%, transparent 48.2% 100%) 8% 27% / 26px 26px no-repeat,
+      linear-gradient(142deg, transparent 0 40%, rgba(255,92,163,.16) 40% 42.4%, transparent 42.4% 100%) 19% 78% / 22px 22px no-repeat,
+      linear-gradient(118deg, transparent 0 41%, rgba(255,214,104,.18) 41% 43.4%, transparent 43.4% 100%) 78% 72% / 24px 24px no-repeat;
   }
 
-  body > #v803GoalSpotlight .v803-sub {
-    font-size: clamp(.68rem, 2.8vw, 1.02rem) !important;
-    line-height: 1 !important;
+  #v812PartyGoalTakeover .v812-panel > * {
+    position: relative !important;
+    z-index: 2 !important;
   }
 
-  body > #v803GoalSpotlight .v803-reward {
-    font-size: clamp(.72rem, 3vw, 1.08rem) !important;
-    line-height: 1 !important;
+  #v812PartyGoalTakeover .v606-party-goal-label {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(1.04rem, 4.5vw, 1.75rem) !important;
+    line-height: .92 !important;
+    font-weight: 1000 !important;
+    letter-spacing: .02em !important;
+    color: #ffe680 !important;
+    text-shadow: 0 1px 0 rgba(0,0,0,.52) !important;
+    white-space: nowrap !important;
   }
 
-  /* The old V804 HUD-row positioning class must have zero geometric effect. */
-  .info-container.v803-goal-row-host {
-    position: static !important;
+  #v812PartyGoalTakeover .v606-party-goal-sub {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.82rem, 3.2vw, 1.17rem) !important;
+    line-height: .95 !important;
+    font-weight: 1000 !important;
+    color: var(--v812-earned-color, #ffe680) !important;
+    text-shadow:
+      0 1px 0 rgba(0,0,0,.50),
+      0 0 10px color-mix(in srgb, var(--v812-earned-color, #ffe680) 48%, transparent 52%) !important;
+    white-space: nowrap !important;
+  }
+
+  #v812PartyGoalTakeover .v812-reward {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.70rem, 2.75vw, 1.02rem) !important;
+    line-height: .96 !important;
+    font-weight: 1000 !important;
+    color: #7ef7dd !important;
+    text-shadow: 0 0 9px rgba(80,227,194,.30) !important;
+    white-space: nowrap !important;
+  }
+
+  #v812PartyGoalTakeover .v606-party-goal-dots {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(6px, 1.9vw, 11px) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #v812PartyGoalTakeover .v606-party-goal-dot.v619-color-target {
+    position: relative !important;
+    display: block !important;
+    flex: 0 0 auto !important;
+    width: clamp(20px, 4.8vw, 30px) !important;
+    height: clamp(20px, 4.8vw, 30px) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+    opacity: 1 !important;
+  }
+
+  /* Still needed: DARK/HOLLOW. Its real target color appears only in the rim. */
+  #v812PartyGoalTakeover .v606-party-goal-dot.v619-color-target:not(.done) {
+    background: rgba(22,17,22,.96) !important;
+    border: 2.5px solid var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.055),
+      0 0 5px rgba(0,0,0,.22) !important;
+  }
+
+  /* Completed: filled with EXACTLY that target slot's real color. */
+  #v812PartyGoalTakeover .v606-party-goal-dot.v619-color-target.done {
+    background: var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) !important;
+    border: 2.5px solid color-mix(
+      in srgb,
+      var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) 72%,
+      white 28%
+    ) !important;
+    box-shadow:
+      inset 0 0 0 2px rgba(255,255,255,.25),
+      0 0 12px color-mix(
+        in srgb,
+        var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) 68%,
+        black 32%
+      ) !important;
+  }
+
+  /*
+    EXACTLY THREE flashes: one full dim->bright cycle per animation iteration,
+    repeated 3 times.
+  */
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned {
+    animation: v812EarnedCircleFlash 330ms ease-in-out 3 !important;
+    transform-origin: center center !important;
+  }
+
+  @keyframes v812EarnedCircleFlash {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+      filter: brightness(1) saturate(1);
+    }
+    48% {
+      opacity: .14;
+      transform: scale(.82);
+      filter: brightness(.62) saturate(.78);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1.16);
+      filter: brightness(1.45) saturate(1.22);
+    }
+  }
+
+  /* Much larger flanking figures for the larger version of the cell. */
+  #v812PartyGoalTakeover .v614-party-goal-image {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: clamp(66px, 15vw, 98px) !important;
+    height: clamp(66px, 15vw, 98px) !important;
+    z-index: 3 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #v812PartyGoalTakeover .v614-party-goal-image.v615-left {
+    left: 14px !important;
+    right: auto !important;
+  }
+
+  #v812PartyGoalTakeover .v614-party-goal-image.v615-right {
+    right: 14px !important;
+    left: auto !important;
+  }
+
+  #v812PartyGoalTakeover .v614-party-goal-image::before,
+  #v812PartyGoalTakeover .v614-party-goal-image::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  #v812PartyGoalTakeover .v614-party-goal-image img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    background: transparent !important;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.22)) !important;
+  }
+
+  @media (max-width: 390px) {
+    #v812PartyGoalTakeover .v812-panel.v606-party-goal-panel {
+      padding-left: 78px !important;
+      padding-right: 78px !important;
+    }
+
+    #v812PartyGoalTakeover .v614-party-goal-image {
+      width: 60px !important;
+      height: 60px !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned {
+      animation: none !important;
+    }
   }
 </style>
 
-<script id="v803-party-goal-progress-spotlight-runtime">
+<script id="v812-party-goal-takeover-runtime">
 (() => {
   'use strict';
 
-  let v803Timer = null;
+  const PROGRESS_VISIBLE_MS = 2350;
+  const COMPLETE_VISIBLE_MS = 3000;
+  const MANUAL_DISMISS_DELAY_MS = 650;
 
-  function v803TopGoal() {
-    return document.getElementById('v742PartyGoalTop');
-  }
+  let hideTimer = null;
+  let failsafeTimer = null;
+  let shownAt = 0;
+  let pauseOwned = false;
+  let wasPausedBefore = false;
+  let fifthMatchSnapshot = null;
 
-  function v803HudContainer() {
-    return document.querySelector('.info-container');
-  }
-
-  function v803PositionOverlay(host, overlay) {
-    // V805: do NOT derive geometry from the HUD.
-    // The requested reference is the real PAUSE top-space:
-    // absolute top:0 / left:0 / width:100% / height:22vh.
-    if (!overlay) return;
-    overlay.style.removeProperty('left');
-    overlay.style.removeProperty('top');
-    overlay.style.removeProperty('width');
-    overlay.style.removeProperty('height');
-  }
-
-  function v803SafeLevel() {
+  function levelNow() {
     try { return Number(level) || 1; } catch (_) { return 1; }
   }
 
-  function v803IsFullParty() {
-    return v803SafeLevel() >= 11;
+  function missionActive() {
+    try {
+      return typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive();
+    } catch (_) {
+      return false;
+    }
   }
 
-  function v803DisplayColor(color) {
+  function allowed() {
+    return levelNow() >= 11 && !missionActive();
+  }
+
+  function displayColor(color) {
     try {
       if (typeof v730DisplayGameColor === 'function') {
         return String(v730DisplayGameColor(color) || color || '#e88a2d');
@@ -71585,156 +71598,373 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     return String(color || '#e88a2d');
   }
 
-  function v803EnsureOverlay(host) {
-    if (!host) return null;
-    let overlay = document.body.querySelector(':scope > #v803GoalSpotlight');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'v803GoalSpotlight';
-      overlay.innerHTML =
-        '<div class="v803-content">' +
-          '<div class="v803-side"></div>' +
-          '<div class="v803-disc-wrap"><div class="v803-disc"></div></div>' +
-          '<div class="v803-side v803-copy">' +
-            '<div class="v803-title">GOOD JOB!</div>' +
-            '<div class="v803-sub">1 OF 5 MATCHED</div>' +
-            '<div class="v803-reward">+100 POINTS WON</div>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(overlay);
-    }
+  function ensureOverlay() {
+    let overlay = document.getElementById('v812PartyGoalTakeover');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'v812PartyGoalTakeover';
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.setAttribute('aria-label', 'Party Goal progress');
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('pointerup', () => {
+      if (!overlay.classList.contains('v812-visible')) return;
+      if ((performance.now() - shownAt) < MANUAL_DISMISS_DELAY_MS) return;
+      hide();
+    }, { passive: true });
+
     return overlay;
   }
 
-  function v803HideOverlay() {
-    const host = v803TopGoal();
-    if (host) host.classList.remove('v803-goal-spotlight-host');
-    document.body.classList.remove('v805-party-goal-takeover');
+  function sourcePanel() {
+    /*
+      The hidden original Party Goal host is authoritative and is updated
+      synchronously by renderColorGoal before onProgress/onComplete fires.
+      Fallback to the visible top mirror if needed.
+    */
+    const originalHost = Array.from(
+      document.querySelectorAll('.button-wrapper .reset-btn.v606-party-goal-host')
+    ).find(host => host.querySelector(':scope > .v606-party-goal-panel'));
 
-    const hud = v803HudContainer();
-    if (hud) hud.classList.remove('v803-goal-row-host');
-
-    const overlay = document.body.querySelector(':scope > #v803GoalSpotlight');
-    if (!overlay) return;
-    overlay.classList.remove('v803-visible', 'v803-complete');
-    overlay.style.removeProperty('--v803-goal-color');
+    return (
+      originalHost?.querySelector(':scope > .v606-party-goal-panel') ||
+      document.querySelector('#v742PartyGoalTop > .v606-party-goal-panel') ||
+      null
+    );
   }
 
-  function v803ShowOverlay({ color, current, total, complete = false, reward = 100 }) {
-    if (!v803IsFullParty()) return;
-    const host = v803TopGoal();
-    if (!host) return;
+  function cloneSideImage(panel, sideClass) {
+    const wrap = panel?.querySelector('.v614-party-goal-image.' + sideClass);
+    if (!wrap) return '';
 
-    const overlay = v803EnsureOverlay(host);
-    if (!overlay) return;
+    const img = wrap.querySelector('img');
+    const src =
+      img?.currentSrc ||
+      img?.getAttribute('src') ||
+      img?.src ||
+      '';
 
-    v803PositionOverlay(host, overlay);
+    if (!src) return '';
 
-    if (v803Timer) {
-      clearTimeout(v803Timer);
-      v803Timer = null;
-    }
+    return (
+      '<div class="v614-party-goal-image ' + sideClass + '">' +
+        '<img src="' + src + '" alt="">' +
+      '</div>'
+    );
+  }
 
-    const shownColor = v803DisplayColor(color);
-    const titleEl = overlay.querySelector('.v803-title');
-    const subEl = overlay.querySelector('.v803-sub');
-    const rewardEl = overlay.querySelector('.v803-reward');
-    const disc = overlay.querySelector('.v803-disc');
-    const left = overlay.querySelector('.v803-side');
+  function authoritativeRecipe(total) {
+    const safeTotal = Math.max(1, Number(total) || 5);
 
-    let title = 'GOOD JOB!';
-    let sub = `${Math.max(0, Number(current) || 0)} OF ${Math.max(1, Number(total) || 5)} MATCHED`;
+    try {
+      if (
+        typeof postGoal !== 'undefined' &&
+        Array.isArray(postGoal.targets) &&
+        postGoal.targets.length >= safeTotal
+      ) {
+        return postGoal.targets.slice(0, safeTotal).map(displayColor);
+      }
+    } catch (_) {}
+
+    const panel = sourcePanel();
+    const dots = Array.from(
+      panel?.querySelectorAll('.v606-party-goal-dot.v619-color-target') || []
+    );
+
+    const colors = dots.map(dot => {
+      const raw =
+        dot.style.getPropertyValue('--v730-goal-display-color') ||
+        dot.style.getPropertyValue('--v619-goal-color') ||
+        getComputedStyle(dot).getPropertyValue('--v730-goal-display-color') ||
+        getComputedStyle(dot).getPropertyValue('--v619-goal-color') ||
+        '#e88a2d';
+
+      return displayColor(String(raw).trim() || '#e88a2d');
+    });
+
+    while (colors.length < safeTotal) colors.push('#e88a2d');
+    return colors.slice(0, safeTotal);
+  }
+
+  function authoritativeCompleted(total, payload, complete) {
+    const safeTotal = Math.max(1, Number(total) || 5);
 
     if (complete) {
-      title = 'PARTY GOAL HIT!';
-      sub = 'ALL 5 COLORS MATCHED';
-    } else if ((Number(total) || 5) - (Number(current) || 0) === 1) {
-      title = 'ONLY ONE MORE TO GO!';
-      sub = `${Math.max(0, Number(current) || 0)} OF ${Math.max(1, Number(total) || 5)} MATCHED`;
+      return Array(safeTotal).fill(true);
     }
 
-    if (titleEl) titleEl.textContent = title;
-    if (subEl) subEl.textContent = sub;
-    if (rewardEl) rewardEl.textContent = `+${Number(reward) || 100} POINTS WON`;
-    if (left) left.innerHTML = complete
-      ? '<div class="v803-title" style="font-size:clamp(.64rem,2.6vw,.94rem)!important;line-height:.94!important;">GOAL</div><div class="v803-sub" style="margin-top:-2px;">COMPLETED</div>'
-      : '<div class="v803-title" style="font-size:clamp(.60rem,2.45vw,.88rem)!important;line-height:.94!important;">PARTY</div><div class="v803-sub" style="margin-top:-2px;">GOAL</div>';
-
-    host.classList.add('v803-goal-spotlight-host');
-    document.body.classList.add('v805-party-goal-takeover');
-    overlay.style.setProperty('--v803-goal-color', shownColor);
-    overlay.classList.remove('v803-visible', 'v803-complete');
-    void overlay.offsetWidth;
-    if (disc) {
-      disc.style.animation = 'none';
-      void disc.offsetWidth;
-      disc.style.animation = '';
+    if (Array.isArray(payload?.completed)) {
+      const mask = payload.completed.slice(0, safeTotal).map(Boolean);
+      while (mask.length < safeTotal) mask.push(false);
+      return mask;
     }
-    overlay.classList.add('v803-visible');
-    if (complete) overlay.classList.add('v803-complete');
 
-    v803Timer = setTimeout(() => {
-      v803HideOverlay();
-      v803Timer = null;
-    }, complete ? 2600 : 2200);
+    try {
+      if (
+        typeof postGoal !== 'undefined' &&
+        Array.isArray(postGoal.completed)
+      ) {
+        const mask = postGoal.completed.slice(0, safeTotal).map(Boolean);
+        while (mask.length < safeTotal) mask.push(false);
+        return mask;
+      }
+    } catch (_) {}
+
+    const current = Math.max(
+      0,
+      Math.min(safeTotal, Number(payload?.current) || 0)
+    );
+    return Array.from({ length: safeTotal }, (_, index) => index < current);
   }
 
-  // Suppress the separate full-party completion toast: the top-card spotlight
-  // now replaces it from level 11 onward.
+  function pauseWithoutPenalty() {
+    try {
+      wasPausedBefore = !!gamePaused;
+      pauseOwned = !wasPausedBefore;
+
+      if (!pauseOwned) return;
+
+      gamePaused = true;
+      if (typeof window.pauseBlockPartyBackgroundMusic === 'function') {
+        window.pauseBlockPartyBackgroundMusic();
+      }
+    } catch (_) {
+      pauseOwned = false;
+    }
+  }
+
+  function resumeIfOwned() {
+    if (!pauseOwned) return;
+    pauseOwned = false;
+
+    try {
+      gamePaused = wasPausedBefore;
+      if (!wasPausedBefore && typeof window.resumeBlockPartyBackgroundMusic === 'function') {
+        window.resumeBlockPartyBackgroundMusic();
+      }
+    } catch (_) {}
+  }
+
+  function neutralizeOldTopCellCelebration() {
+    const host = document.getElementById('v742PartyGoalTop');
+    if (!host) return;
+
+    host.classList.remove(
+      'v767-progress-celebrate',
+      'v767-complete-celebrate',
+      'v643-party-progress-pop',
+      'v634-complete-payoff',
+      'v614-complete',
+      'v606-goal-hit'
+    );
+  }
+
+  function hide() {
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
+    if (failsafeTimer) {
+      clearTimeout(failsafeTimer);
+      failsafeTimer = null;
+    }
+
+    const overlay = document.getElementById('v812PartyGoalTakeover');
+    if (overlay) {
+      overlay.classList.remove('v812-visible', 'v812-complete');
+      overlay.style.removeProperty('--v812-earned-color');
+      overlay.innerHTML = '';
+    }
+
+    resumeIfOwned();
+  }
+
+  function show(payload, { complete = false, reward = 100 } = {}) {
+    if (!allowed()) return;
+
+    const overlay = ensureOverlay();
+    const panel = sourcePanel();
+    if (!overlay || !panel) return;
+
+    const total = Math.max(1, Number(payload?.total) || 5);
+    const current = complete
+      ? total
+      : Math.max(0, Math.min(total, Number(payload?.current) || 0));
+
+    /*
+      registerPostGoalGroup emits onProgress at 5/5 immediately before onComplete.
+      Remember the fifth color, but do NOT show a second 5/5 progress card.
+    */
+    if (!complete && current >= total) {
+      fifthMatchSnapshot = {
+        color: payload?.color,
+        targetIndex: payload?.targetIndex,
+        completed: Array.isArray(payload?.completed)
+          ? payload.completed.slice()
+          : null
+      };
+      return;
+    }
+
+    const recipe = authoritativeRecipe(total);
+    const completed = authoritativeCompleted(total, payload, complete);
+
+    let earnedIndex = Number(payload?.targetIndex);
+    if (!Number.isInteger(earnedIndex) || earnedIndex < 0 || earnedIndex >= total) {
+      earnedIndex = Math.max(0, Math.min(total - 1, current - 1));
+    }
+
+    if (complete && fifthMatchSnapshot && Number.isInteger(Number(fifthMatchSnapshot.targetIndex))) {
+      earnedIndex = Math.max(
+        0,
+        Math.min(total - 1, Number(fifthMatchSnapshot.targetIndex))
+      );
+    }
+
+    const rawEarnedColor =
+      (complete && fifthMatchSnapshot?.color) ||
+      payload?.color ||
+      recipe[earnedIndex] ||
+      '#e88a2d';
+
+    const earnedColor = displayColor(rawEarnedColor);
+
+    const remaining = total - current;
+    const feedbackText = complete
+      ? 'PARTY GOAL COMPLETE!'
+      : (remaining === 1 ? 'ONLY ONE MORE TO GO!' : 'GOOD JOB!');
+
+    const dotsHtml = recipe.map((color, index) => {
+      const classes = [
+        'v606-party-goal-dot',
+        'v619-color-target'
+      ];
+
+      if (completed[index]) classes.push('done');
+      if (index === earnedIndex) classes.push('v812-newly-earned');
+
+      return (
+        '<span class="' + classes.join(' ') + '"' +
+        ' style="--v619-goal-color:' + color + ';--v730-goal-display-color:' + color + '"' +
+        ' aria-label="' + (completed[index] ? 'completed' : 'still needed') + '">' +
+        '</span>'
+      );
+    }).join('');
+
+    const rewardHtml = complete
+      ? '<div class="v812-reward">+' + (Number(reward) || 100) + ' POINTS WON</div>'
+      : '';
+
+    overlay.innerHTML =
+      '<div class="v812-shell">' +
+        '<div class="v812-panel v606-party-goal-panel" data-total="' + total + '">' +
+          '<div class="v606-party-goal-label">PARTY GOAL</div>' +
+          '<div class="v606-party-goal-sub">' + feedbackText + '</div>' +
+          '<div class="v606-party-goal-dots" aria-label="' + current + ' of ' + total + ' matched">' +
+            dotsHtml +
+          '</div>' +
+          rewardHtml +
+          cloneSideImage(panel, 'v615-left') +
+          cloneSideImage(panel, 'v615-right') +
+        '</div>' +
+      '</div>';
+
+    overlay.style.setProperty('--v812-earned-color', earnedColor);
+
+    if (hideTimer) clearTimeout(hideTimer);
+    if (failsafeTimer) clearTimeout(failsafeTimer);
+
+    pauseWithoutPenalty();
+    neutralizeOldTopCellCelebration();
+
+    overlay.classList.remove('v812-visible', 'v812-complete');
+    void overlay.offsetWidth;
+    overlay.classList.add('v812-visible');
+    if (complete) overlay.classList.add('v812-complete');
+
+    shownAt = performance.now();
+
+    const duration = complete ? COMPLETE_VISIBLE_MS : PROGRESS_VISIBLE_MS;
+    hideTimer = setTimeout(hide, duration);
+
+    /* Hard failsafe: impossible for a stale Party Goal takeover to stay forever. */
+    failsafeTimer = setTimeout(hide, duration + 1200);
+
+    if (complete) {
+      fifthMatchSnapshot = null;
+    }
+  }
+
+  /*
+    Suppress ONLY the legacy separate completion toast.
+    No menu/start-screen toast or button behavior is touched.
+  */
   if (typeof v468Toast === 'function') {
-    const v803BaseToast = v468Toast;
+    const baseToast = v468Toast;
     v468Toast = function(title, text = '', durationMs) {
-      const upperTitle = String(title || '').trim().toUpperCase();
-      const upperText = String(text || '').trim().toUpperCase();
+      const t = String(title || '').trim().toUpperCase();
+      const b = String(text || '').trim().toUpperCase();
+
       if (
-        v803IsFullParty() &&
-        upperTitle === 'PARTY GOAL COMPLETE!' &&
-        upperText === '+100 POINTS'
+        allowed() &&
+        t === 'PARTY GOAL COMPLETE!' &&
+        b === '+100 POINTS'
       ) {
         return;
       }
-      return v803BaseToast.apply(this, arguments);
+
+      return baseToast.apply(this, arguments);
     };
   }
 
+  /*
+    Attach only to Party Goal callbacks.
+    No start/menu/new-game/tutorial function is wrapped here.
+  */
   if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onProgress === 'function') {
-    const v803BaseProgress = window.bpPartyGoalV634.onProgress;
+    const baseProgress = window.bpPartyGoalV634.onProgress;
+
     window.bpPartyGoalV634.onProgress = function(payload) {
-      const result = v803BaseProgress.apply(this, arguments);
+      const result = baseProgress.apply(this, arguments);
+
       try {
-        if (v803IsFullParty()) {
-          v803ShowOverlay({
-            color: payload && payload.color,
-            current: payload && payload.current,
-            total: payload && payload.total,
-            complete: false
-          });
-        }
+        show(payload || {}, { complete: false });
       } catch (_) {}
+
       return result;
     };
   }
 
   if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
-    const v803BaseComplete = window.bpPartyGoalV634.onComplete;
+    const baseComplete = window.bpPartyGoalV634.onComplete;
+
     window.bpPartyGoalV634.onComplete = function(payload) {
-      const result = v803BaseComplete.apply(this, arguments);
+      const result = baseComplete.apply(this, arguments);
+
       try {
-        if (v803IsFullParty() && !(payload && payload.muted)) {
-          v803ShowOverlay({
-            color: '#50e3c2',
-            current: 5,
+        if (!(payload && payload.muted)) {
+          const completionPayload = {
+            ...(payload || {}),
             total: 5,
+            current: 5,
+            completed: [true, true, true, true, true],
+            color: fifthMatchSnapshot?.color,
+            targetIndex: fifthMatchSnapshot?.targetIndex
+          };
+
+          show(completionPayload, {
             complete: true,
-            reward: payload && payload.reward
+            reward: payload?.reward
           });
         }
       } catch (_) {}
+
       return result;
     };
   }
 
-  window.addEventListener('pageshow', v803HideOverlay);
+  window.v812HidePartyGoalTakeover = hide;
 })();
 </script>
 

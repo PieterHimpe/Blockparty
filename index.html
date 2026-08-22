@@ -67868,6 +67868,19 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v778:
+     SCORE celebration ring made visibly equivalent to the PARTY GOAL treatment.
+     - Removed the v776 SCORE-ring override that left the moving ring too hard to
+       distinguish against SCORE's full-card group-colour background.
+     - SCORE now keeps a dark inner card during celebration.
+     - The existing orange v686 SCORE border remains the fixed OUTER ring.
+     - A separate light/dark group-colour ring moves visibly INSIDE that border.
+     - The moving ring is explicitly foregrounded and its animation is explicitly
+       re-declared in the final CSS so no older SCORE rule can suppress it.
+     - No extra outer/behind ring or hard white halo is used.
+     - v777 core-cell fill fix, Party Goal timing, LEVEL progress and v775 movement
+       timing remain unchanged. -->
+
 <!-- v777:
      Small visual alignment fix for REPAIRS / NEXT SET / SCORE / LEVEL.
      - Their orange/yellow v686 SVG borders stay exactly where they are.
@@ -70445,55 +70458,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
 </style>
-
-
-
-<style id="v776-score-inner-ring-like-party-goal">
-  /*
-    PARTY GOAL reads correctly because its animated ring is a foreground ring
-    inside the already visible frame. SCORE still had its animated pseudo-element
-    below the v686 SVG border (z-index 3 vs v686 z-index 7), which made it read as
-    a second/behind ring.
-
-    Keep the existing v686 SCORE border as the outer orange frame and place the
-    moving colour ring just INSIDE it.
-  */
-  #scoreDisplay.score-party-active::before {
-    inset: 5px !important;
-    border-radius: 7px !important;
-    padding: 3px !important;
-    z-index: 30 !important;
-    filter: none !important;
-    pointer-events: none !important;
-  }
-
-  #scoreDisplay.score-party-hit.score-party-active::before,
-  #scoreDisplay.score-party-active.score-party-hit::before {
-    inset: 5px !important;
-    border-radius: 7px !important;
-    padding: 3px !important;
-    z-index: 30 !important;
-  }
-
-  /*
-    v686 stays the visible OUTER orange frame.
-    Explicitly keep it under the animated inner ring but above the card background.
-  */
-  #scoreDisplay.info-cell > #v686ScoreBorder {
-    z-index: 7 !important;
-  }
-
-  /*
-    Keep SCORE text above both rings. This only affects stacking, never size.
-  */
-  #scoreDisplay.score-party-active .v685-shell,
-  #scoreDisplay.score-party-active #scoreValue {
-    position: relative !important;
-    z-index: 40 !important;
-  }
-</style>
-
-
 <style id="v777-four-core-cells-inner-dark-fill">
   /*
     Simple fix: keep the v686 border unchanged and make only the NORMAL dark fill
@@ -70539,6 +70503,122 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   */
   #scoreDisplay.score-party-active > .v685-shell::before {
     display: none !important;
+  }
+</style>
+
+
+<style id="v778-score-visible-inner-moving-ring">
+  /*
+    Final SCORE celebration geometry.
+    PARTY GOAL is readable because the moving colour ring is shown against a
+    dark card. Do the same for SCORE:
+      fixed orange outer v686 border
+      dark inner card
+      moving colour ring inside that border
+      content above everything
+  */
+
+  #scoreDisplay.score-party-active {
+    position: relative !important;
+    isolation: isolate !important;
+    background: transparent !important;
+    border-color: transparent !important;
+
+    /* Remove V230's hard white outer ring; the v686 orange frame stays authoritative. */
+    box-shadow: none !important;
+  }
+
+  /* Dark celebration card, 2px inward like the v777 normal core-cell fill. */
+  #scoreDisplay.score-party-active::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 2px !important;
+    border-radius: 8px !important;
+    background: rgba(0,0,0,.70) !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+  }
+
+  /*
+    Fixed outer SCORE border remains the existing v686 SVG.
+    It is NOT recoloured and does NOT move.
+  */
+  #scoreDisplay.info-cell > #v686ScoreBorder {
+    z-index: 7 !important;
+  }
+
+  /*
+    Moving INNER ring. Re-declare the complete visual + animation here instead
+    of depending on the older v235 geometry.
+  */
+  #scoreDisplay.score-party-active::before {
+    display: block !important;
+    content: "" !important;
+    position: absolute !important;
+    inset: 4px !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    pointer-events: none !important;
+    z-index: 30 !important;
+    opacity: 1 !important;
+
+    background: conic-gradient(
+      from var(--v235-score-angle),
+      var(--party-dark, #245486) 0deg 60deg,
+      var(--party-light, #9BC9F2) 60deg 120deg,
+      var(--party-dark, #245486) 120deg 180deg,
+      var(--party-light, #9BC9F2) 180deg 240deg,
+      var(--party-dark, #245486) 240deg 300deg,
+      var(--party-light, #9BC9F2) 300deg 360deg
+    ) !important;
+
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0) !important;
+    -webkit-mask-composite: xor !important;
+            mask-composite: exclude !important;
+
+    filter: none !important;
+    transform: none !important;
+    animation: v235ScoreColorsForward 2450ms linear infinite !important;
+  }
+
+  #scoreDisplay.score-party-active.v235-spin-reverse::before {
+    animation: v235ScoreColorsReverse 2450ms linear infinite !important;
+  }
+
+  /* Arrival hit must not replace or hide the moving ring. */
+  #scoreDisplay.score-party-hit.score-party-active::before,
+  #scoreDisplay.score-party-active.score-party-hit::before {
+    display: block !important;
+    inset: 4px !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    z-index: 30 !important;
+    opacity: 1 !important;
+    animation: v235ScoreColorsForward 2450ms linear infinite !important;
+  }
+
+  /* SCORE content stays above dark fill, fixed outer border and moving inner ring. */
+  #scoreDisplay.score-party-active > .v685-shell {
+    position: relative !important;
+    z-index: 40 !important;
+    background: transparent !important;
+  }
+
+  #scoreDisplay.score-party-active #scoreValue,
+  #scoreDisplay.score-party-active .v685-title {
+    position: relative !important;
+    z-index: 41 !important;
+  }
+
+  /*
+    v777 normally excludes active SCORE from its inset-fill pseudo-element.
+    Keep that explicit: v778's parent ::after is the only active dark fill.
+  */
+  #scoreDisplay.score-party-active > .v685-shell::before {
+    display: none !important;
+    content: none !important;
   }
 </style>
 

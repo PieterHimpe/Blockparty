@@ -67769,6 +67769,14 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v792:
+     Bottom SCORE / LEVEL cards refined.
+     - SCORE and LEVEL now use one stricter shared geometry so both cards match better.
+     - The labels "SCORE" and "LEVEL" are moved slightly LOWER, closer to the feel of
+       the small "BEST PARTY" / "HIGHEST LEVEL" labels.
+     - The number zones for SCORE and LEVEL stay on exactly the same value line.
+     - No gameplay, Party Goal, lock, timing or tutorial logic changed. -->
+
 <!-- v791:
      BLUE intro artwork fix.
      - The active card is titled "READY FOR A SECOND COLOR?" with body
@@ -70834,13 +70842,15 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 </style>
 
-
-<style id="v790-score-level-visual-center">
+<style id="v792-score-level-shared-geometry">
   /*
-    SCORE + LEVEL bottom cards:
-    use a visual center, not a strict mathematical full-card center.
-    This keeps the number where it looks right in the scoring state too.
+    Shared geometry for the two bottom stat cards.
+    Goal:
+    - SCORE and LEVEL visually identical in structure
+    - top label slightly lower than before
+    - number line shared exactly
   */
+
   #v742BottomCoreStats > #scoreDisplay .v685-shell,
   #v742BottomCoreStats > #extraCell1 .v685-shell {
     position: relative !important;
@@ -70849,16 +70859,17 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     height: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
+    box-sizing: border-box !important;
   }
 
-  /* Compact title band near the top */
+  /* Label band: placed a bit lower than before */
   #v742BottomCoreStats > #scoreDisplay .v685-top,
   #v742BottomCoreStats > #extraCell1 .v685-top {
     position: absolute !important;
     left: 0 !important;
     right: 0 !important;
-    top: 7% !important;
-    height: 22% !important;
+    top: 12% !important;
+    height: 16% !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -70867,19 +70878,20 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     box-sizing: border-box !important;
     z-index: 45 !important;
     pointer-events: none !important;
+    line-height: 1 !important;
   }
 
   /*
-    Shared value line for SCORE + LEVEL.
-    The value box is anchored visually slightly below the true middle.
+    Value band: identical for SCORE and LEVEL.
+    Centered on one shared visual line.
   */
   #v742BottomCoreStats > #scoreDisplay .v685-bottom,
   #v742BottomCoreStats > #extraCell1 .v685-bottom {
     position: absolute !important;
     left: 0 !important;
     right: 0 !important;
-    top: 58% !important;
-    height: 34% !important;
+    top: 61% !important;
+    height: 32% !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -70891,36 +70903,35 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     pointer-events: none !important;
   }
 
+  /* Make both value wrappers full-size and identical */
   #v742BottomCoreStats > #scoreDisplay #scoreValue,
-  #v742BottomCoreStats > #extraCell1 #levelDisplayExtra {
+  #v742BottomCoreStats > #extraCell1 #levelDisplayExtra,
+  #v742BottomCoreStats > #extraCell1 #levelStatusValues,
+  #v742BottomCoreStats > #extraCell1 #levelStatusValues > div:first-child {
     position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 100% !important;
-    height: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
     text-align: center !important;
+    box-sizing: border-box !important;
     transform: none !important;
   }
 
-  /* Keep LEVEL's wrapper chain from introducing extra vertical bias */
-  #v742BottomCoreStats > #extraCell1 #levelStatusValues,
-  #v742BottomCoreStats > #extraCell1 #levelStatusValues > div:first-child {
-    width: 100% !important;
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
+  /* While SCORE animates, keep exactly the same geometry */
+  #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-top,
+  #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-top {
+    top: 12% !important;
+    height: 16% !important;
   }
 
-  /* Preserve the same placement while SCORE is animating */
   #v742BottomCoreStats > #scoreDisplay.score-party-active .v685-bottom,
   #v742BottomCoreStats > #scoreDisplay.score-party-hit .v685-bottom {
-    top: 58% !important;
+    top: 61% !important;
+    height: 32% !important;
     transform: translateY(-50%) !important;
   }
 </style>

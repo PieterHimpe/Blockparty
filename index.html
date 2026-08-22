@@ -39874,7 +39874,7 @@ function v446ShowBarrierLesson(afterLesson) {
         );
       }
     );
-  }, 720);
+  }, 1440);
 }
 
 
@@ -68401,6 +68401,24 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v768:
+     Party Goal celebration durations doubled.
+     - Single-color Party Goal celebration: ~0.7 s -> ~1.4 s
+     - Full Party Goal completion celebration: ~1.0 s -> ~2.0 s
+     The visual behavior is unchanged; only the durations/timers are longer. -->
+
+<!-- v767:
+     Party Goal celebration corrected.
+     - Restores the normal PARTY GOAL frame to the same static 2px / 10px rounded HUD frame as before.
+     - Removes v765's rotating frame element and its infinite animation.
+     - The frame itself NEVER rotates.
+     - On each earned Party Goal color: the whole cell pulses briefly and a light/dark
+       band travels around the FIXED rounded border in the earned color.
+     - On full completion: a stronger finite pulse + stronger finite border sweep.
+     - All celebration classes are dedicated v767 classes with explicit timers, so
+       no celebration can remain active indefinitely.
+     - v765's important image-flicker fix is preserved. -->
+
 <!-- v766:
      Tutorial Party Goal placeholder copy improved.
      Visible subtext changed from "SOON" to "COMING SOON".
@@ -70366,192 +70384,288 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
-<style id="v765-party-goal-progress-effects-style">
-  /* Final visual treatment for the visible top Party Goal. */
+
+
+
+<style id="v767-party-goal-celebration-fixed-frame-style">
+  /*
+    Static baseline = the same visual frame language as the other HUD cells.
+    Important: keep overflow hidden so the festive panel respects the rounded corners.
+  */
   #v742PartyGoalTop {
     position: relative !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     isolation: isolate !important;
+    border: 2px solid var(--v692-hud-border, #e88a2d) !important;
+    border-radius: 10px !important;
+    background: var(--v692-hud-bg, rgba(0,0,0,.68)) !important;
+    box-shadow: 0 0 6px var(--v692-hud-border, #e88a2d) !important;
+    transform: none;
   }
 
   #v742PartyGoalTop > .v606-party-goal-panel {
-    position: relative !important;
-    z-index: 1 !important;
+    border-radius: 8px !important;
   }
 
-  /* Rotating colored border ring for progress + complete. */
-  #v742PartyGoalTop::before,
-  #v742PartyGoalTop::after {
-    content: none;
+  /*
+    Kill every earlier top-host celebration transform/ring.
+    v767 owns the visible celebration from here onward.
+  */
+  #v742PartyGoalTop.v643-party-progress-pop,
+  #v742PartyGoalTop.v634-complete-payoff,
+  #v742PartyGoalTop.v614-complete,
+  #v742PartyGoalTop.v606-goal-hit,
+  #v742PartyGoalTop.v606-new-goal {
+    animation: none !important;
+    transform: none !important;
   }
 
   #v742PartyGoalTop.v643-party-progress-pop::before,
   #v742PartyGoalTop.v634-complete-payoff::before,
-  #v742PartyGoalTop.v614-complete::before {
+  #v742PartyGoalTop.v614-complete::before,
+  #v742PartyGoalTop.v606-goal-hit::before,
+  #v742PartyGoalTop.v606-new-goal::before {
+    content: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+
+  /*
+    The celebration ring is geometrically FIXED.
+    Only the conic-gradient's starting angle changes, so light/dark appears
+    to travel around the rounded border while the frame itself never rotates.
+  */
+  #v742PartyGoalTop.v767-progress-celebrate::after,
+  #v742PartyGoalTop.v767-complete-celebrate::after {
     content: '' !important;
     position: absolute !important;
-    inset: -2px !important;
-    border-radius: 14px !important;
-    padding: 2px !important;
+    inset: 0 !important;
+    border-radius: 10px !important;
+    padding: 3px !important;
     pointer-events: none !important;
-    z-index: 6 !important;
+    z-index: 30 !important;
+
     background:
       conic-gradient(
-        from 0deg,
-        color-mix(in srgb, var(--v643-party-accent, #ffd166) 88%, white 12%) 0deg,
-        color-mix(in srgb, var(--v643-party-accent, #ffd166) 48%, black 52%) 78deg,
-        color-mix(in srgb, var(--v643-party-accent, #ffd166) 90%, white 10%) 158deg,
-        color-mix(in srgb, var(--v643-party-accent, #ffd166) 42%, black 58%) 238deg,
-        color-mix(in srgb, var(--v643-party-accent, #ffd166) 92%, white 8%) 318deg,
-        color-mix(in srgb, var(--v643-party-accent, #ffd166) 88%, white 12%) 360deg
+        from var(--v767-ring-angle, 0deg),
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 0deg,
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 58%, black 42%) 48deg,
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 94%, white 6%) 102deg,
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 44%, black 56%) 158deg,
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 218deg,
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 52%, black 48%) 276deg,
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 336deg,
+        color-mix(in srgb, var(--v767-party-color, #ffd166) 96%, white 4%) 360deg
       ) !important;
+
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
             mask-composite: exclude;
-    animation: v765PartyGoalRingSpin 720ms linear infinite, v765PartyGoalRingGlow 650ms ease-in-out infinite alternate !important;
-    box-shadow:
-      0 0 7px color-mix(in srgb, var(--v643-party-accent, #ffd166) 72%, white 28%),
-      0 0 16px color-mix(in srgb, var(--v643-party-accent, #ffd166) 84%, transparent 16%) !important;
+
+    transform: none !important;
   }
 
-  /* Slightly larger pulse for one earned color. */
-  #v742PartyGoalTop.v643-party-progress-pop {
-    animation: v765TopGoalProgressPulse 620ms cubic-bezier(.2,.85,.25,1) 1 !important;
+  /* One Party Goal color earned. */
+  #v742PartyGoalTop.v767-progress-celebrate {
+    animation: v767PartyGoalProgressPulse 1360ms cubic-bezier(.2,.86,.24,1) 1 !important;
     transform-origin: center center !important;
   }
 
-  /* Stronger pulse for a fully completed Party Goal. */
-  #v742PartyGoalTop.v634-complete-payoff,
-  #v742PartyGoalTop.v614-complete {
-    animation: v765TopGoalCompletePulse 900ms cubic-bezier(.16,.9,.24,1) 1 !important;
+  #v742PartyGoalTop.v767-progress-celebrate::after {
+    animation:
+      v767PartyGoalRingFlow 1360ms linear 1,
+      v767PartyGoalRingProgressGlow 1360ms ease-out 1 !important;
+  }
+
+  /* Full Party Goal completed. */
+  #v742PartyGoalTop.v767-complete-celebrate {
+    animation: v767PartyGoalCompletePulse 2000ms cubic-bezier(.16,.9,.24,1) 1 !important;
     transform-origin: center center !important;
   }
 
-  #v742PartyGoalTop.v643-party-progress-pop > .v606-party-goal-panel,
-  #v742PartyGoalTop.v634-complete-payoff > .v606-party-goal-panel,
-  #v742PartyGoalTop.v614-complete > .v606-party-goal-panel {
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--v643-party-accent, #ffd166) 65%, white 35%),
-      0 0 12px color-mix(in srgb, var(--v643-party-accent, #ffd166) 70%, transparent 30%),
-      0 0 24px color-mix(in srgb, var(--v643-party-accent, #ffd166) 46%, transparent 54%) !important;
+  #v742PartyGoalTop.v767-complete-celebrate::after {
+    padding: 4px !important;
+    animation:
+      v767PartyGoalRingFlowComplete 2000ms linear 1,
+      v767PartyGoalRingCompleteGlow 2000ms ease-out 1 !important;
   }
 
-  @keyframes v765TopGoalProgressPulse {
+  @property --v767-ring-angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+  }
+
+  @keyframes v767PartyGoalProgressPulse {
     0%   { transform: scale(1); }
-    24%  { transform: scale(1.055); }
-    54%  { transform: scale(1.025); }
+    27%  { transform: scale(1.055); }
+    58%  { transform: scale(1.025); }
     100% { transform: scale(1); }
   }
 
-  @keyframes v765TopGoalCompletePulse {
+  @keyframes v767PartyGoalCompletePulse {
     0%   { transform: scale(1); }
-    18%  { transform: scale(1.085); }
-    46%  { transform: scale(1.045); }
+    20%  { transform: scale(1.085); }
+    48%  { transform: scale(1.045); }
     100% { transform: scale(1); }
   }
 
-  @keyframes v765PartyGoalRingSpin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+  @keyframes v767PartyGoalRingFlow {
+    from { --v767-ring-angle: 0deg; }
+    to   { --v767-ring-angle: 360deg; }
   }
 
-  @keyframes v765PartyGoalRingGlow {
-    from { opacity: .82; }
-    to   { opacity: 1; }
+  @keyframes v767PartyGoalRingFlowComplete {
+    from { --v767-ring-angle: 0deg; }
+    to   { --v767-ring-angle: 720deg; }
+  }
+
+  @keyframes v767PartyGoalRingProgressGlow {
+    0%   { opacity: 0; }
+    16%  { opacity: 1; }
+    74%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes v767PartyGoalRingCompleteGlow {
+    0%   { opacity: 0; }
+    12%  { opacity: 1; }
+    82%  { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #v742PartyGoalTop.v643-party-progress-pop,
-    #v742PartyGoalTop.v634-complete-payoff,
-    #v742PartyGoalTop.v614-complete {
+    #v742PartyGoalTop.v767-progress-celebrate,
+    #v742PartyGoalTop.v767-complete-celebrate {
       animation: none !important;
       transform: none !important;
     }
 
-    #v742PartyGoalTop.v643-party-progress-pop::before,
-    #v742PartyGoalTop.v634-complete-payoff::before,
-    #v742PartyGoalTop.v614-complete::before {
+    #v742PartyGoalTop.v767-progress-celebrate::after,
+    #v742PartyGoalTop.v767-complete-celebrate::after {
       animation: none !important;
+      opacity: 1 !important;
     }
   }
 </style>
 
-<script id="v765-party-goal-progress-effects-runtime">
+<script id="v767-party-goal-celebration-fixed-frame-runtime">
 (() => {
   'use strict';
 
-  function v765SourceGoalHost() {
-    return document.querySelector('.button-wrapper .reset-btn.v606-party-goal-host');
+  let v767ProgressTimer = null;
+  let v767CompleteTimer = null;
+  let v767LastWonColor = '#ffd166';
+
+  function topGoal() {
+    return document.getElementById('v742PartyGoalTop');
   }
 
-  function v765AccentFromPayload(payload) {
-    const key = String(payload && payload.color || '').trim();
-    if (!key) return '';
-    if (typeof window.v730DisplayGameColor === 'function') {
-      return window.v730DisplayGameColor(key);
+  function displayColor(color) {
+    const raw = String(color || '').trim();
+    if (!raw) return '#ffd166';
+
+    try {
+      if (typeof v730DisplayGameColor === 'function') {
+        return String(v730DisplayGameColor(raw) || raw);
+      }
+    } catch (_) {}
+
+    return raw;
+  }
+
+  function stopProgressCelebration(host) {
+    if (!host) return;
+    host.classList.remove('v767-progress-celebrate');
+    if (v767ProgressTimer) {
+      clearTimeout(v767ProgressTimer);
+      v767ProgressTimer = null;
     }
-    return key;
   }
 
-  function v765AccentFromCompletedGoal(host) {
-    if (!host) return '#ffd166';
-    const doneDots = Array.from(host.querySelectorAll('.v606-party-goal-dots .v619-color-target.done'));
-    const lastDone = doneDots[doneDots.length - 1];
-    if (!lastDone) return '#ffd166';
-    return (
-      lastDone.style.getPropertyValue('--v730-goal-display-color') ||
-      lastDone.style.getPropertyValue('--v619-goal-color') ||
-      getComputedStyle(lastDone).backgroundColor ||
-      '#ffd166'
-    );
+  function stopCompleteCelebration(host) {
+    if (!host) return;
+    host.classList.remove('v767-complete-celebrate');
+    if (v767CompleteTimer) {
+      clearTimeout(v767CompleteTimer);
+      v767CompleteTimer = null;
+    }
   }
 
-  function v765ApplyAccent(host, accent, durationMs) {
-    if (!host || !accent) return;
-    host.style.setProperty('--v643-party-accent', accent);
-    if (host._v765AccentTimer) clearTimeout(host._v765AccentTimer);
-    host._v765AccentTimer = setTimeout(() => {
-      host.style.removeProperty('--v643-party-accent');
-      host._v765AccentTimer = null;
-    }, Math.max(400, Number(durationMs) || 700));
+  function celebrateProgress(color) {
+    const host = topGoal();
+    if (!host) return;
+
+    stopCompleteCelebration(host);
+    stopProgressCelebration(host);
+
+    v767LastWonColor = displayColor(color);
+    host.style.setProperty('--v767-party-color', v767LastWonColor);
+
+    // Force a fresh finite animation every time a requested color is earned.
+    void host.offsetWidth;
+    host.classList.add('v767-progress-celebrate');
+
+    v767ProgressTimer = setTimeout(() => {
+      host.classList.remove('v767-progress-celebrate');
+      v767ProgressTimer = null;
+      if (!host.classList.contains('v767-complete-celebrate')) {
+        host.style.removeProperty('--v767-party-color');
+      }
+    }, 720);
   }
 
+  function celebrateComplete() {
+    const host = topGoal();
+    if (!host) return;
+
+    stopProgressCelebration(host);
+    stopCompleteCelebration(host);
+
+    host.style.setProperty('--v767-party-color', v767LastWonColor || '#ffd166');
+
+    void host.offsetWidth;
+    host.classList.add('v767-complete-celebrate');
+
+    v767CompleteTimer = setTimeout(() => {
+      host.classList.remove('v767-complete-celebrate');
+      host.style.removeProperty('--v767-party-color');
+      v767CompleteTimer = null;
+    }, 2120);
+  }
+
+  /*
+    Hook after all existing Party Goal callbacks.
+    Game logic/rewards are untouched; these wrappers only add finite visible effects.
+  */
   if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onProgress === 'function') {
-    const v765BaseOnProgress = window.bpPartyGoalV634.onProgress;
+    const baseProgress = window.bpPartyGoalV634.onProgress;
     window.bpPartyGoalV634.onProgress = function(payload) {
-      const result = v765BaseOnProgress.apply(this, arguments);
-      try {
-        const host = v765SourceGoalHost();
-        const accent = v765AccentFromPayload(payload || {});
-        if (host && accent) {
-          host.style.setProperty('--v643-party-accent', accent);
-          host.classList.remove('v643-party-progress-pop');
-          void host.offsetWidth;
-          host.classList.add('v643-party-progress-pop');
-          v765ApplyAccent(host, accent, 700);
-        }
-      } catch (_) {}
+      const result = baseProgress.apply(this, arguments);
+      try { celebrateProgress(payload && payload.color); } catch (_) {}
       return result;
     };
   }
 
   if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
-    const v765BaseOnComplete = window.bpPartyGoalV634.onComplete;
+    const baseComplete = window.bpPartyGoalV634.onComplete;
     window.bpPartyGoalV634.onComplete = function(payload) {
-      const result = v765BaseOnComplete.apply(this, arguments);
-      try {
-        const host = v765SourceGoalHost();
-        const accent = v765AccentFromCompletedGoal(host);
-        if (host && accent) {
-          host.style.setProperty('--v643-party-accent', accent);
-          v765ApplyAccent(host, accent, 1100);
-        }
-      } catch (_) {}
+      const result = baseComplete.apply(this, arguments);
+      try { celebrateComplete(); } catch (_) {}
       return result;
     };
   }
+
+  // Defensive cleanup on page restoration/resume.
+  window.addEventListener('pageshow', () => {
+    const host = topGoal();
+    if (!host) return;
+    stopProgressCelebration(host);
+    stopCompleteCelebration(host);
+    host.style.removeProperty('--v767-party-color');
+  });
 })();
 </script>
 

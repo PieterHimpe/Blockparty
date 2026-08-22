@@ -68388,6 +68388,15 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </script>
 
 
+<!-- v774:
+     Party Goal timing consolidated to ONE authoritative source.
+     - Removed the v773 extra cleanup/wrapper script completely.
+     - The original Party Goal CSS animation durations are now directly 2720ms
+       for progress and 4000ms for full completion.
+     - The original Party Goal JS cleanup timers are now directly 2880ms and 4240ms.
+     - No second wrapper can remove or restart those celebration classes early.
+     - v773 SCORE-border geometry and the real 4px Party Goal frame are preserved. -->
+
 <!-- v773:
      SCORE and PARTY GOAL celebration polish.
      - SCORE no longer gets an extra outer ring. The existing SCORE border area itself
@@ -70507,27 +70516,27 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
   /* One Party Goal color earned. */
   #v742PartyGoalTop.v767-progress-celebrate {
-    animation: v767PartyGoalProgressPulse 1360ms cubic-bezier(.2,.86,.24,1) 1 !important;
+    animation: v767PartyGoalProgressPulse 2720ms cubic-bezier(.2,.86,.24,1) 1 !important;
     transform-origin: center center !important;
   }
 
   #v742PartyGoalTop.v767-progress-celebrate::after {
     animation:
-      v235ScoreColorsForward 1360ms linear 1,
-      v767PartyGoalRingProgressGlow 1360ms ease-out 1 !important;
+      v235ScoreColorsForward 2720ms linear 1,
+      v767PartyGoalRingProgressGlow 2720ms ease-out 1 !important;
   }
 
   /* Full Party Goal completed. */
   #v742PartyGoalTop.v767-complete-celebrate {
-    animation: v767PartyGoalCompletePulse 2000ms cubic-bezier(.16,.9,.24,1) 1 !important;
+    animation: v767PartyGoalCompletePulse 4000ms cubic-bezier(.16,.9,.24,1) 1 !important;
     transform-origin: center center !important;
   }
 
   #v742PartyGoalTop.v767-complete-celebrate::after {
     padding: 4px !important;
     animation:
-      v235ScoreColorsForward 2000ms linear 1,
-      v767PartyGoalRingCompleteGlow 2000ms ease-out 1 !important;
+      v235ScoreColorsForward 4000ms linear 1,
+      v767PartyGoalRingCompleteGlow 4000ms ease-out 1 !important;
   }
 
 
@@ -70667,7 +70676,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       if (!host.classList.contains('v767-complete-celebrate')) {
         clearPartyGoalTint(host);
       }
-    }, 1440);
+    }, 2880);
   }
 
   function celebrateComplete() {
@@ -70686,7 +70695,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       host.classList.remove('v767-complete-celebrate');
       clearPartyGoalTint(host);
       v767CompleteTimer = null;
-    }, 2120);
+    }, 4240);
   }
 
   /*
@@ -70920,114 +70929,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     border-radius: 10px !important;
   }
 
-  /* Double the existing Party Goal durations once more. */
-  #v742PartyGoalTop.v767-progress-celebrate {
-    animation: v767PartyGoalProgressPulse 2720ms cubic-bezier(.2,.86,.24,1) 1 !important;
-  }
-
-  #v742PartyGoalTop.v767-progress-celebrate::after {
-    animation:
-      v235ScoreColorsForward 2720ms linear 1,
-      v767PartyGoalRingProgressGlow 2720ms ease-out 1 !important;
-  }
-
-  #v742PartyGoalTop.v767-complete-celebrate {
-    animation: v767PartyGoalCompletePulse 4000ms cubic-bezier(.16,.9,.24,1) 1 !important;
-  }
-
-  #v742PartyGoalTop.v767-complete-celebrate::after {
-    animation:
-      v235ScoreColorsForward 4000ms linear 1,
-      v767PartyGoalRingCompleteGlow 4000ms ease-out 1 !important;
-  }
 </style>
 
-<script id="v773-party-goal-longer-cleanup">
-(() => {
-  'use strict';
-
-  if (typeof window.bpPartyGoalV634 !== 'object' || !window.bpPartyGoalV634) return;
-
-  /*
-    Rewrap the existing v767/v771 callback decorations only to extend the
-    visible celebration cleanup window. Game logic remains untouched.
-  */
-
-  // Patch celebrateProgress / celebrateComplete indirectly by wrapping callbacks
-  // after the existing wrappers. The classes are removed and reapplied by the
-  // current implementation, so we only need to keep them alive longer.
-  const topGoal = () => document.getElementById('v742PartyGoalTop');
-
-  let progressCleanup = null;
-  let completeCleanup = null;
-
-  function keepProgressAliveLonger() {
-    const host = topGoal();
-    if (!host) return;
-    if (progressCleanup) clearTimeout(progressCleanup);
-    progressCleanup = setTimeout(() => {
-      host.classList.remove('v767-progress-celebrate');
-      if (!host.classList.contains('v767-complete-celebrate')) {
-        host.style.removeProperty('--v767-party-color');
-        host.style.removeProperty('--party-dark');
-        host.style.removeProperty('--party-base');
-        host.style.removeProperty('--party-light');
-        host.style.removeProperty('--party-highlight');
-      }
-      progressCleanup = null;
-    }, 2880);
-  }
-
-  function keepCompleteAliveLonger() {
-    const host = topGoal();
-    if (!host) return;
-    if (completeCleanup) clearTimeout(completeCleanup);
-    completeCleanup = setTimeout(() => {
-      host.classList.remove('v767-complete-celebrate');
-      host.style.removeProperty('--v767-party-color');
-      host.style.removeProperty('--party-dark');
-      host.style.removeProperty('--party-base');
-      host.style.removeProperty('--party-light');
-      host.style.removeProperty('--party-highlight');
-      completeCleanup = null;
-    }, 4240);
-  }
-
-  if (typeof window.bpPartyGoalV634.onProgress === 'function') {
-    const baseProgress = window.bpPartyGoalV634.onProgress;
-    window.bpPartyGoalV634.onProgress = function() {
-      const result = baseProgress.apply(this, arguments);
-      try {
-        const host = topGoal();
-        if (host) {
-          host.classList.remove('v767-progress-celebrate');
-          void host.offsetWidth;
-          host.classList.add('v767-progress-celebrate');
-        }
-        keepProgressAliveLonger();
-      } catch (_) {}
-      return result;
-    };
-  }
-
-  if (typeof window.bpPartyGoalV634.onComplete === 'function') {
-    const baseComplete = window.bpPartyGoalV634.onComplete;
-    window.bpPartyGoalV634.onComplete = function() {
-      const result = baseComplete.apply(this, arguments);
-      try {
-        const host = topGoal();
-        if (host) {
-          host.classList.remove('v767-complete-celebrate');
-          void host.offsetWidth;
-          host.classList.add('v767-complete-celebrate');
-        }
-        keepCompleteAliveLonger();
-      } catch (_) {}
-      return result;
-    };
-  }
-})();
-</script>
 
 </body>
 </html>

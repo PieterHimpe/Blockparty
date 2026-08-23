@@ -71253,6 +71253,29 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 </style>
 
 
+<!-- v815:
+     Large Party Goal takeover banner gets the same kind of festive rotating border
+     as the initial Party Goal onboarding card.
+     Scope intentionally limited:
+     - build on working v814;
+     - do NOT touch start/menu/intro/gameflow logic;
+     - only restyle the large Party Goal banner border.
+-->
+
+<!-- v814:
+     Refinement of the working v813 Party Goal takeover.
+     Scope intentionally limited:
+     - keep the working v813/v812/v807 logic;
+     - do NOT touch start/menu/intro flow;
+     - only improve the visibility treatment of the newly earned Party Goal color.
+     Changes:
+     - the newly earned disc no longer grows larger and no longer overlaps neighbours;
+     - it stays in the normal layout, but gets a clearer festive emphasis:
+       double ring, stronger glow, sparkle accents, and a small NEW badge;
+     - the other four discs stay readable, so it remains clear:
+       these are the 5 target colors, these were already done, and this one was just added.
+-->
+
 <!-- v813:
      Party Goal takeover refinement, still built ONLY on v812/v807 Party Goal code.
      - Large takeover now clones the ACTUAL current Party Goal panel DOM, so it is
@@ -71345,7 +71368,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     height: 100% !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
-    border: 3px solid #e88a2d !important;
+    border: 5px solid transparent !important;
     border-radius: 15px !important;
 
     display: flex !important;
@@ -71363,11 +71386,26 @@ triggerPromoGroupCelebration = function(group, groupColor) {
         rgba(88,35,26,.98) 28%,
         rgba(120,54,22,.97) 50%,
         rgba(86,34,43,.98) 72%,
-        rgba(39,18,28,.99) 100%) !important;
+        rgba(39,18,28,.99) 100%) padding-box,
+      conic-gradient(
+        from var(--v235-score-angle),
+        #FFD86A 0deg 40deg,
+        #e88a2d 40deg 80deg,
+        #ff74b8 80deg 120deg,
+        #7be9d6 120deg 160deg,
+        #9b7cf7 160deg 200deg,
+        #FFD86A 200deg 240deg,
+        #e88a2d 240deg 280deg,
+        #ff74b8 280deg 320deg,
+        #7be9d6 320deg 340deg,
+        #9b7cf7 340deg 360deg
+      ) border-box !important;
     box-shadow:
       inset 0 0 0 1px rgba(255,210,120,.07),
       inset 0 8px 24px rgba(255,149,35,.06),
-      0 0 12px rgba(232,138,45,.22) !important;
+      0 0 14px rgba(232,138,45,.24),
+      0 0 20px rgba(255,216,106,.16) !important;
+    animation: v815PartyGoalBannerBorderRotate 2300ms linear infinite !important;
   }
 
   #v812PartyGoalTakeover .v812-panel.v606-party-goal-panel::before {
@@ -71437,8 +71475,8 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: clamp(6px, 1.9vw, 11px) !important;
-    margin: 0 !important;
+    gap: clamp(8px, 2vw, 12px) !important;
+    margin: 0 0 8px !important;
     padding: 0 !important;
   }
 
@@ -71482,43 +71520,103 @@ triggerPromoGroupCelebration = function(group, groupColor) {
   }
 
   /*
-    V813: persistent highlight instead of relying on rapid flicker.
-    This is deliberately visible for the complete takeover lifetime.
+    V814: clearer emphasis without changing disc size/position.
+    The earned disc stays in the same layout, but gets a strong readable accent.
   */
   #v812PartyGoalTakeover .v606-party-goal-dot {
     transition: none !important;
   }
 
   #v812PartyGoalTakeover .v606-party-goal-dot.v812-not-new {
-    opacity: .64 !important;
-    filter: brightness(.84) saturate(.90) !important;
-    transform: scale(.92) !important;
+    opacity: .72 !important;
+    filter: brightness(.90) saturate(.94) !important;
+    transform: none !important;
   }
 
   #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned {
     z-index: 8 !important;
     opacity: 1 !important;
-    transform: scale(1.42) !important;
-    filter: brightness(1.22) saturate(1.14) !important;
+    transform: none !important;
+    filter: brightness(1.18) saturate(1.12) !important;
     border: 3px solid #ffffff !important;
     box-shadow:
-      0 0 0 4px rgba(255,214,88,.96),
+      0 0 0 4px rgba(255,214,88,.98),
+      0 0 0 7px rgba(255,255,255,.22),
       0 0 18px 7px color-mix(
         in srgb,
-        var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) 70%,
-        white 30%
+        var(--v730-goal-display-color, var(--v619-goal-color, #e88a2d)) 74%,
+        white 26%
       ),
-      inset 0 0 0 2px rgba(255,255,255,.34) !important;
+      inset 0 0 0 2px rgba(255,255,255,.36) !important;
   }
 
   #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned::before {
     content: '' !important;
     position: absolute !important;
-    inset: -9px !important;
+    inset: -11px !important;
     border-radius: 50% !important;
-    border: 2px solid rgba(255,255,255,.72) !important;
-    box-shadow: 0 0 13px rgba(255,255,255,.34) !important;
+    border: 2px solid rgba(255,255,255,.75) !important;
+    box-shadow:
+      0 0 10px rgba(255,255,255,.34),
+      0 0 16px rgba(255,214,88,.26) !important;
     pointer-events: none !important;
+  }
+
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned::after {
+    content: 'NEW' !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: calc(100% + 7px) !important;
+    transform: translateX(-50%) !important;
+    min-width: 28px !important;
+    padding: 1px 6px 0 !important;
+    border-radius: 999px !important;
+    border: 2px solid rgba(255,255,255,.84) !important;
+    background: linear-gradient(180deg, #ffe680 0%, #ffb347 100%) !important;
+    color: #5c2408 !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.46rem, 1.8vw, .62rem) !important;
+    line-height: 1.1 !important;
+    font-weight: 1000 !important;
+    letter-spacing: .04em !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    box-shadow:
+      0 2px 0 rgba(92,36,8,.18),
+      0 0 10px rgba(255,196,73,.32) !important;
+    pointer-events: none !important;
+  }
+
+  /* Festive sparkles around the newly earned disc, without moving the disc itself. */
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned .v814-sparkles {
+    position: absolute !important;
+    inset: -13px !important;
+    pointer-events: none !important;
+    z-index: 9 !important;
+  }
+
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned .v814-sparkles::before,
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned .v814-sparkles::after {
+    content: '' !important;
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
+    inset: 0 !important;
+    background:
+      radial-gradient(circle at 18% 24%, rgba(255,238,165,.95) 0 1.6px, transparent 2px),
+      radial-gradient(circle at 80% 20%, rgba(255,176,73,.92) 0 1.7px, transparent 2.1px),
+      radial-gradient(circle at 16% 78%, rgba(255,132,186,.88) 0 1.5px, transparent 1.9px),
+      radial-gradient(circle at 84% 74%, rgba(123,233,214,.92) 0 1.6px, transparent 2px),
+      linear-gradient(90deg, transparent 0 45%, rgba(255,242,188,.92) 45% 55%, transparent 55% 100%) 28% 10% / 8px 8px no-repeat,
+      linear-gradient(0deg, transparent 0 45%, rgba(255,242,188,.92) 45% 55%, transparent 55% 100%) 28% 10% / 8px 8px no-repeat,
+      linear-gradient(90deg, transparent 0 45%, rgba(255,225,122,.88) 45% 55%, transparent 55% 100%) 72% 84% / 7px 7px no-repeat,
+      linear-gradient(0deg, transparent 0 45%, rgba(255,225,122,.88) 45% 55%, transparent 55% 100%) 72% 84% / 7px 7px no-repeat !important;
+    opacity: .98 !important;
+  }
+
+  #v812PartyGoalTakeover .v606-party-goal-dot.v812-newly-earned .v814-sparkles::after {
+    transform: rotate(18deg) !important;
+    opacity: .7 !important;
   }
 
   /* Much larger flanking figures for the larger version of the cell. */
@@ -71914,6 +72012,16 @@ triggerPromoGroupCelebration = function(group, groupColor) {
         dot.classList.add('v812-newly-earned');
       } else {
         dot.classList.add('v812-not-new');
+      }
+    });
+
+    clonedDots.forEach((dot) => {
+      dot.querySelectorAll('.v814-sparkles').forEach(node => node.remove());
+      if (dot.classList.contains('v812-newly-earned')) {
+        const sparkle = document.createElement('span');
+        sparkle.className = 'v814-sparkles';
+        sparkle.setAttribute('aria-hidden', 'true');
+        dot.appendChild(sparkle);
       }
     });
 

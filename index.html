@@ -40457,14 +40457,13 @@ function v450IsArrowControl(control) {
 
 function v448SyncControlLocks() {
   /*
-    V764:
-    In normal gameplay (level 11+) the short movement-area transition is only
-    a technical no-input window. It no longer needs a visible gray-arrow flash.
-    Tutorial levels keep the old visual teaching language.
+    V839 fixed16:
+    The short movement-area transition after a landing is a technical no-input
+    window in EVERY level, including onboarding. Keep the logical input lock,
+    but never gray-flash the movement arrows for that transition alone.
+    Intentional tutorial dimming remains owned by tutorial-arrow-dimmed/disabled.
   */
-  const normalGameplayTransitionOnly = Boolean(
-    typeof level !== "undefined" &&
-    level >= 11 &&
+  const movementAreaTransitionOnly = Boolean(
     typeof isMovementAreaTransitionActive === "function" &&
     isMovementAreaTransitionActive() &&
     !gamePaused &&
@@ -40476,10 +40475,10 @@ function v448SyncControlLocks() {
     const shouldLock = v448ShouldLockControl(control);
     const isArrow = v450IsArrowControl(control);
 
-    // Visuele lock enkel op pijltjes, behalve bij de gewone 360ms as-overgang.
+    // Keep the technical input lock, but do not show a gray flash on landing.
     control.classList.toggle(
       "v448-auto-input-locked",
-      shouldLock && isArrow && !normalGameplayTransitionOnly
+      shouldLock && isArrow && !movementAreaTransitionOnly
     );
 
     // Zorg dat niet-pijltjes nooit onterecht grijs blijven hangen.

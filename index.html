@@ -14399,6 +14399,20 @@ const activeRewards = {
   totalBpmReduction: 0
 };
 
+// V839 FIX17: Party Mission gameplay upgrades are temporary.
+// Instant stock rewards stay permanent, but every active upgrade lasts for
+// exactly the next 100 played sets. Timers are independent per reward family.
+const PARTY_REWARD_SET_DURATION = 100;
+const activeRewardSetsRemaining = {
+  heartFrequency: 0,
+  multicolorFrequency: 0,
+  freePictureFrequency: 0,
+  heartValue: 0,
+  multicolorValue: 0,
+  freePictureValue: 0,
+  divaCountdown: 0
+};
+
 
 
 /* ===== V190: centrale beschikbaarheid van de 12 infocellen ===== */
@@ -14846,8 +14860,93 @@ function getDefaultActiveRewards() {
   };
 }
 
+function getDefaultActiveRewardSetTimers() {
+  return {
+    heartFrequency: 0,
+    multicolorFrequency: 0,
+    freePictureFrequency: 0,
+    heartValue: 0,
+    multicolorValue: 0,
+    freePictureValue: 0,
+    divaCountdown: 0
+  };
+}
+
+function activeRewardEffectIsActive(key) {
+  switch (key) {
+    case 'heartFrequency': return activeRewards.heartFrequencyMultiplier > 1;
+    case 'multicolorFrequency': return activeRewards.multicolorFrequencyMultiplier > 1;
+    case 'freePictureFrequency': return activeRewards.freePictureFrequencyMultiplier > 1;
+    case 'heartValue': return activeRewards.heartLifeValue > 1;
+    case 'multicolorValue': return activeRewards.multicolorRewardValue > 1;
+    case 'freePictureValue': return activeRewards.freePictureRewardValue > 1;
+    case 'divaCountdown': return activeRewards.divaCountdownMultiplier > 1;
+    default: return false;
+  }
+}
+
+function startTimedPartyReward(key) {
+  if (!Object.prototype.hasOwnProperty.call(activeRewardSetsRemaining, key)) return;
+  // If the next set has already been spawned while the reward chooser is open,
+  // that visible/paused set is set 1 of 100. Otherwise all 100 are still ahead.
+  activeRewardSetsRemaining[key] = Math.max(
+    0,
+    PARTY_REWARD_SET_DURATION - (typeof fallingBlock !== 'undefined' && fallingBlock ? 1 : 0)
+  );
+}
+
+function resetTimedPartyRewardEffect(key) {
+  switch (key) {
+    case 'heartFrequency':
+      activeRewards.heartFrequencyMultiplier = 1;
+      break;
+    case 'multicolorFrequency':
+      activeRewards.multicolorFrequencyMultiplier = 1;
+      break;
+    case 'freePictureFrequency':
+      activeRewards.freePictureFrequencyMultiplier = 1;
+      break;
+    case 'heartValue':
+      activeRewards.heartLifeValue = 1;
+      break;
+    case 'multicolorValue':
+      activeRewards.multicolorRewardValue = 1;
+      break;
+    case 'freePictureValue':
+      activeRewards.freePictureRewardValue = 1;
+      break;
+    case 'divaCountdown':
+      activeRewards.divaCountdownMultiplier = 1;
+      break;
+  }
+}
+
+function advanceTimedPartyRewardsForNewSet() {
+  let changed = false;
+
+  Object.keys(activeRewardSetsRemaining).forEach(key => {
+    const remaining = Math.max(0, Number(activeRewardSetsRemaining[key]) || 0);
+
+    // A zero timer with an active effect means the previous/current set was the
+    // 100th one. Expire before this new set starts.
+    if (remaining === 0) {
+      if (activeRewardEffectIsActive(key)) {
+        resetTimedPartyRewardEffect(key);
+        changed = true;
+      }
+      return;
+    }
+
+    activeRewardSetsRemaining[key] = remaining - 1;
+    changed = true;
+  });
+
+  if (changed) saveActiveRewards();
+}
+
 function resetActiveRewards(options = {}) {
   Object.assign(activeRewards, getDefaultActiveRewards());
+  Object.assign(activeRewardSetsRemaining, getDefaultActiveRewardSetTimers());
 
   if (options.removeSaved !== false) {
     localStorage.removeItem("activePartyRewards");
@@ -14857,12 +14956,16 @@ function resetActiveRewards(options = {}) {
 function saveActiveRewards() {
   localStorage.setItem(
     "activePartyRewards",
-    JSON.stringify(activeRewards)
+    JSON.stringify({
+      ...activeRewards,
+      setTimers: { ...activeRewardSetsRemaining }
+    })
   );
 }
 
 function restoreActiveRewards() {
   Object.assign(activeRewards, getDefaultActiveRewards());
+  Object.assign(activeRewardSetsRemaining, getDefaultActiveRewardSetTimers());
 
   const storedRewards = localStorage.getItem("activePartyRewards");
   if (!storedRewards) return;
@@ -14899,6 +15002,24 @@ function restoreActiveRewards() {
 
     activeRewards.totalBpmReduction =
       Math.max(0, Number(parsed.totalBpmReduction) || 0);
+
+    const storedTimers = parsed && typeof parsed.setTimers === 'object' && parsed.setTimers
+      ? parsed.setTimers
+      : null;
+
+    Object.keys(activeRewardSetsRemaining).forEach(key => {
+      if (storedTimers && Number.isFinite(Number(storedTimers[key]))) {
+        activeRewardSetsRemaining[key] = Math.max(
+          0,
+          Math.min(PARTY_REWARD_SET_DURATION, Math.floor(Number(storedTimers[key])))
+        );
+      } else if (activeRewardEffectIsActive(key)) {
+        // Backward compatibility: an older save can contain a formerly permanent
+        // timed active reward but no timer. Give that effect one fresh 100-set lifetime.
+        // BPM reductions are intentionally excluded from this timer map and remain permanent.
+        activeRewardSetsRemaining[key] = PARTY_REWARD_SET_DURATION;
+      }
+    });
   } catch (error) {
     console.error("Fout bij laden van Party Mission-beloningen:", error);
     resetActiveRewards({ removeSaved: true });
@@ -15061,7 +15182,7 @@ const PARTY_REWARDS = [
     id: "heart_frequency_2",
     icon: "❤️",
     title: "Heart Blocks 2×",
-    description: "Heart Blocks appear twice as often for the rest of this game.",
+    description: "Heart Blocks appear twice as often for the next 100 sets.",
     weight: 6,
     exclusionGroup: "heart_frequency",
     type: "active",
@@ -15069,13 +15190,14 @@ const PARTY_REWARDS = [
     apply() {
       activeRewards.heartFrequencyMultiplier =
         Math.max(activeRewards.heartFrequencyMultiplier, 2);
+      startTimedPartyReward('heartFrequency');
     }
   },
   {
     id: "heart_frequency_3",
     icon: "❤️",
     title: "Heart Blocks 3×",
-    description: "Heart Blocks appear three times as often for the rest of this game.",
+    description: "Heart Blocks appear three times as often for the next 100 sets.",
     weight: 3,
     exclusionGroup: "heart_frequency",
     type: "active",
@@ -15083,13 +15205,14 @@ const PARTY_REWARDS = [
     apply() {
       activeRewards.heartFrequencyMultiplier =
         Math.max(activeRewards.heartFrequencyMultiplier, 3);
+      startTimedPartyReward('heartFrequency');
     }
   },
   {
     id: "multicolor_frequency_2",
     icon: "🌈",
     title: "Multicolors 2×",
-    description: "Multicolor Blocks appear twice as often for the rest of this game.",
+    description: "Multicolor Blocks appear twice as often for the next 100 sets.",
     weight: 6,
     exclusionGroup: "multicolor_frequency",
     type: "active",
@@ -15097,13 +15220,14 @@ const PARTY_REWARDS = [
     apply() {
       activeRewards.multicolorFrequencyMultiplier =
         Math.max(activeRewards.multicolorFrequencyMultiplier, 2);
+      startTimedPartyReward('multicolorFrequency');
     }
   },
   {
     id: "multicolor_frequency_3",
     icon: "🌈",
     title: "Multicolors 3×",
-    description: "Multicolor Blocks appear three times as often for the rest of this game.",
+    description: "Multicolor Blocks appear three times as often for the next 100 sets.",
     weight: 3,
     exclusionGroup: "multicolor_frequency",
     type: "active",
@@ -15111,13 +15235,14 @@ const PARTY_REWARDS = [
     apply() {
       activeRewards.multicolorFrequencyMultiplier =
         Math.max(activeRewards.multicolorFrequencyMultiplier, 3);
+      startTimedPartyReward('multicolorFrequency');
     }
   },
   {
     id: "free_picture_frequency_2",
     icon: "🖼️",
     title: "Free Pictures 2×",
-    description: "You earn Free Pictures twice as often for the rest of this game.",
+    description: "You earn Free Pictures twice as often for the next 100 sets.",
     weight: 6,
     exclusionGroup: "free_picture_frequency",
     type: "active",
@@ -15125,13 +15250,14 @@ const PARTY_REWARDS = [
     apply() {
       activeRewards.freePictureFrequencyMultiplier =
         Math.max(activeRewards.freePictureFrequencyMultiplier, 2);
+      startTimedPartyReward('freePictureFrequency');
     }
   },
   {
     id: "free_picture_frequency_3",
     icon: "🖼️",
     title: "Free Pictures 3×",
-    description: "You earn Free Pictures three times as often for the rest of this game.",
+    description: "You earn Free Pictures three times as often for the next 100 sets.",
     weight: 3,
     exclusionGroup: "free_picture_frequency",
     type: "active",
@@ -15139,65 +15265,70 @@ const PARTY_REWARDS = [
     apply() {
       activeRewards.freePictureFrequencyMultiplier =
         Math.max(activeRewards.freePictureFrequencyMultiplier, 3);
+      startTimedPartyReward('freePictureFrequency');
     }
   },
   {
     id: "heart_value_2",
     icon: "🛠️",
     title: "Repair Block Gives +2",
-    description: "Every cleared Repair Block now adds two Repairs.",
+    description: "For the next 100 sets, every cleared Repair Block adds two Repairs.",
     weight: 5,
     exclusionGroup: null,
     type: "active",
     accent: "#FF5A7D",
     apply() {
       activeRewards.heartLifeValue = 2;
+      startTimedPartyReward('heartValue');
     }
   },
   {
     id: "multicolor_value_2",
     icon: "🌈",
     title: "Multicolor Gives 2",
-    description: "Every cleared Multicolor now adds two Multicolors to your supply.",
+    description: "For the next 100 sets, every cleared Multicolor adds two Multicolors to your supply.",
     weight: 4,
     exclusionGroup: null,
     type: "active",
     accent: "#45DCCC",
     apply() {
       activeRewards.multicolorRewardValue = 2;
+      startTimedPartyReward('multicolorValue');
     }
   },
   {
     id: "free_picture_value_2",
     icon: "🖼️",
     title: "Free Picture Gives 2",
-    description: "Every earned Free Picture now adds two to your supply.",
+    description: "For the next 100 sets, every earned Free Picture adds two to your supply.",
     weight: 4,
     exclusionGroup: null,
     type: "active",
     accent: "#9A62F0",
     apply() {
       activeRewards.freePictureRewardValue = 2;
+      startTimedPartyReward('freePictureValue');
     }
   },
   {
     id: "diva_countdown_2",
     icon: "💃",
     title: "Diva Countdown 2×",
-    description: "Diva Blocks count down twice as fast for the rest of this game.",
+    description: "Diva Blocks count down twice as fast for the next 100 sets.",
     weight: 5,
     exclusionGroup: null,
     type: "active",
     accent: "#D56BFF",
     apply() {
       activeRewards.divaCountdownMultiplier = 2;
+      startTimedPartyReward('divaCountdown');
     }
   },
   {
     id: "bpm_minus_5",
     icon: "🎵",
     title: "DJ BPM −5",
-    description: "Permanently lower the current DJ tempo by 5 BPM.",
+    description: "Lower the current DJ tempo by 5 BPM for the rest of this game.",
     weight: 6,
     exclusionGroup: "bpm_reduction",
     type: "active",
@@ -15210,7 +15341,7 @@ const PARTY_REWARDS = [
     id: "bpm_minus_10",
     icon: "🎵",
     title: "DJ BPM −10",
-    description: "Permanently lower the current DJ tempo by 10 BPM.",
+    description: "Lower the current DJ tempo by 10 BPM for the rest of this game.",
     weight: 1,
     exclusionGroup: "bpm_reduction",
     type: "active",
@@ -15331,7 +15462,7 @@ function createRewardCard(reward, index) {
     <div class="reward-card-icon">${iconMarkup}</div>
     <div class="reward-card-title">${reward.title}</div>
     <div class="reward-card-description">${reward.description || ""}</div>
-    <div class="reward-card-type">${reward.type === "instant" ? "Instant reward" : "Active this game"}</div>
+    <div class="reward-card-type">${reward.type === "instant" ? "Instant reward" : (reward.id && reward.id.startsWith("bpm_minus_") ? "Permanent this game" : "Next 100 sets")}</div>
   `;
 
   const choose = () => choosePartyReward(reward.id);
@@ -15393,7 +15524,7 @@ function choosePartyReward(rewardId) {
   rewardChoiceResolved = true;
   reward.apply();
 
-  // Zowel directe als actieve beloningen worden samen met deze game bewaard.
+  // Directe beloningen en de resterende duur van actieve beloningen worden samen met deze game bewaard.
   saveActiveRewards();
 
   const overlay = document.getElementById("rewardChoiceOverlay");
@@ -15414,7 +15545,7 @@ function choosePartyReward(rewardId) {
   subtitle.textContent =
     reward.type === "instant"
       ? `${reward.title} has been added immediately.`
-      : `${reward.title} is now active for the rest of this game.`;
+      : `${reward.title} is now active for the next 100 sets.`;
   continueButton.style.display = "block";
   continueButton.onclick = closeRewardChoice;
 
@@ -20477,6 +20608,7 @@ function registerCentralTutorialBlockStart() {
 }
 
 function bpCreateBlockCoreV831(direction = "down") {
+  advanceTimedPartyRewardsForNewSet();
   registerCentralTutorialBlockStart();
 
 updateChallengeStatusCell();
@@ -20844,6 +20976,7 @@ if (practiceModech59) {
 
 
 function bpCreateBlockHCoreV831(direction = "right") {
+  advanceTimedPartyRewardsForNewSet();
   registerCentralTutorialBlockStart();
 
 updateChallengeStatusCell();
@@ -24876,6 +25009,9 @@ if (bigGroupCount >= levelProgressThreshold) {
     pauseUsesLeft++;
     updatePauseDisplay();
     updateLevelDisplay();
+    if (typeof bpShowLevelUpMissionPreview === "function") {
+      bpShowLevelUpMissionPreview(level);
+    }
   }
   bigGroupCount = 0;
 
@@ -45382,9 +45518,7 @@ window.bpLevel23OnboardingV839.replaceCore('startLevel3TwoColorTutorial','v468',
   v468Level2SetsAfterNextSet = 0;
   v468Level2Finished = false;
 
-  // Level 2 recenter: het bestaande level-1-veld blijft staan.
-  gridOffsetX = 0;
-  gridOffsetY = 0;
+  // Keep the player's current dance-floor position when Level 2 starts.
   useVertical = true;
   directionToggle = true;
   updateControls();
@@ -46499,8 +46633,8 @@ window.bpLevel23OnboardingV839.replaceCore('v408StartLevel4AfterBasics','v471', 
     level=4;localStorage.setItem('tutorialLevelV3','4');
     level4TutorialActive=true;level4TutorialColorIndex=0;level4YellowGroupsCleared=0;level4BlueGroupsCleared=0;level4RedGroupsCleared=0;level4TotalGroupsCleared=0;level4TransitionStarted=false;v471Level4ExitPending=false;v471RedIntroduced=true;
     level3ExpandedPassageUnlocked=true;level3SideLaneTutorialCompleted=true;oneColorDirectionCycleActive=false;
-    // Recenter only. Field and Barrier stay exactly as they are.
-    gridOffsetX=0;gridOffsetY=0;useVertical=true;directionToggle=true;updateControls();
+    // Keep field, Barrier and the player's current dance-floor position.
+    useVertical=true;directionToggle=true;updateControls();
     updateLevelDisplay();updateLevelAndBpmDisplay();updateTutorialColorTracker({animate:true});
     fallingBlock=null;forcedNextBlock=v471PlainBlock('#E53935',2);fallingBlock=createBlock('down');
     v408SetMovementButtonsEnabled(true);v408SetDropButtonsEnabled(true);updateFeatureAvailability({animate:false});
@@ -46871,7 +47005,7 @@ body.v472-block-c-card .v453-fast-forward {
     if(typeof heartFreed!=='undefined')heartFreed=true;
 
     oneColorDirectionCycleActive=true;
-    gridOffsetX=0;gridOffsetY=0; // recenter only: field + Barrier stay untouched.
+    // Preserve the player's current dance-floor position across the Level 4 -> 5 handoff.
 
     v472Level5ResolvedSets=0;
     v472Level5GreenAnnounced=false;
@@ -46985,7 +47119,7 @@ body.v472-block-c-card .v453-fast-forward {
     level6BlocksAfterDiva=0;
     oneColorDirectionCycleActive=true;
 
-    gridOffsetX=0;gridOffsetY=0; // recenter only; keep field + Barrier.
+    // Preserve the player's current dance-floor position for the Diva introduction.
 
     v472DivaCountdownHintShown=false;
     v472DivaTransformedShown=false;
@@ -47408,7 +47542,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     level7ColorSelected=false;level7SelectedColor=null;level7DeployedJokerCleared=false;level7PurpleUnlocked=false;level7BlocksAfterMastery=0;
     v473Level7WaitingSets=0;v473Level7AdaptiveHintShown=false;v473Level7IgnoreFirstResolved=true;
 
-    gridOffsetX=0;gridOffsetY=0; // recenter only
+    // Preserve the player's current dance-floor position for the Multicolor introduction.
     oneColorDirectionCycleActive=true;
     localStorage.setItem('tutorialLevelV3','7');
     multicolorUnlocked=false;localStorage.setItem('multicolorUnlocked','false');localStorage.setItem('testMulticolorUnlocked','false');
@@ -47511,7 +47645,8 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     level=8;level7MulticolorTutorialActive=false;level8FreePictureTutorialActive=true;
     level8FreePictureStage='awaiting_free_picture_click';level8FreePictureUsed=false;level8FreePicturePlacementMessageShown=true;
     level7PurpleUnlocked=true;level8TurquoiseUnlocked=false;level8BlocksAfterFreePicture=0;v473Level8PostPictureStarts=0;
-    gridOffsetX=0;gridOffsetY=0;oneColorDirectionCycleActive=true;
+    // Preserve the player's current dance-floor position for the Free Picture introduction.
+    oneColorDirectionCycleActive=true;
     localStorage.setItem('tutorialLevelV3','8');
 
     freePictureUnlocked=true;freePictureCount=Math.max(1,Number(freePictureCount)||0);
@@ -47579,7 +47714,8 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     level9SkipStage='playing_before_skip';level9SkipUsed=false;level9BlocksBeforeSkip=0;level9ThirdBlockStepsRemaining=0;level9BlocksAfterSkip=0;
     level9GrayUnlocked=false;level9SkipStartPending=false;level9SkipMovementStepsRemaining=0;level10TransitionStarted=false;
     level9PauseHintShown=true;level9SaveHintShown=true;
-    gridOffsetX=0;gridOffsetY=0;oneColorDirectionCycleActive=true;
+    // Preserve the player's current dance-floor position for the Skip introduction.
+    oneColorDirectionCycleActive=true;
     localStorage.setItem('tutorialLevelV3','9');
     localStorage.removeItem(FEATURE_DISCOVERY_KEYS.skip);localStorage.removeItem(FEATURE_DISCOVERY_KEYS.shop);
     updateFeatureAvailability({animate:false});updateLevelDisplay();updateLevelAndBpmDisplay();updateTutorialColorTracker({animate:false});
@@ -47710,7 +47846,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
     if(level10TransitionStarted||level!==9)return;
     level10TransitionStarted=true;level=10;level8FreePictureTutorialActive=false;level9SkipTutorialActive=false;level9SkipStage='complete';oneColorDirectionCycleActive=false;
     level10Count=5;level10FixedColor=null;v473FullPartySetStarts=0;v473MissionOpened=false;
-    gridOffsetX=0;gridOffsetY=0; // recenter only, preserve field + Barrier
+    // Preserve the player's current dance-floor position into Full Party.
     localStorage.setItem('tutorialLevelV3','10');localStorage.removeItem('tutorialCompletedV1');
     localStorage.setItem(FEATURE_DISCOVERY_KEYS.skip,'true');localStorage.setItem(FEATURE_DISCOVERY_KEYS.pause,'true');localStorage.setItem(FEATURE_DISCOVERY_KEYS.shop,'true');
     // Save stays closed only while the Full Party payoff is on screen.
@@ -51177,7 +51313,31 @@ window.bpLevel23OnboardingV839.registerWrapper('v468IntroduceNextSet','v505',fun
         playAreaOrigin + (extraColsLeft + oldMaxOffset + gridCols) * blockSize + barrierOffset
       );
 
-      // Draw left and right new 3-cell side rectangles:
+      // Lightly tint ONLY the two newly available 3x10 side zones.
+      // The familiar central 10x10 remains completely untouched.
+      // The tint follows the same tutorial state as the red outline, so both
+      // disappear together when the guided set has returned and landed.
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 64, 76, 0.075)';
+      if (laneLeftX < oldLaneLeftX) {
+        ctx.fillRect(
+          laneLeftX,
+          topBarrierY,
+          Math.max(0, oldLaneLeftX - laneLeftX),
+          Math.max(0, bottomBarrierY - topBarrierY)
+        );
+      }
+      if (oldLaneRightX < laneRightX) {
+        ctx.fillRect(
+          oldLaneRightX,
+          topBarrierY,
+          Math.max(0, laneRightX - oldLaneRightX),
+          Math.max(0, bottomBarrierY - topBarrierY)
+        );
+      }
+      ctx.restore();
+
+      // Keep the red learning outline on those same two side zones:
       // outer side vertical line + top and bottom 3-cell segments.
       if (laneLeftX < oldLaneLeftX) {
         v517DrawRedDottedSegment(laneLeftX, topBarrierY, oldLaneLeftX, topBarrierY, segmentSize);
@@ -56202,19 +56362,35 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     const v634MissionActiveForGoal =
       (typeof isAnyChallengeActive === 'function' && isAnyChallengeActive());
 
+    if (window.bpMilestonePriorityV840 && typeof window.bpMilestonePriorityV840.markPartyGoalCompleteThisTurn === 'function') {
+      window.bpMilestonePriorityV840.markPartyGoalCompleteThisTurn();
+    }
+
     if (!v634MissionActiveForGoal && typeof v468Toast === 'function') {
       v468Toast('PARTY GOAL COMPLETE!', '+100 POINTS', 1600);
     }
 
-    try {
-      if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
-        window.bpPartyGoalV634.onComplete({
-          reward: POST_GOAL_REWARD,
-          score: Number(score) || 0,
-          muted: !!v634MissionActiveForGoal
-        });
-      }
-    } catch (_) {}
+    // Visual completion is deliberately deferred by one task. This lets the same
+    // clear finish its level-up/mission scheduling before we decide what is shown.
+    setTimeout(() => {
+      const suppressForMission = !!(
+        window.bpMilestonePriorityV840 &&
+        typeof window.bpMilestonePriorityV840.suppressPartyGoalCompleteVisual === 'function' &&
+        window.bpMilestonePriorityV840.suppressPartyGoalCompleteVisual()
+      );
+      const missionNowActive =
+        (typeof isAnyChallengeActive === 'function' && isAnyChallengeActive());
+
+      try {
+        if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
+          window.bpPartyGoalV634.onComplete({
+            reward: POST_GOAL_REWARD,
+            score: Number(score) || 0,
+            muted: !!(missionNowActive || suppressForMission)
+          });
+        }
+      } catch (_) {}
+    }, 0);
 
     postGoal.mode = 'cooldown';
     postGoal.cooldownRemaining = POST_GOAL_COOLDOWN_SETS;
@@ -57074,6 +57250,10 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
 
 
 <!-- V618: VISUAL ONLY — clearer movement stage around the 10x10 dance floor.
+     During the Level-3 EXTRA SPACE demonstration, ONLY the two newly added 3x10
+     side zones (30 cells left + 30 cells right) receive a light red fill.
+     No red border is drawn. The central 10x10 remains untouched. The red fill
+     remains until the guided set has re-entered the 10x10 and landed.
      No gameplay, timing, input, scoring, tutorial or persistence logic changed. -->
 <script id="v618-movement-stage-visual-only">
 (function(){
@@ -57116,21 +57296,73 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       };
     }
 
+    const centerRawX = playAreaOrigin + extraColsLeft * blockSize;
+    const centerRawY = playAreaOrigin + extraRowsAbove * blockSize;
+    const centerRawRect = {
+      x: centerRawX,
+      y: centerRawY,
+      width: gridCols * blockSize,
+      height: gridRows * blockSize
+    };
+    // Exact requested geometry for the level-3 Extra Space lesson:
+    // the overall orange movement field is already correct; the red tutorial
+    // highlight must therefore live at the extreme outer sides of that field.
+    // So: fixed 3-column strip at the far left + fixed 3-column strip at the
+    // far right, both matching the visible movement-space height exactly.
+    const horizontalSideWidth = movementAreaGuide.axis === 'horizontal'
+      ? 3 * blockSize
+      : 0;
+    const leftExtraRect = movementAreaGuide.axis === 'horizontal'
+      ? {
+          x: areaOuter.x,
+          y: areaOuter.y,
+          width: horizontalSideWidth,
+          height: areaOuter.height
+        }
+      : null;
+    const rightExtraRect = movementAreaGuide.axis === 'horizontal'
+      ? {
+          x: areaOuter.x + areaOuter.width - horizontalSideWidth,
+          y: areaOuter.y,
+          width: horizontalSideWidth,
+          height: areaOuter.height
+        }
+      : null;
+
     return {
+      rawArea,
+      floorRect,
       floorOuter,
       areaOuter,
+      centerRawRect,
+      leftExtraRect,
+      rightExtraRect,
       axis: movementAreaGuide.axis
     };
   }
 
   function v618FillMovementStage(rects){
-    const { floorOuter, areaOuter, axis } = rects;
+    const { floorOuter, areaOuter, axis, leftExtraRect, rightExtraRect } = rects;
+    const extraSpaceLesson = v618ExtraSpaceRedGuideActive(rects);
 
     ctx.save();
 
-    // Roughly 22% warm-neutral darkening in the extra movement space.
-    // The current 10x10 itself is deliberately left untouched, preserving
-    // the dance-floor visual the player already reads clearly.
+    if (extraSpaceLesson) {
+      // Exact requested tutorial highlight:
+      // only the 3x10 strip that was added on the left and the 3x10 strip
+      // that was added on the right are tinted red. The central 10x10 stays untouched.
+      ctx.fillStyle = 'rgba(46, 204, 113, 0.15)';
+      if (leftExtraRect && leftExtraRect.width > 0.1) {
+        ctx.fillRect(leftExtraRect.x, leftExtraRect.y, leftExtraRect.width, leftExtraRect.height);
+      }
+      if (rightExtraRect && rightExtraRect.width > 0.1) {
+        ctx.fillRect(rightExtraRect.x, rightExtraRect.y, rightExtraRect.width, rightExtraRect.height);
+      }
+      ctx.restore();
+      return;
+    }
+
+    // Normal movement-stage treatment everywhere outside this one tutorial moment.
     ctx.fillStyle = 'rgba(18, 14, 10, 0.22)';
 
     if (axis === 'horizontal') {
@@ -57138,24 +57370,70 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const rightX = floorOuter.x + floorOuter.width;
       const rightW = Math.max(0, areaOuter.x + areaOuter.width - rightX);
 
-      if (leftW > 0.1) {
-        ctx.fillRect(areaOuter.x, areaOuter.y, leftW, areaOuter.height);
-      }
-      if (rightW > 0.1) {
-        ctx.fillRect(rightX, areaOuter.y, rightW, areaOuter.height);
-      }
+      if (leftW > 0.1) ctx.fillRect(areaOuter.x, areaOuter.y, leftW, areaOuter.height);
+      if (rightW > 0.1) ctx.fillRect(rightX, areaOuter.y, rightW, areaOuter.height);
     } else {
       const topH = Math.max(0, floorOuter.y - areaOuter.y);
       const bottomY = floorOuter.y + floorOuter.height;
       const bottomH = Math.max(0, areaOuter.y + areaOuter.height - bottomY);
 
-      if (topH > 0.1) {
-        ctx.fillRect(areaOuter.x, areaOuter.y, areaOuter.width, topH);
-      }
-      if (bottomH > 0.1) {
-        ctx.fillRect(areaOuter.x, bottomY, areaOuter.width, bottomH);
-      }
+      if (topH > 0.1) ctx.fillRect(areaOuter.x, areaOuter.y, areaOuter.width, topH);
+      if (bottomH > 0.1) ctx.fillRect(areaOuter.x, bottomY, areaOuter.width, bottomH);
     }
+
+    ctx.restore();
+  }
+
+  function v618ExtraSpaceRedGuideActive(rects){
+    if (!rects || rects.axis !== 'horizontal') return false;
+    if (typeof level === 'undefined' || Number(level) !== 3) return false;
+    if (typeof level3SideLaneTutorialActive === 'undefined' || !level3SideLaneTutorialActive) return false;
+    if (typeof level3SideLaneStage === 'undefined') return false;
+    return [
+      'intro_expanded',
+      'preview_fall',
+      'awaiting_left',
+      'side_fall',
+      'awaiting_right',
+      'inside_fall'
+    ].includes(level3SideLaneStage);
+  }
+
+  function v618DrawExtraSpaceRedGuide(rects){
+    if (!v618ExtraSpaceRedGuideActive(rects)) return;
+    const { leftExtraRect, rightExtraRect } = rects;
+
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(46, 204, 113, 0.98)';
+    ctx.lineWidth = Math.max(3.2, blockSize * 0.135);
+    ctx.shadowColor = 'rgba(46, 204, 113, 0.28)';
+    ctx.shadowBlur = Math.max(2.0, blockSize * 0.085);
+
+    function drawUStrip(rect, side) {
+      if (!rect || rect.width <= 0.1 || rect.height <= 0.1) return;
+      const x0 = Math.round(rect.x) + 0.5;
+      const x1 = Math.round(rect.x + rect.width) - 0.5;
+      const y0 = Math.round(rect.y) + 0.5;
+      const y1 = Math.round(rect.y + rect.height) - 0.5;
+      ctx.beginPath();
+      if (side === 'left') {
+        ctx.moveTo(x1, y0);
+        ctx.lineTo(x0, y0);
+        ctx.lineTo(x0, y1);
+        ctx.lineTo(x1, y1);
+      } else {
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y0);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x0, y1);
+      }
+      ctx.stroke();
+    }
+
+    drawUStrip(leftExtraRect, 'left');
+    drawUStrip(rightExtraRect, 'right');
 
     ctx.restore();
   }
@@ -57218,6 +57496,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     ctx.moveTo(x + corner, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + h - corner);
     ctx.stroke();
 
+    v618DrawExtraSpaceRedGuide(rects);
     ctx.restore();
   }
 
@@ -60171,7 +60450,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 
     syncOneLeft(current, total);
 
-    if (missionActive()) return;
+    if (current >= total || missionActive() || (payload && payload.muted)) return;
 
     const host = visibleGoalHost();
     if (!host) return;
@@ -61783,7 +62062,11 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     const v643BaseOnProgress = window.bpPartyGoalV634.onProgress;
     window.bpPartyGoalV634.onProgress = function(payload) {
       const result = v643BaseOnProgress.apply(this, arguments);
-      try { v643PulsePartyGoalHost(); } catch (_) {}
+      try {
+        const current = Math.max(0, Number(payload && payload.current) || 0);
+        const total = Math.max(1, Number(payload && payload.total) || 5);
+        if (current < total && !(payload && payload.muted)) v643PulsePartyGoalHost();
+      } catch (_) {}
       return result;
     };
   }
@@ -70580,7 +70863,11 @@ window.bpBarrierResolverV825=Object.freeze({
     const baseProgress = window.bpPartyGoalV634.onProgress;
     window.bpPartyGoalV634.onProgress = function(payload) {
       const result = baseProgress.apply(this, arguments);
-      try { celebrateProgress(payload && payload.color); } catch (_) {}
+      try {
+        const current = Math.max(0, Number(payload && payload.current) || 0);
+        const total = Math.max(1, Number(payload && payload.total) || 5);
+        if (current < total && !(payload && payload.muted)) celebrateProgress(payload && payload.color);
+      } catch (_) {}
       return result;
     };
   }
@@ -70589,7 +70876,7 @@ window.bpBarrierResolverV825=Object.freeze({
     const baseComplete = window.bpPartyGoalV634.onComplete;
     window.bpPartyGoalV634.onComplete = function(payload) {
       const result = baseComplete.apply(this, arguments);
-      try { celebrateComplete(); } catch (_) {}
+      try { if (!(payload && payload.muted)) celebrateComplete(); } catch (_) {}
       return result;
     };
   }
@@ -72140,7 +72427,9 @@ window.bpBarrierResolverV825=Object.freeze({
       const result = baseComplete.apply(this, arguments);
 
       try {
-        if (!(payload && payload.muted)) {
+        if (payload && payload.muted) {
+          fifthMatchSnapshot = null;
+        } else {
           const completionPayload = {
             ...(payload || {}),
             total: 5,
@@ -72390,6 +72679,345 @@ window.bpBarrierResolverV825=Object.freeze({
   window.v807NormalizeScoreLevelDigits = v807ScheduleCanonicalSizing;
 
   v807ScheduleCanonicalSizing();
+})();
+</script>
+
+
+<style id="v839f19-level-up-mission-preview-style">
+  .v839f19-level-up-preview {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.86);
+    width: min(88vw, 540px);
+    min-height: 176px;
+    z-index: 150000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 180ms ease, transform 240ms ease;
+    filter: drop-shadow(0 18px 40px rgba(0,0,0,0.45));
+  }
+  .v839f19-level-up-preview.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .v839f19-level-up-preview.is-leaving {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  .v839f19-level-up-preview-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    border: 4px solid #f09a32;
+    background:
+      radial-gradient(circle at top, rgba(255,214,102,0.26), transparent 46%),
+      linear-gradient(180deg, rgba(48,21,7,0.98) 0%, rgba(22,10,4,0.98) 100%);
+    box-shadow:
+      0 0 0 2px rgba(255,214,102,0.18) inset,
+      0 0 34px rgba(255,163,67,0.25);
+    padding: 18px 20px;
+  }
+  .v839f19-level-up-preview-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.16) 18%, transparent 36%);
+    transform: translateX(-120%);
+    animation: v839f19PreviewShine 1.8s ease-out 1;
+    pointer-events: none;
+  }
+  .v839f19-level-up-preview-body {
+    position: relative;
+    display: grid;
+    grid-template-columns: 132px 1fr;
+    gap: 18px;
+    align-items: center;
+  }
+  .v839f19-level-up-preview-iconbox {
+    width: 132px;
+    height: 132px;
+    border-radius: 22px;
+    background: rgba(10,6,4,0.9);
+    border: 2px solid rgba(255,201,98,0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 1px rgba(255,143,52,0.16) inset;
+    overflow: hidden;
+  }
+  .v839f19-level-up-preview-iconbox img {
+    max-width: 86%;
+    max-height: 86%;
+    display: block;
+    object-fit: contain;
+  }
+  .v839f19-level-up-preview-copy {
+    min-width: 0;
+  }
+  .v839f19-level-up-preview-level {
+    font-family: 'Avenir Next', Avenir, 'Trebuchet MS', Arial, sans-serif;
+    color: #ffd86a;
+    font-weight: 900;
+    font-size: clamp(1rem, 2vw, 1.15rem);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    text-shadow: 0 0 14px rgba(255,216,106,0.28);
+  }
+  .v839f19-level-up-preview-kicker {
+    color: #fff5d7;
+    font-weight: 800;
+    font-size: clamp(0.92rem, 1.85vw, 1.04rem);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    opacity: 0.96;
+    margin-bottom: 6px;
+  }
+  .v839f19-level-up-preview-title {
+    color: #ffffff;
+    font-weight: 900;
+    font-size: clamp(1.55rem, 3.45vw, 2.1rem);
+    line-height: 0.98;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    text-shadow: 0 0 22px rgba(255,112,82,0.18);
+  }
+  .v839f19-level-up-preview-remaining {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255,145,58,0.16);
+    border: 1px solid rgba(255,193,94,0.32);
+    color: #ffd86a;
+    font-weight: 900;
+    font-size: clamp(0.95rem, 1.9vw, 1.08rem);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 0 18px rgba(255,143,52,0.12) inset;
+  }
+  .v839f19-level-up-preview-remaining strong {
+    color: #ffffff;
+    font-size: 1.08em;
+    letter-spacing: 0.06em;
+  }
+  .v839f19-level-up-preview-confetti {
+    position: absolute;
+    inset: -16px;
+    overflow: hidden;
+    border-radius: 28px;
+    pointer-events: none;
+  }
+  .v839f19-level-up-preview-confetti i {
+    position: absolute;
+    top: -18px;
+    left: var(--left);
+    width: var(--w);
+    height: var(--h);
+    border-radius: 2px;
+    background: var(--color);
+    transform: rotate(var(--rotation));
+    opacity: 0;
+    animation: v839f19PreviewConfetti var(--duration) linear var(--delay) forwards;
+  }
+  @keyframes v839f19PreviewConfetti {
+    0% { transform: translate3d(0,-10px,0) rotate(var(--rotation)); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translate3d(var(--drift), 240px, 0) rotate(calc(var(--rotation) + 420deg)); opacity: 0; }
+  }
+  @keyframes v839f19PreviewShine {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(220%); }
+  }
+  @media (max-width: 620px) {
+    .v839f19-level-up-preview { width: min(92vw, 450px); }
+    .v839f19-level-up-preview-body { grid-template-columns: 104px 1fr; gap: 14px; }
+    .v839f19-level-up-preview-iconbox { width: 104px; height: 104px; border-radius: 18px; }
+    .v839f19-level-up-preview-card { padding: 16px; border-radius: 22px; }
+  }
+</style>
+<script id="v839f19-level-up-mission-preview-runtime">
+(function(){
+  // V840: one authority for simultaneous milestone presentation.
+  // Priority: Party Mission Start > Party Goal Complete > Level-up preview.
+  // Ordinary group feedback and Party Goal progress 1/5-4/5 are never suppressed.
+  let partyGoalCompleteThisTurn = false;
+  let clearPartyGoalTurnFlagScheduled = false;
+
+  function anyPartyMissionActive(){
+    try {
+      return typeof isAnyChallengeActive === 'function' && isAnyChallengeActive();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function pendingMissionAtLevel(levelNumber){
+    const lv = Math.floor(Number(levelNumber) || 0);
+    try {
+      if (lv === Number(challengeLevel) && !challengeRewardGiven) return true;
+      if (lv === Number(challenge2Level) && !challenge2RewardGiven) return true;
+      if (lv === Number(challenge3Level) && !challenge3Started) return true;
+      if (lv === Number(challenge4Level) && !challenge4RewardGiven) return true;
+      if (lv === Number(challenge5StartLevel) && !challenge5Started) return true;
+      if (lv === Number(challenge6Level) && !challenge6Done && !challenge6RewardGiven) return true;
+      if (lv === Number(challenge7Level) && !challenge7Done && !challenge7RewardGiven) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function markPartyGoalCompleteThisTurn(){
+    partyGoalCompleteThisTurn = true;
+    if (clearPartyGoalTurnFlagScheduled) return;
+    clearPartyGoalTurnFlagScheduled = true;
+    queueMicrotask(() => {
+      partyGoalCompleteThisTurn = false;
+      clearPartyGoalTurnFlagScheduled = false;
+    });
+  }
+
+  window.bpMilestonePriorityV840 = Object.freeze({
+    markPartyGoalCompleteThisTurn,
+    allowLevelUpPreview(){
+      return !partyGoalCompleteThisTurn;
+    },
+    suppressPartyGoalCompleteVisual(){
+      const currentLevel = Math.floor(Number(level) || 0);
+      return anyPartyMissionActive() || pendingMissionAtLevel(currentLevel);
+    }
+  });
+
+  const MISSION_LEVEL_PREVIEWS = Object.freeze([
+    { level: 15, title: '30 TIMES REPAIR', image: 'images/fig77.png' },
+    { level: 20, title: 'MULTICOLOR RUSH', image: 'images/fig89.png' },
+    /* User request: use the Repair figure instead of the orange heart figure here. */
+    { level: 25, title: 'BARRIER GUARD', image: 'images/fig77.png' },
+    { level: 30, title: 'PACK THE FLOOR', image: 'images/fig82.png' },
+    { level: 35, title: 'DIVA STORM', image: 'images/fig87.png' },
+    { level: 40, title: 'BIG GROUPS', image: 'images/fig88.png' },
+    { level: 45, title: 'SPEED MODE', image: 'images/fig85.png' }
+  ]);
+
+  let activePreview = null;
+  let activePreviewHideTimer = null;
+  let activePreviewCleanupTimer = null;
+
+  function isMissionThreshold(levelNumber) {
+    return MISSION_LEVEL_PREVIEWS.some(item => item.level === levelNumber);
+  }
+
+  function getNextMissionPreview(levelNumber) {
+    return MISSION_LEVEL_PREVIEWS.find(item => item.level > levelNumber) || null;
+  }
+
+  function clearActivePreview() {
+    if (activePreviewHideTimer) {
+      clearTimeout(activePreviewHideTimer);
+      activePreviewHideTimer = null;
+    }
+    if (activePreviewCleanupTimer) {
+      clearTimeout(activePreviewCleanupTimer);
+      activePreviewCleanupTimer = null;
+    }
+    if (activePreview && activePreview.parentNode) {
+      activePreview.parentNode.removeChild(activePreview);
+    }
+    activePreview = null;
+  }
+
+  function buildConfetti(host) {
+    const layer = host.querySelector('.v839f19-level-up-preview-confetti');
+    if (!layer) return;
+    const colors = ['#FFD86A','#FF5F86','#72F6A5','#5D8BFF','#B86BFF','#45E0C0','#FF9F43','#FFFFFF'];
+    for (let i = 0; i < 34; i++) {
+      const piece = document.createElement('i');
+      const width = 5 + Math.random() * 5;
+      const height = 10 + Math.random() * 10;
+      const duration = 1.6 + Math.random() * 0.9;
+      const delay = Math.random() * 0.25;
+      piece.style.setProperty('--left', `${Math.random() * 100}%`);
+      piece.style.setProperty('--w', `${width}px`);
+      piece.style.setProperty('--h', `${height}px`);
+      piece.style.setProperty('--color', colors[Math.floor(Math.random() * colors.length)]);
+      piece.style.setProperty('--duration', `${duration}s`);
+      piece.style.setProperty('--delay', `${delay}s`);
+      piece.style.setProperty('--drift', `${-90 + Math.random() * 180}px`);
+      piece.style.setProperty('--rotation', `${Math.floor(Math.random() * 360)}deg`);
+      layer.appendChild(piece);
+    }
+  }
+
+  function showOverlay(payload) {
+    clearActivePreview();
+
+    const levelWord = payload.levelsRemaining === 1 ? 'LEVEL' : 'LEVELS';
+    const overlay = document.createElement('div');
+    overlay.className = 'v839f19-level-up-preview';
+    overlay.innerHTML = `
+      <div class="v839f19-level-up-preview-card">
+        <div class="v839f19-level-up-preview-confetti" aria-hidden="true"></div>
+        <div class="v839f19-level-up-preview-body">
+          <div class="v839f19-level-up-preview-iconbox">
+            <img src="${payload.image}" alt="${payload.title}">
+          </div>
+          <div class="v839f19-level-up-preview-copy">
+            <div class="v839f19-level-up-preview-level">LEVEL ${payload.currentLevel}</div>
+            <div class="v839f19-level-up-preview-kicker">Next Party Mission</div>
+            <div class="v839f19-level-up-preview-title">${payload.title}</div>
+            <div class="v839f19-level-up-preview-remaining"><strong>${payload.levelsRemaining}</strong> ${levelWord} TO GO</div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    activePreview = overlay;
+    buildConfetti(overlay);
+    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+
+    activePreviewHideTimer = setTimeout(() => {
+      if (!overlay.isConnected) return;
+      overlay.classList.add('is-leaving');
+    }, 2400);
+    activePreviewCleanupTimer = setTimeout(() => {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      if (activePreview === overlay) activePreview = null;
+    }, 2800);
+  }
+
+  function showLevelUpMissionPreview(levelNumber) {
+    const currentLevel = Math.floor(Number(levelNumber) || 0);
+    if (currentLevel < 12) return;
+    if (isMissionThreshold(currentLevel)) return;
+    if (typeof isAnyChallengeActive === 'function' && isAnyChallengeActive()) return;
+    if (window.bpMilestonePriorityV840 && !window.bpMilestonePriorityV840.allowLevelUpPreview()) return;
+    const next = getNextMissionPreview(currentLevel);
+    if (!next) return;
+
+    const payload = {
+      currentLevel,
+      levelsRemaining: next.level - currentLevel,
+      title: next.title,
+      image: next.image
+    };
+
+    let shown = false;
+    const finish = () => {
+      if (shown) return;
+      shown = true;
+      showOverlay(payload);
+    };
+
+    const preload = new Image();
+    preload.onload = finish;
+    preload.onerror = finish;
+    preload.src = payload.image;
+    setTimeout(finish, 120);
+  }
+
+  window.bpShowLevelUpMissionPreview = showLevelUpMissionPreview;
 })();
 </script>
 

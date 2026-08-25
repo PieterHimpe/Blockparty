@@ -295,6 +295,7 @@
 <!-- v628: authoritative fallSpeed gate. The CURRENT fallSpeed is now the non-negotiable minimum between automatic visible x/y steps; requested/restarted timers may only be slower, never faster. New sets are timestamped at spawn, update/updateH and tutorial preview hooks are guarded at movement entry, Drop remains intentionally instant, and bpTimingV628 records actual gaps/blocked attempts for runtime verification. -->
 <!-- v627: authoritative hard minimum fall gate at the actual movement layer. Every automatic x/y step must respect the current fallSpeed; scheduler restarts cannot shorten it. Direct tutorial preview movements are guarded too, and the active level-3 preview no longer runs at 55% of fallSpeed. -->
 <!-- v626: automatic fall timing now uses a strict minimum interval after each rendered step; no partial catch-up. Capture-gate overlay consolidated to one lightweight animation to avoid entry spikes. -->
+<!-- V841: visual-focus pass only. No gameplay, timing, collision, save, level, scoring or movement rules changed. The DJ background is quieter; the active corridor is separated from the rest of the 30x30 world; the moving 10x10 dance floor gets a stronger visual hierarchy; and tiles/faces use more of their existing cell. -->
 <!-- v625: stable-timing/performance pass. Fall timing now uses a no-catch-up deadline scheduler; the 1s movement-area transition no longer pauses gameplay; canvas redraws are batched per fall tick; canvas is 1280x1280 (exact 40px cells) instead of 1540x1540; empty off-floor grid loops are skipped; HUD/high-score/localStorage updates are throttled/cached; onboarding autosave moves to idle time; celebration geometry reads are cached; existing gameplay rules and audio mix are preserved. -->
 <!-- v624: rebalance audio mix: background music softer, gameplay SFX louder with short music ducking; Repair keeps music playing throughout. -->
 <!-- v734: every 5+ group-clear celebration uses the single supplied goed.mp3 tone. -->
@@ -12763,13 +12764,13 @@ function drawMovementAreaGuide() {
 
   ctx.save();
 
-  // V373: buiten de actieve bewegingsstrook blijft de DJ-achtergrond vrijwel
-  // onaangeroerd. Alleen een minimale sluier voorkomt dat het verschil met de
-  // actieve corridor te hard wordt.
+  // V841 VISUAL ONLY: the 30x30 world remains fully visible, but the part that
+  // is irrelevant for the CURRENT set recedes. The corridor itself is cut out
+  // of this matte, so the eye is naturally pulled toward the route + 10x10.
   ctx.beginPath();
   ctx.rect(fullPlayAreaX, fullPlayAreaY, fullPlayAreaWidth, fullPlayAreaHeight);
   ctx.rect(areaX, areaY, areaWidth, areaHeight);
-  ctx.fillStyle = "rgba(18, 18, 22, 0.06)";
+  ctx.fillStyle = "rgba(10, 11, 14, 0.24)";
   ctx.fill("evenodd");
 
   // V373: de volledige strook waarover de 10x10 kan bewegen krijgt een
@@ -12789,7 +12790,7 @@ function drawMovementAreaGuide() {
       ? "rgba(72, 153, 174, 0.48)"
       : tutorialAreaDim
         ? "rgba(35, 73, 84, 0.20)"
-        : "rgba(24, 45, 52, 0.26)"
+        : "rgba(19, 34, 40, 0.14)"
   );
   bandGradient.addColorStop(
     0.5,
@@ -12797,7 +12798,7 @@ function drawMovementAreaGuide() {
       ? "rgba(58, 139, 162, 0.60)"
       : tutorialAreaDim
         ? "rgba(28, 60, 70, 0.24)"
-        : "rgba(18, 35, 42, 0.34)"
+        : "rgba(15, 29, 35, 0.18)"
   );
   bandGradient.addColorStop(
     1,
@@ -12805,7 +12806,7 @@ function drawMovementAreaGuide() {
       ? "rgba(72, 153, 174, 0.48)"
       : tutorialAreaDim
         ? "rgba(35, 73, 84, 0.20)"
-        : "rgba(24, 45, 52, 0.26)"
+        : "rgba(19, 34, 40, 0.14)"
   );
   ctx.fillStyle = bandGradient;
   ctx.fillRect(areaX, areaY, areaWidth, areaHeight);
@@ -25811,7 +25812,8 @@ function v597DisplayTileColor(color) {
 }
 
 function drawPolishedPartyTile(x, y, color, showDarkOutline = true, cacheGradients = false) {
-  const inset = Math.max(0.7, blockSize * 0.035);
+  // V841 VISUAL ONLY: occupy more of the same logical cell. Collision/grid math is untouched.
+  const inset = Math.max(0.45, blockSize * 0.018);
   const tileX = x + inset;
   const tileY = y + inset;
   const tileSize = Math.max(1, blockSize - inset * 2);
@@ -25821,8 +25823,8 @@ function drawPolishedPartyTile(x, y, color, showDarkOutline = true, cacheGradien
   ctx.save();
 
   // Zachte diepteschaduw: scheidt aangrenzende blokjes zonder harde witte rand.
-  ctx.shadowColor = "rgba(25, 10, 29, 0.52)";
-  ctx.shadowBlur = Math.max(1.5, blockSize * 0.10);
+  ctx.shadowColor = "rgba(18, 7, 22, 0.66)";
+  ctx.shadowBlur = Math.max(2.0, blockSize * 0.14);
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = Math.max(0.7, blockSize * 0.045);
   tracePartyTilePath(tileX, tileY, tileSize, tileSize, radius);
@@ -26820,17 +26822,48 @@ function drawGrid() {
   }
 // einde getgroupsize V442
 
-  // V373: boven op de corridor krijgt de actuele 10x10 een sterker, neutraal
-  // focusvlak. In combinatie met de corridor komt de effectieve verduistering
-  // rond 58-62%, terwijl de gekleurde blokken pas daarna worden getekend en dus
-  // zelf helder blijven.
-  ctx.fillStyle = "rgba(18, 18, 22, 0.56)";
-ctx.fillRect(
-  playAreaOrigin + (extraColsLeft + gridOffsetX) * blockSize, // linkerkant van het 10x10 blok
-  playAreaOrigin + (extraRowsAbove - gridOffsetY) * blockSize, // bovenkant van het 10x10 blok
-  gridCols * blockSize, // breedte van 10 blokken
-  gridRows * blockSize  // hoogte van 10 blokken
-);
+  // V841 VISUAL ONLY: make the moving 10x10 read as the hero of the screen.
+  // Geometry stays identical; this is only a background, halo and faint cell grid.
+  const v841FloorRect = getCurrentDanceFloorRect();
+  ctx.save();
+
+  // A soft halo separates the floor from the DJ artwork without hiding the world.
+  ctx.shadowColor = "rgba(255, 211, 111, 0.60)";
+  ctx.shadowBlur = Math.max(10, blockSize * 0.46);
+  ctx.strokeStyle = "rgba(255, 231, 166, 0.30)";
+  ctx.lineWidth = Math.max(2.0, blockSize * 0.065);
+  ctx.strokeRect(
+    v841FloorRect.x + 1.0,
+    v841FloorRect.y + 1.0,
+    v841FloorRect.width - 2.0,
+    v841FloorRect.height - 2.0
+  );
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(12, 14, 18, 0.50)";
+  ctx.fillRect(
+    v841FloorRect.x,
+    v841FloorRect.y,
+    v841FloorRect.width,
+    v841FloorRect.height
+  );
+
+  // The 10x10 structure becomes legible even when the floor is almost empty.
+  ctx.beginPath();
+  for (let i = 1; i < gridCols; i++) {
+    const gx = v841FloorRect.x + i * blockSize;
+    ctx.moveTo(gx, v841FloorRect.y);
+    ctx.lineTo(gx, v841FloorRect.y + v841FloorRect.height);
+  }
+  for (let i = 1; i < gridRows; i++) {
+    const gy = v841FloorRect.y + i * blockSize;
+    ctx.moveTo(v841FloorRect.x, gy);
+    ctx.lineTo(v841FloorRect.x + v841FloorRect.width, gy);
+  }
+  ctx.strokeStyle = "rgba(236, 244, 248, 0.075)";
+  ctx.lineWidth = Math.max(0.6, blockSize * 0.018);
+  ctx.stroke();
+  ctx.restore();
 
   // V409: in de allereerste onboardingstap wordt exact de huidige 10x10 als
   // DANCE FLOOR aangewezen. Geen andere gameplaygeometrie verandert.
@@ -27018,7 +27051,7 @@ if (!specialCenterDrawn) {
     imageToUse.naturalHeight > 0;
 
   if (imageIsUsable) {
-    const imgSize = blockSize * 0.9;
+    const imgSize = blockSize * 0.96;
     ctx.drawImage(
       imageToUse,
       x + (blockSize - imgSize) / 2,
@@ -27136,7 +27169,7 @@ function drawSingleFallingBlockImage(block, drawX, drawY) {
 
   if (!imageIsUsable) return;
 
-  const imgSize = blockSize * 0.9;
+  const imgSize = blockSize * 0.96;
   ctx.drawImage(
     imageToUse,
     drawX + (blockSize - imgSize) / 2,
@@ -35121,7 +35154,11 @@ challenge7BlockCount = 0;
 challenge7GroupCount = 0;
 //challenge7RewardGiven = false;
 
-saveBlockCountdown = 60;
+saveBlockCountdown =
+  (window.bpV840ResumeMode === 'live' &&
+   Number.isFinite(Number(window.bpV840PendingResumeCountdown)))
+    ? Math.max(1, Math.floor(Number(window.bpV840PendingResumeCountdown)))
+    : 60;
 
 updateChallengeStatusCell();
 updateChallenge2StatusCell();
@@ -53297,9 +53334,14 @@ window.bpLevel23OnboardingV839.registerWrapper('registerLevel3SideLaneFallingSte
       if(v545IsOnboarding()){
         if(typeof v468AutosaveNow === 'function') v468AutosaveNow();
       }else{
-        // After onboarding, keep the existing full-party save format automatically fresh too.
-        if(typeof saveTestScore === 'function') saveTestScore();
-        if(typeof saveManualPartySnapshot === 'function') saveManualPartySnapshot();
+        // V840: post-tutorial lifecycle events must NEVER overwrite the player's
+        // explicit SAVE NOW checkpoint. CONTINUE GAME is maintained separately
+        // after safe resolved-set boundaries by bpV840SaveLiveResume().
+        // Therefore pagehide/blur/visibility/freeze only keep the last stable
+        // live-resume snapshot that is already on disk.
+        if(typeof window.bpV840KeepLastStableLiveResume === 'function'){
+          window.bpV840KeepLastStableLiveResume();
+        }
       }
     }catch(error){
       console.error('V545 safety save failed:', error);
@@ -56710,6 +56752,14 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     if (inOnboarding()) mirrorTutorialGoalFromExistingState();
     else ensurePostGoalActive();
   });
+
+  // V840: save/resume architecture needs to reload this closure after a
+  // live/manual snapshot has restored the POST_GOAL_KEY in localStorage.
+  // This is post-tutorial only; onboarding behavior is untouched.
+  window.bpV840ReloadPostGoalFromStorage = function(){
+    loadPostGoal();
+    syncEverything();
+  };
 
   /* Expose only small diagnostics for the existing developer console/tests. */
   window.v606PartyGoalDebug = function(){
@@ -73021,5 +73071,452 @@ window.bpBarrierResolverV825=Object.freeze({
 })();
 </script>
 
+
+<!-- ===== v840 DUAL POST-TUTORIAL SAVE ARCHITECTURE =====
+     Contract:
+       - Levels 1-10: untouched; existing onboarding autosave remains authoritative.
+       - Level 11+: CONTINUE GAME = last stable automatically captured live party.
+       - Level 11+: CONTINUE SAVED GAME = explicit SAVE NOW checkpoint only.
+       - GAME OVER invalidates CONTINUE GAME immediately.
+       - START NEW GAME clears both live resume and explicit SAVE NOW checkpoint.
+       - Explicit SAVE NOW is never overwritten by lifecycle/background events.
+-->
+<script id="v840-dual-post-tutorial-save-architecture">
+(function(){
+  'use strict';
+
+  const V840_LIVE_KEY = 'livePartyResumeV840';
+  const V840_GAMEOVER_KEY = 'livePartyGameOverV840';
+  const V840_POST_GOAL_KEY = 'v634PostTutorialPartyGoalColorV2';
+
+  let v840GameOverActive = false;
+  let v840StableSaveQueued = false;
+
+  // Post-tutorial Party Goal is genuine run state and therefore belongs in both
+  // SAVE NOW and CONTINUE GAME snapshots. V740 already added Barrier/Mission state.
+  try {
+    if (Array.isArray(MANUAL_PARTY_SAVE_KEYS) &&
+        !MANUAL_PARTY_SAVE_KEYS.includes(V840_POST_GOAL_KEY)) {
+      MANUAL_PARTY_SAVE_KEYS.push(V840_POST_GOAL_KEY);
+    }
+  } catch (_) {}
+
+  function v840CompletedTutorial(){
+    try {
+      return typeof hasEverCompletedTutorial === 'function'
+        ? !!hasEverCompletedTutorial()
+        : Number(typeof level !== 'undefined' ? level : 1) >= 11;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function v840InFullParty(){
+    const n = Number(typeof level !== 'undefined' ? level : 0) || 0;
+    return v840CompletedTutorial() && n >= 11;
+  }
+
+  function v840RelevantStorageKeys(){
+    const out = [];
+    try {
+      if (Array.isArray(MANUAL_PARTY_SAVE_KEYS)) {
+        MANUAL_PARTY_SAVE_KEYS.forEach((key) => {
+          if (typeof key === 'string' && key && !out.includes(key)) out.push(key);
+        });
+      }
+    } catch (_) {}
+    if (!out.includes(V840_POST_GOAL_KEY)) out.push(V840_POST_GOAL_KEY);
+    return out;
+  }
+
+  function v840ReadLive(){
+    let raw = null;
+    try { raw = localStorage.getItem(V840_LIVE_KEY); } catch (_) {}
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.version !== 840 || !parsed.storage || typeof parsed.storage !== 'object') return null;
+      const lvl = Number(parsed.storage.testLevel);
+      if (!Number.isFinite(lvl) || lvl < 11) return null;
+      if (parsed.storage.testScore === undefined || parsed.storage.savedField === undefined) return null;
+      return parsed;
+    } catch (error) {
+      console.error('V840 live resume could not be read:', error);
+      return null;
+    }
+  }
+
+  function v840HasLive(){
+    try {
+      if (localStorage.getItem(V840_GAMEOVER_KEY) === 'true') return false;
+    } catch (_) {}
+    return !!v840ReadLive();
+  }
+
+  function v840ClearLive(markGameOver = false){
+    try {
+      localStorage.removeItem(V840_LIVE_KEY);
+      if (markGameOver) localStorage.setItem(V840_GAMEOVER_KEY, 'true');
+      else localStorage.removeItem(V840_GAMEOVER_KEY);
+    } catch (_) {}
+  }
+
+  function v840ClearManualCheckpoint(){
+    try {
+      localStorage.removeItem(MANUAL_PARTY_SNAPSHOT_KEY);
+      localStorage.removeItem('manualSavedPartyV1');
+    } catch (_) {}
+  }
+
+  function v840BuildSnapshotFromCurrentStorage(runtimeOverride = null){
+    const storage = {};
+    v840RelevantStorageKeys().forEach((key) => {
+      try {
+        const value = localStorage.getItem(key);
+        if (value !== null) storage[key] = value;
+      } catch (_) {}
+    });
+
+    const storedLevel = Number(storage.testLevel);
+    if (!Number.isFinite(storedLevel) || storedLevel < 11 ||
+        storage.testScore === undefined || storage.savedField === undefined) {
+      return null;
+    }
+
+    const runtime = runtimeOverride || {
+      saveBlockCountdown: Math.max(0, Number(typeof saveBlockCountdown !== 'undefined' ? saveBlockCountdown : 60) || 0),
+      saveUnlocked: !!(typeof saveUnlocked !== 'undefined' && saveUnlocked)
+    };
+
+    return {
+      version: 840,
+      savedAt: Date.now(),
+      storage,
+      runtime: {
+        saveBlockCountdown: Math.max(0, Number(runtime.saveBlockCountdown) || 0),
+        saveUnlocked: !!runtime.saveUnlocked
+      }
+    };
+  }
+
+  function v840PersistSnapshot(snapshot){
+    if (!snapshot) return false;
+    try {
+      localStorage.setItem(V840_LIVE_KEY, JSON.stringify(snapshot));
+      localStorage.removeItem(V840_GAMEOVER_KEY);
+      return true;
+    } catch (error) {
+      console.error('V840 live resume could not be saved:', error);
+      return false;
+    }
+  }
+
+  function v840SaveLiveResume(){
+    if (!v840InFullParty() || v840GameOverActive) return false;
+    if (window.v545MainMenuOpen || !window.v545GameplayActive) return false;
+
+    try {
+      // This is called only after a resolved set. saveTestScore + V739/V740
+      // therefore persist a coherent landed-field snapshot with mission/barrier state.
+      if (typeof saveTestScore === 'function') saveTestScore();
+      const snapshot = v840BuildSnapshotFromCurrentStorage();
+      return v840PersistSnapshot(snapshot);
+    } catch (error) {
+      console.error('V840 stable live save failed:', error);
+      return false;
+    }
+  }
+
+  // Lifecycle/background events deliberately do NOT create a new mid-fall snapshot.
+  // The last resolved-set snapshot remains authoritative, so a killed app can at most
+  // replay the currently falling set and cannot corrupt mission/set-start counters.
+  window.bpV840KeepLastStableLiveResume = function(){
+    return v840HasLive();
+  };
+  window.bpV840SaveLiveResume = v840SaveLiveResume;
+  window.bpV840HasLiveResume = v840HasLive;
+
+  function v840RestoreStorageMap(storage){
+    const keys = v840RelevantStorageKeys();
+    keys.forEach((key) => {
+      try {
+        if (Object.prototype.hasOwnProperty.call(storage, key)) {
+          localStorage.setItem(key, storage[key]);
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch (_) {}
+    });
+  }
+
+  function v840RestoreLive(){
+    const snapshot = v840ReadLive();
+    if (!snapshot) return false;
+
+    v840RestoreStorageMap(snapshot.storage);
+
+    const wasUnlocked = !!(snapshot.runtime && snapshot.runtime.saveUnlocked);
+    const storedCountdown = Math.max(
+      1,
+      Math.floor(Number(snapshot.runtime && snapshot.runtime.saveBlockCountdown) || 1)
+    );
+
+    // continueWithScore creates the next falling set. The normal spawn path should
+    // perform exactly one countdown tick. An already-unlocked SAVE NOW is represented
+    // by 1 so that this spawn naturally rebuilds the clickable SAVE NOW UI.
+    window.bpV840ResumeMode = 'live';
+    window.bpV840PendingResumeCountdown = wasUnlocked ? 1 : storedCountdown;
+    if (typeof saveUnlocked !== 'undefined') saveUnlocked = false;
+
+    v840GameOverActive = false;
+    try { localStorage.removeItem(V840_GAMEOVER_KEY); } catch (_) {}
+    return true;
+  }
+  window.bpV840RestoreLiveResume = v840RestoreLive;
+
+  function v840SeedLiveFromManualCheckpoint(){
+    // restoreManualPartySnapshot has just copied the explicit checkpoint into the
+    // regular test* storage. Seed CONTINUE GAME at the same position immediately,
+    // so closing before the next resolved set never revives a newer abandoned run.
+    const snapshot = v840BuildSnapshotFromCurrentStorage({
+      saveBlockCountdown: 60,
+      saveUnlocked: false
+    });
+    if (snapshot) v840PersistSnapshot(snapshot);
+  }
+
+  // Mark manual restores so the loader always starts SAVE NOW's new 60-set cooldown
+  // from the checkpoint, including same-session restores where saveUnlocked was true.
+  if (typeof restoreManualPartySnapshot === 'function') {
+    const baseRestoreManualPartySnapshotV840 = restoreManualPartySnapshot;
+    restoreManualPartySnapshot = function(){
+      const ok = baseRestoreManualPartySnapshotV840.apply(this, arguments);
+      if (ok && v840CompletedTutorial()) {
+        window.bpV840ResumeMode = 'manual';
+        window.bpV840PendingResumeCountdown = null;
+        if (typeof saveUnlocked !== 'undefined') saveUnlocked = false;
+        v840GameOverActive = false;
+        v840SeedLiveFromManualCheckpoint();
+      }
+      return ok;
+    };
+  }
+
+  // Reload closure-based post-tutorial state after either restore path.
+  if (typeof continueWithScore === 'function') {
+    const baseContinueWithScoreV840 = continueWithScore;
+    continueWithScore = function(){
+      const mode = window.bpV840ResumeMode || null;
+      if (mode === 'manual' && typeof saveUnlocked !== 'undefined') saveUnlocked = false;
+      if (mode === 'live' && typeof saveUnlocked !== 'undefined') saveUnlocked = false;
+
+      const result = baseContinueWithScoreV840.apply(this, arguments);
+
+      if ((mode === 'manual' || mode === 'live') &&
+          typeof window.bpV840ReloadPostGoalFromStorage === 'function') {
+        try { window.bpV840ReloadPostGoalFromStorage(); } catch (_) {}
+      }
+
+      // The base loader has now created the next set and consumed the intended
+      // one countdown tick. Future automatic saves capture the resulting runtime.
+      window.bpV840ResumeMode = null;
+      window.bpV840PendingResumeCountdown = null;
+      v840GameOverActive = false;
+      try { localStorage.removeItem(V840_GAMEOVER_KEY); } catch (_) {}
+      return result;
+    };
+  }
+
+  // Existing Continue button listener calls continueTutorialProgress().
+  // Preserve its exact onboarding behavior; branch only after tutorial completion.
+  if (typeof continueTutorialProgress === 'function') {
+    const baseContinueTutorialProgressV840 = continueTutorialProgress;
+    continueTutorialProgress = function(){
+      if (!v840CompletedTutorial()) {
+        return baseContinueTutorialProgressV840.apply(this, arguments);
+      }
+
+      if (!v840HasLive()) {
+        if (typeof refreshStartMenuButtons === 'function') refreshStartMenuButtons();
+        return;
+      }
+
+      return leaveStartScreenAndRun(() => {
+        if (!v840RestoreLive()) {
+          firstUseGameStarted = false;
+          if (typeof refreshStartMenuButtons === 'function') refreshStartMenuButtons();
+          return;
+        }
+        if (typeof continueWithScore === 'function') continueWithScore();
+      });
+    };
+  }
+
+  // Post-tutorial start menu: three independent meanings.
+  // Onboarding delegates 100% to the existing V468 implementation.
+  if (typeof refreshStartMenuButtons === 'function') {
+    const baseRefreshStartMenuButtonsV840 = refreshStartMenuButtons;
+    refreshStartMenuButtons = function(){
+      if (!v840CompletedTutorial()) {
+        return baseRefreshStartMenuButtonsV840.apply(this, arguments);
+      }
+
+      const actionContainer = document.querySelector('#firstUseIntro .first-use-action');
+      const startGameButton = document.getElementById('firstUseStartButton');
+      const continueGameButton = document.getElementById('continueTutorialButton');
+      const startNewGameButton = document.getElementById('startPartyButton');
+      const savedGameButton = document.getElementById('resumeSavedGameButton');
+      const hint = actionContainer ? actionContainer.querySelector('.first-use-hint') : null;
+
+      const liveAvailable = v840HasLive();
+      const manualAvailable = typeof hasSavedParty === 'function' && hasSavedParty();
+
+      if (startGameButton) startGameButton.style.display = 'none';
+
+      if (startNewGameButton) {
+        startNewGameButton.style.display = 'block';
+        startNewGameButton.innerHTML = 'START NEW<br>GAME';
+      }
+
+      if (continueGameButton) {
+        continueGameButton.style.display = liveAvailable ? 'block' : 'none';
+        continueGameButton.innerHTML = 'CONTINUE<br>GAME';
+      }
+
+      if (savedGameButton) {
+        savedGameButton.style.display = manualAvailable ? 'block' : 'none';
+        savedGameButton.innerHTML = 'CONTINUE SAVED<br>GAME';
+      }
+
+      [startGameButton, continueGameButton, startNewGameButton, savedGameButton]
+        .filter(Boolean)
+        .forEach((button) => {
+          button.classList.remove('start-menu-primary', 'start-menu-secondary');
+          if (button.style.display !== 'none') button.classList.add('start-menu-secondary');
+        });
+
+      const primary = liveAvailable
+        ? continueGameButton
+        : manualAvailable
+          ? savedGameButton
+          : startNewGameButton;
+      if (primary && primary.style.display !== 'none') {
+        primary.classList.remove('start-menu-secondary');
+        primary.classList.add('start-menu-primary');
+      }
+
+      if (actionContainer) {
+        const ordered = [startNewGameButton, continueGameButton, savedGameButton];
+        ordered.forEach((button) => {
+          if (button && button.style.display !== 'none') {
+            actionContainer.insertBefore(button, hint || null);
+          }
+        });
+
+        const visibleCount = ordered.filter(
+          (button) => button && button.style.display !== 'none'
+        ).length;
+        actionContainer.classList.remove('start-options-1', 'start-options-2', 'start-options-3');
+        actionContainer.classList.add(`start-options-${Math.max(1, Math.min(3, visibleCount))}`);
+      }
+
+      if (hint) {
+        if (liveAvailable && manualAvailable) {
+          hint.textContent = 'Continue where you stopped, return to your saved game, or start over';
+        } else if (liveAvailable) {
+          hint.textContent = 'Continue where you stopped or start a new game';
+        } else if (manualAvailable) {
+          hint.textContent = 'Continue your saved game or start a new game';
+        } else {
+          hint.textContent = 'Start a new party from level 11';
+        }
+      }
+    };
+  }
+
+  // New party means exactly that: no old automatic run and no old SAVE NOW checkpoint.
+  // This branch exists only after tutorial completion / level 11.
+  if (typeof startFreshPartyAtLevel11 === 'function') {
+    const baseStartFreshPartyAtLevel11V840 = startFreshPartyAtLevel11;
+    startFreshPartyAtLevel11 = function(){
+      if (typeof firstUseGameStarted !== 'undefined' && firstUseGameStarted) {
+        return baseStartFreshPartyAtLevel11V840.apply(this, arguments);
+      }
+      v840ClearLive(false);
+      v840ClearManualCheckpoint();
+      v840GameOverActive = false;
+      window.bpV840ResumeMode = null;
+      window.bpV840PendingResumeCountdown = null;
+      return baseStartFreshPartyAtLevel11V840.apply(this, arguments);
+    };
+  }
+
+  // Every fully resolved post-tutorial set refreshes CONTINUE GAME.
+  if (window.bpCheckMatchesV829 && typeof window.bpCheckMatchesV829.registerLayer === 'function') {
+    window.bpCheckMatchesV829.registerLayer('v840-live-resume', function(next) {
+      const levelBefore = Number(typeof level !== 'undefined' ? level : 0) || 0;
+      const result = next();
+
+      if (levelBefore >= 11 || (Number(typeof level !== 'undefined' ? level : 0) || 0) >= 11) {
+        if (!v840StableSaveQueued) {
+          v840StableSaveQueued = true;
+          setTimeout(() => {
+            v840StableSaveQueued = false;
+            if (!v840GameOverActive) v840SaveLiveResume();
+          }, 0);
+        }
+      }
+      return result;
+    });
+  }
+
+  // A GAME OVER is terminal for the current live run. Clear it BEFORE rendering
+  // PARTY OVER so backgrounding the phone on that overlay can never resurrect it.
+  if (typeof showGameOverScreen === 'function') {
+    const baseShowGameOverScreenV840 = showGameOverScreen;
+    showGameOverScreen = function(){
+      if (v840InFullParty()) {
+        v840GameOverActive = true;
+        v840ClearLive(true);
+      }
+      return baseShowGameOverScreenV840.apply(this, arguments);
+    };
+  }
+
+  // Starting/resuming gameplay makes a previous terminal marker irrelevant.
+  function v840MarkActiveAgain(){
+    v840GameOverActive = false;
+    try { localStorage.removeItem(V840_GAMEOVER_KEY); } catch (_) {}
+  }
+
+  if (typeof startNormalGame === 'function') {
+    const baseStartNormalGameV840 = startNormalGame;
+    startNormalGame = function(){
+      v840MarkActiveAgain();
+      return baseStartNormalGameV840.apply(this, arguments);
+    };
+  }
+
+  // Initial menu render may have run before this final authority was installed.
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      if (typeof refreshStartMenuButtons === 'function') refreshStartMenuButtons();
+    }, 0);
+  });
+})();
+</script>
+
+
+<style id="v841-visual-focus-css">
+/* V841 VISUAL ONLY — hierarchy pass. The artwork remains recognizable, but it
+   functions as atmosphere rather than competing with the 10x10 and blocks. */
+.backgroundLayer {
+  opacity: 0.46 !important;
+  filter: saturate(0.62) brightness(0.74) contrast(0.96) blur(0.65px) !important;
+}
+.canvas-wrapper {
+  background-color: #211713 !important;
+}
+</style>
 </body>
 </html>

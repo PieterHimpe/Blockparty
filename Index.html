@@ -3,7 +3,7 @@
 <!-- V2332: during the tutorial-to-Level-1 handoff, the top card now shows a neutral PARTY IS ABOUT TO START message instead of the five-star Party Goal countdown. -->
 <!-- V2333: the seven-colour tutorial card now has 2x larger title/help text, heart icons aligned with the text rows, and colour discs enlarged by 1.5x. -->
 <!-- V2335: replaced Biggest Group display/popup with authoritative persistent Longest Streak (ordinary successful Party Goals), across manual/live resume. -->
-<!-- V2354: Continue Game derives top HUD width from restored discoveries; ordinary tutorial goals A-D do not redraw unchanged dots. -->
+<!-- V2355: Continue Game uses discovered features; all tutorial goals A-J preserve unchanged circles, exact-size targets and seven-color discs. -->
 <!-- V2336: Record header has one persistent source; orientation changes move DROP only, preventing barrier-impact record flashes. -->
 <!-- V2334: Level 8 Free Picture action hint now says TAP PHOTO TO USE, including after autosave resume. -->
 <!-- V2181: consistent 2px bronze HUD borders in original CSS and SVG owners; no v2180 override block. -->
@@ -13735,6 +13735,7 @@ function resetTutorialFeatureDiscoveries() {
 
 function resetFreshTutorialUnlockState() {
   // Een expliciete herstart bij tutorial 1 moet visueel en functioneel echt opnieuw beginnen.
+  bpShopSetCenterPending(false);
   if (typeof clearTutorialCheckpoint === "function") {
     clearTutorialCheckpoint();
   } else {
@@ -17947,6 +17948,7 @@ const MANUAL_PARTY_SAVE_KEYS = [
   "testSkip",
   "freePictureCount",
   "testFreePictureUnlocked",
+  "bpShopCenterPendingV2356",
   "savedField",
   "gridOffsetX",
   "gridOffsetY",
@@ -29750,6 +29752,15 @@ document.addEventListener('DOMContentLoaded', () => {
 const CENTER_DANCE_FLOOR_SHOP_PRICE = 200;
 const CENTER_DANCE_FLOOR_SHOP_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj4KPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjRDNjQ0IiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHJlY3QgeD0iMzQiIHk9IjM0IiB3aWR0aD0iNTIiIGhlaWdodD0iNTIiIHJ4PSI4IiBmaWxsPSIjMzMyNzFGIi8+CiAgPHBhdGggZD0iTTQ3IDM0djUyTTYwIDM0djUyTTczIDM0djUyTTM0IDQ3aDUyTTM0IDYwaDUyTTM0IDczaDUyIiBzdHJva2U9IiNFODhBMkQiIHN0cm9rZS13aWR0aD0iMi41IiBvcGFjaXR5PSIuODUiLz4KICA8cGF0aCBkPSJNNjAgN3YxOG0wIDAtOC04bTggOCA4LThNNjAgMTEzVjk1bTAgMC04IDhtOC04IDggOE03IDYwaDE4bTAgMC04LThtOCA4LTggOE0xMTMgNjBIOTVtMCAwIDgtOG0tOCA4IDggOCIvPgo8L2c+CjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjgiIGZpbGw9IiNGRkQ4NkEiIHN0cm9rZT0iIzdBM0IxMyIgc3Ryb2tlLXdpZHRoPSIzIi8+Cjwvc3ZnPg==';
 let centerDanceFloorAfterNextLanding = false;
+const BP_SHOP_CENTER_PENDING_KEY = 'bpShopCenterPendingV2356';
+function bpShopSetCenterPending(pending) {
+  centerDanceFloorAfterNextLanding = !!pending;
+  try { localStorage.setItem(BP_SHOP_CENTER_PENDING_KEY, String(centerDanceFloorAfterNextLanding)); } catch (_) {}
+}
+function bpShopAutosavePurchase() {
+  // Onboarding Continue Game must also keep purchases made between two landings.
+  try { if (typeof v468AutosaveNow === 'function') v468AutosaveNow(); } catch (_) {}
+}
 
 function getMainFreePictureIconSrc() {
   const mainFreePictureImage = document.querySelector('#freePictureDisplay img');
@@ -29791,12 +29802,8 @@ function closeShopModal() {
 }
 
 function bpGetKnownShopLevel() {
-  try {
-    if (typeof currentLevel !== 'undefined') {
-      const parsed = Number(currentLevel);
-      if (Number.isFinite(parsed) && parsed > 0) return parsed;
-    }
-  } catch (_) {}
+  // The actual internal game level is authoritative. A leftover currentLevel
+  // or localStorage value can refer to a different run or a UI presentation level.
   try {
     if (typeof level !== 'undefined') {
       const parsed = Number(level);
@@ -29804,8 +29811,7 @@ function bpGetKnownShopLevel() {
     }
   } catch (_) {}
   try {
-    const raw = localStorage.getItem('currentLevel') || localStorage.getItem('level');
-    const parsed = Number(raw);
+    const parsed = Number(localStorage.getItem('testLevel') || localStorage.getItem('tutorialLevelV3'));
     if (Number.isFinite(parsed) && parsed > 0) return parsed;
   } catch (_) {}
   return 1;
@@ -29820,34 +29826,50 @@ function bpShopFeatureKnown(featureName) {
   return false;
 }
 
+// V2356: one entitlement owner for BOTH shop presentation and purchases.
+// Internal A-J = 1..10; real Level 1 starts at 11. Match the existing
+// v828CoreUpdateFeatureAvailability unlock rules exactly.
+function bpShopAvailability() {
+  const lvl = bpGetKnownShopLevel();
+  const normal = lvl >= 11;
+  const allTutorialSpecials = lvl >= 10;
+  return {
+    multicolor: normal || allTutorialSpecials || (typeof multicolorUnlocked !== 'undefined' && !!multicolorUnlocked),
+    freePicture: normal || allTutorialSpecials || (typeof freePictureUnlocked !== 'undefined' && !!freePictureUnlocked),
+    skip: normal || allTutorialSpecials || (lvl === 9 && bpShopFeatureKnown('skip')),
+    // These are Shop-exclusive tools, without a separate tutorial unlock step.
+    centerDanceFloor: true,
+    clearColor: true
+  };
+}
+
+function bpShopIsAvailable(product) {
+  return bpShopAvailability()[product] === true;
+}
+
 function refreshShopProductVisibility() {
-  const tutorialLevel = bpGetKnownShopLevel();
-  const afterTutorial = tutorialLevel > 11;
-  const freePictureKnown = afterTutorial || localStorage.getItem('freePictureUnlocked') === 'true';
-  const multicolorKnown = afterTutorial || localStorage.getItem('multicolorUnlocked') === 'true';
-  const skipKnown = afterTutorial || bpShopFeatureKnown('skip');
-  // These two Shop utilities are available immediately, including tutorial Level A.
-  const centerDanceFloorKnown = true;
-  const clearColorKnown = true;
-
-  const visibility = [
-    ['freePictureShopButton', freePictureKnown],
-    ['multicolorShopButton', multicolorKnown],
-    ['centerDanceFloorShopButton', centerDanceFloorKnown],
-    ['skipShopButton', skipKnown],
-    ['clearColorShopButton', clearColorKnown]
+  const availability = bpShopAvailability();
+  const products = [
+    ['freePictureShopButton', 'freePicture'],
+    ['multicolorShopButton', 'multicolor'],
+    ['centerDanceFloorShopButton', 'centerDanceFloor'],
+    ['skipShopButton', 'skip'],
+    ['clearColorShopButton', 'clearColor']
   ];
-
-  visibility.forEach(([id, known]) => {
+  products.forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.style.display = known ? '' : 'none';
-    el.setAttribute('aria-hidden', known ? 'false' : 'true');
+    const available = availability[key] === true;
+    el.style.display = available ? '' : 'none';
+    el.disabled = !available;
+    el.setAttribute('aria-hidden', available ? 'false' : 'true');
+    el.setAttribute('aria-disabled', available ? 'false' : 'true');
   });
 }
 
 
 function buySkipBlock() {
+  if (!bpShopIsAvailable('skip')) return;
   const img = document.getElementById("skipBlockImage");
 
   if (score >= 10) {
@@ -29855,6 +29877,7 @@ function buySkipBlock() {
     renewTokenCount++;
     updateScoreDisplay();
     updateRenewDisplay();
+    bpShopAutosavePurchase();
 
     if (img) img.src = window.__BP_SHARED_ASSETS__[27];
 
@@ -29868,6 +29891,7 @@ function buySkipBlock() {
 
 
 function buyFreePicture() {
+  if (!bpShopIsAvailable('freePicture')) return;
   const img = document.getElementById("freePictureImage");
 
     if (score >= 100) {
@@ -29875,6 +29899,7 @@ function buyFreePicture() {
     freePictureCount++;
     updateFreePictureDisplay();
     updateScoreDisplay();
+    bpShopAutosavePurchase();
 
     if (img) img.src = window.__BP_SHARED_ASSETS__[27];
 
@@ -29886,12 +29911,14 @@ function buyFreePicture() {
 }
 
 function buyMulticolor() {
+  if (!bpShopIsAvailable('multicolor')) return;
   const img = document.getElementById("multicolorImage");
     if (score >= 50) {
     score -= 50;
     multicolorCount++;
     updateMulticolorDisplay();
     updateScoreDisplay();
+    bpShopAutosavePurchase();
 
     if (img) img.src = window.__BP_SHARED_ASSETS__[27];
 
@@ -29903,6 +29930,7 @@ function buyMulticolor() {
 
 
 function buyCenterDanceFloor() {
+  if (!bpShopIsAvailable('centerDanceFloor')) return;
   const img = document.getElementById("centerDanceFloorImage");
 
   // One purchase arms exactly one future landing. Repeated taps do not charge twice.
@@ -29913,8 +29941,9 @@ function buyCenterDanceFloor() {
 
   if (score >= CENTER_DANCE_FLOOR_SHOP_PRICE) {
     score -= CENTER_DANCE_FLOOR_SHOP_PRICE;
-    centerDanceFloorAfterNextLanding = true;
+    bpShopSetCenterPending(true);
     updateScoreDisplay();
+    bpShopAutosavePurchase();
     if (img) img.src = window.__BP_SHARED_ASSETS__[27];
   } else {
     if (img) img.src = window.__BP_SHARED_ASSETS__[1];
@@ -29928,7 +29957,7 @@ window.bpCheckMatchesV829.registerLayer('v1025-center-dance-floor-shop', functio
   const result = next();
 
   if (centerAfterThisLanding && centerDanceFloorAfterNextLanding) {
-    centerDanceFloorAfterNextLanding = false;
+    bpShopSetCenterPending(false);
     gridOffsetX = 0;
     gridOffsetY = 0;
 
@@ -30492,6 +30521,9 @@ function applyTutorialColorStateAtCheckpoint(checkpointLevel) {
 }
 
 function resumeTutorialCheckpoint(checkpointLevel) {
+  // Historical checkpoints have no pending shop purchase; never carry one from
+  // a later abandoned session into this tutorial restart.
+  bpShopSetCenterPending(false);
   const targetLevel = Math.max(1, Math.min(10, Math.floor(Number(checkpointLevel) || 1)));
 
   // De eerste drie basislevels worden bewust altijd volledig opnieuw geleerd.
@@ -30637,6 +30669,8 @@ function resumeTutorialCheckpoint(checkpointLevel) {
 }
 
 function continueWithScore() {
+  // The checkpoint (manual or live) restored this key before entering here.
+  bpShopSetCenterPending(localStorage.getItem(BP_SHOP_CENTER_PENDING_KEY) === 'true');
   tutorialLevelBannerEnabled = false;
   lastTutorialLevelBannerShown = null;
   hideTutorialLevelBanner();
@@ -31466,6 +31500,7 @@ function continueTutorialProgress() {
 }
 
 function startFreshPartyAtLevel11() {
+  bpShopSetCenterPending(false);
   requestedNewGameStartLevel = EXPERIENCED_PLAYER_START_LEVEL;
   leaveStartScreenAndRun(() => startNormalGame());
 }
@@ -38435,6 +38470,7 @@ function v827CoreCreateAutosaveSnapshot() {
     bigGroupCount: Math.max(0, Number(bigGroupCount) || 0),
     multicolorUnlocked: !!multicolorUnlocked,
     freePictureUnlocked: !!freePictureUnlocked,
+    shopCenterPending: !!centerDanceFloorAfterNextLanding,
     featureFlags: v468FeatureSnapshot(),
     barrier: {
       top: barrierWallStates.top.slice(),
@@ -38820,6 +38856,13 @@ function v827CoreResumeAutosave(snapshot) {
     bigGroupCount = Math.max(0, Number(snapshot.bigGroupCount) || 0);
     multicolorUnlocked = !!snapshot.multicolorUnlocked;
     freePictureUnlocked = !!snapshot.freePictureUnlocked;
+    // The shop and HUD must see the SAME restored unlock state, even if a
+    // newer session left different standalone localStorage flags behind.
+    localStorage.setItem('multicolorUnlocked', String(multicolorUnlocked));
+    localStorage.setItem('freePictureUnlocked', String(freePictureUnlocked));
+    localStorage.setItem('testMulticolorUnlocked', String(multicolorUnlocked));
+    localStorage.setItem('testFreePictureUnlocked', String(freePictureUnlocked));
+    bpShopSetCenterPending(!!snapshot.shopCenterPending);
     useVertical = snapshot.useVertical !== false;
     directionToggle = snapshot.directionToggle !== false;
     {
@@ -49243,6 +49286,10 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const panel = host.querySelector('.v606-party-goal-panel');
       if (!panel) return;
       const dots = panel.querySelector('.v606-party-goal-dots');
+      if(panel.dataset.v606Mode === V973_GOAL_MODES.WAITING &&
+         dots && dots.childElementCount === 0 &&
+         panel.querySelector('.v606-party-goal-label')?.textContent === 'PARTY GOAL' &&
+         panel.querySelector('.v606-party-goal-sub')?.textContent === 'COMING SOON') return;
       v973SetGoalPresentationMode(host, panel, dots, V973_GOAL_MODES.WAITING);
       panel.dataset.total = '0';
       host.classList.remove('v614-one-more','v614-complete');
@@ -49723,6 +49770,31 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
      --------------------------------------------------------------------- */
   let v606LastTutorialGoalSignature = null;
 
+  // V2355: one stable-render check for ALL tutorial Party Goal presentations.
+  // Only state changes (or a missing/stale restored panel) may rebuild the dots.
+  // This also keeps the Goal 5 exact-size circles and Goal 7 color discs from
+  // briefly disappearing on ordinary block movements.
+  function tutorialMirrorIsCurrent(signature, mode, expectedDots){
+    if (v606LastTutorialGoalSignature !== signature) return false;
+    const hosts = goalHosts();
+    return hosts.length > 0 && hosts.every(host => {
+      const panel = host.querySelector('.v606-party-goal-panel');
+      const dots = panel && panel.querySelector('.v606-party-goal-dots');
+      return panel && dots &&
+        panel.dataset.v606Mode === mode &&
+        panel.dataset.v606MirrorSignature === signature &&
+        dots.querySelectorAll(':scope > .v606-party-goal-dot').length === expectedDots;
+    });
+  }
+
+  function rememberTutorialMirror(signature){
+    v606LastTutorialGoalSignature = signature;
+    goalHosts().forEach(host => {
+      const panel = host.querySelector('.v606-party-goal-panel');
+      if (panel) panel.dataset.v606MirrorSignature = signature;
+    });
+  }
+
   function mirrorTutorialGoalFromExistingState(options = {}){
     if (!inOnboarding()) {
       v606LastTutorialGoalSignature = null;
@@ -49745,10 +49817,11 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const exactSizes=[5,6,7,8];
       const exactColors=exactSizes.map(size=>level5PartyGoalExactColors && level5PartyGoalExactColors[size] ? level5PartyGoalExactColors[size] : null);
       const done=exactColors.filter(Boolean).length;
-      const signature='exact:'+exactSizes.map((size,index)=>size+':' +(exactColors[index]||'-')).join('|');
+      const signature='level:'+Number(level)+':exact:'+exactSizes.map((size,index)=>size+':' +(exactColors[index]||'-')).join('|');
       const previousSignature=v606LastTutorialGoalSignature;
+      if(tutorialMirrorIsCurrent(signature,V973_GOAL_MODES.TUTORIAL_EXACT,4)) return;
       renderGoal(done,4,'',null,{mode:V973_GOAL_MODES.TUTORIAL_EXACT,exactSizes,exactColors});
-      v606LastTutorialGoalSignature=signature;
+      rememberTutorialMirror(signature);
       const suppressMirrorAnimation=options.animate===false || !!window.bpResumeVisualRebuildActiveV962 || !!window.bpExactTopHudResumeActiveV966;
       if(!suppressMirrorAnimation && previousSignature===null){
         animateHosts('v606-new-goal',950);
@@ -49773,15 +49846,18 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const completedMask = typeof multicolorGoal.completedMask === 'function'
         ? multicolorGoal.completedMask().slice(0,7).map(Boolean)
         : null;
-      const signature = `colors:${done}/7/${completedMask ? completedMask.map(v=>v?'1':'0').join('') : earnedColors.join(',')}`;
+      // Include BOTH the mask and earned colours: different colours can share
+      // the same number of completed discs, but must still update visually.
+      const signature = `level:${Number(level)}:colors:${done}/7/${completedMask ? completedMask.map(v=>v?'1':'0').join('') : '-'}/${earnedColors.join(',')}`;
       const previousSignature = v606LastTutorialGoalSignature;
+      if(tutorialMirrorIsCurrent(signature,V973_GOAL_MODES.TUTORIAL_SEVEN,7)) return;
 
       renderGoal(done, 7, '', null, {
         mode: V973_GOAL_MODES.TUTORIAL_SEVEN,
         earnedColors,
         completedMask
       });
-      v606LastTutorialGoalSignature = signature;
+      rememberTutorialMirror(signature);
 
       const suppressMirrorAnimation = options.animate === false || !!window.bpResumeVisualRebuildActiveV962 || !!window.bpExactTopHudResumeActiveV966;
       if (!suppressMirrorAnimation && previousSignature === null) {
@@ -49811,24 +49887,20 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     const earnedSignature = steps.length === 7 && window.bpMulticolorGoalV529 && typeof window.bpMulticolorGoalV529.earnedColors === 'function'
       ? window.bpMulticolorGoalV529.earnedColors().slice(0,done).join(',')
       : '';
-    const signature = `${done}/${steps.length}/${computedGoalColor}/${earnedSignature}`;
+    // On Goals 3 and 4, the masks matter independently of the completed count.
+    // Include the current level and each step's completion state so transitions
+    // that happen to have the same number of circles cannot retain stale art.
+    const stepMask = steps.map(step => step.classList.contains('done') ? '1' : '0').join('');
+    const goal3Mask = Number(level) === 3
+      ? `${!!window.v503Level3OrangeDone}/${!!window.v503Level3BlueDone}` : '';
+    const goal4Mask = Number(level) === 4 && typeof level4TutorialActive !== 'undefined' && level4TutorialActive
+      ? `${Number(level4YellowGroupsCleared)>0}/${Number(level4BlueGroupsCleared)>0}/${Number(level4RedGroupsCleared)>0}` : '';
+    const signature = `level:${Number(level)}:ordinary:${done}/${steps.length}/${stepMask}/${computedGoalColor}/${earnedSignature}/${goal3Mask}/${goal4Mask}`;
     const previousSignature = v606LastTutorialGoalSignature;
-
-    // V2354: the single stable-render rule applies to ALL ordinary tutorial
-    // Party Goals (A-D), not only Goal 1. In Goal 2 (three blue groups), the
-    // level-step callback used to rebuild unchanged circles on every landing,
-    // producing a visible one-frame flash. Only re-render after real progress,
-    // goal-colour/step changes, or when the goal panel needs first-time repair.
-    if(Number(level) >= 1 && Number(level) <= 4 &&
-       signature === previousSignature &&
-       goalHosts().every(host => {
-         const panel = host.querySelector('.v606-party-goal-panel');
-         return panel && panel.dataset.v606Mode === V973_GOAL_MODES.TUTORIAL &&
-           panel.querySelectorAll('.v606-party-goal-dots > .v606-party-goal-dot').length === steps.length;
-       })) return;
+    if(tutorialMirrorIsCurrent(signature,V973_GOAL_MODES.TUTORIAL,steps.length)) return;
 
     renderGoal(done, steps.length, '', computedGoalColor || null);
-    v606LastTutorialGoalSignature = signature;
+    rememberTutorialMirror(signature);
 
     const suppressMirrorAnimation = options.animate === false || !!window.bpResumeVisualRebuildActiveV962 || !!window.bpExactTopHudResumeActiveV966;
     if (!suppressMirrorAnimation && previousSignature === null) {
@@ -75975,6 +76047,9 @@ window.bpRepairSelectorV945 = Object.freeze({
     if (typeof updateChallenge7StatusCell === 'function') updateChallenge7StatusCell();
     if (typeof drawGrid === 'function') drawGrid();
     if (typeof fallingBlock !== 'undefined' && fallingBlock && typeof drawFallingBlock === 'function') drawFallingBlock();
+    // Shop purchases also persist immediately during tutorial A-J, not only
+    // after the next set lands. Save the cleared field and the deducted points.
+    if (typeof bpShopAutosavePurchase === 'function') bpShopAutosavePurchase();
 
     showProducts();
     if (typeof closeShopModal === 'function') closeShopModal();

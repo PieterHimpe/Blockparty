@@ -29,6 +29,7 @@
 
 
 <!DOCTYPE html>
+<!-- V2347: identical upper/lower HUD widths on tablets; square game canvas and Party Goal --- Level preserved. -->
 
 
 <html lang="en">
@@ -307,6 +308,9 @@ background-color: #c9a878;
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* V2346: avoid intrinsic-width shrinkage of the flex body on tablets. */
+  width: 100%;
+  box-sizing: border-box;
   height: 100vh;
   overflow: hidden;
   margin: 0;
@@ -367,6 +371,19 @@ body {
   align-items: center;
   position: relative;
   top: 1.5vh;
+}
+
+/* V2346: the tablet board scales uniformly. Its width and height share ONE
+   calculated dimension, so the outer canvas remains a genuine 1:1 square.
+   The 30x30 layout and 10x10 active arena both preserve their proportions. */
+@media (min-width: 650px) and (orientation: portrait) {
+  .canvas-wrapper {
+    width: var(--bp2346-square-side) !important;
+    height: var(--bp2346-square-side) !important;
+    max-width: var(--bp2346-square-side) !important;
+    max-height: var(--bp2346-square-side) !important;
+    aspect-ratio: 1 / 1;
+  }
 }
 
 #gameCanvas {
@@ -61285,7 +61302,7 @@ window.bpBarrierResolverV825=Object.freeze({
       const sourceTitle = String(sourcePanel.querySelector('.v606-party-goal-label')?.textContent || 'PARTY GOAL');
       const isNormalPartyGoal = sourcePanel.dataset.v606Mode === 'active' && sourcePanel.dataset.total === '5';
       const displayTitle = isNormalPartyGoal
-        ? `${sourceTitle} x ${window.bpLevelPresentationV948.label(level)}`
+        ? `${sourceTitle} --- ${window.bpLevelPresentationV948.label(level)}`
         : sourceTitle;
       if (targetGoalLabel.textContent !== displayTitle) targetGoalLabel.textContent = displayTitle;
     }
@@ -75977,7 +75994,35 @@ window.bpProtectedBarrierRetryV1033 = Object.freeze({
 
 <style id="v2084-posttutorial-authoritative-style">
 /* Canonical HUD layout for tutorial A-J and all normal levels.
-   V2233: four original tool cards flank the central Party Goal, two per side.
+   V2347: top HUD, lower status row and lower controls share one width token.
+   The 30x30 playing-field canvas keeps its independent square-side token. */
+@media (min-width: 650px) and (orientation: portrait) {
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) {
+    --bp2346-square-side: min(
+      calc(100vw - 20px),
+      55vh,
+      calc(74.75vh - clamp(174px, calc(16vh + 50px), 212px) - 12px)
+    );
+    /* Keep a readable minimum HUD width when the height-limited square is small. */
+    --bp2347-hud-width: min(calc(100vw - 20px), max(560px, var(--bp2346-square-side)));
+  }
+}
+/* Landscape tablets: match the pre-existing 600px upper HUD, without changing
+   the very short landscape-phone controls. */
+@media (min-width: 650px) and (min-height: 600px) and (orientation: landscape) {
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) {
+    --bp2347-hud-width: min(100vw, 600px);
+  }
+}
+@media (min-width: 650px) and (orientation: portrait),
+       (min-width: 650px) and (min-height: 600px) and (orientation: landscape) {
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) .info-container {
+    width: var(--bp2347-hud-width) !important;
+    max-width: var(--bp2347-hud-width) !important;
+  }
+}
+
+/* V2233: four original tool cards flank the central Party Goal, two per side.
    The separate LEVEL card is hidden in full-party mode; level is already in Party Goal.
    SCORE remains in the bottom-left card, with its existing live node and colour ring.
    Tutorial and gameplay behaviour are not changed. */
@@ -77163,10 +77208,11 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
 
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2116BottomHeaderRow {
   position: fixed;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   top: 74vh;
   z-index: 24;
-  width: 100vw;
+  width: var(--bp2347-hud-width, 100vw);
   height: var(--v2116-lower-header-h);
   box-sizing: border-box;
   padding: 0 6px 4px;
@@ -77216,8 +77262,11 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2116BottomHeaderRow .v2116-
 body:is(.v2075-full-party-queue,.v2238-shared-hud) .vertical-controls,
 body:is(.v2075-full-party-queue,.v2238-shared-hud) .horizontal-controls {
   --v2129-queue-side-lane: clamp(26px, 5.8vw, 48px);
-  /* V2343: on phone screens the queue gets even more breathing room.
-     It sits a touch lower and farther from the neighbouring panels. */
+  /* V2347: same width/centerline as the top HUD and lower score row.
+     V2343 queue clearance and vertical placement remain authoritative here. */
+  left: 50% !important;
+  width: var(--bp2347-hud-width, 100vw) !important;
+  transform: translateX(-50%) !important;
   top: 74.75vh !important;
   height: 23.25vh !important;
   box-sizing: border-box !important;

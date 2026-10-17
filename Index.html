@@ -3,6 +3,7 @@
 <!-- V2332: during the tutorial-to-Level-1 handoff, the top card now shows a neutral PARTY IS ABOUT TO START message instead of the five-star Party Goal countdown. -->
 <!-- V2333: the seven-colour tutorial card now has 2x larger title/help text, heart icons aligned with the text rows, and colour discs enlarged by 1.5x. -->
 <!-- V2335: replaced Biggest Group display/popup with authoritative persistent Longest Streak (ordinary successful Party Goals), across manual/live resume. -->
+<!-- V2354: Continue Game derives top HUD width from restored discoveries; ordinary tutorial goals A-D do not redraw unchanged dots. -->
 <!-- V2336: Record header has one persistent source; orientation changes move DROP only, preventing barrier-impact record flashes. -->
 <!-- V2334: Level 8 Free Picture action hint now says TAP PHOTO TO USE, including after autosave resume. -->
 <!-- V2181: consistent 2px bronze HUD borders in original CSS and SVG owners; no v2180 override block. -->
@@ -29,6 +30,7 @@
 
 
 <!DOCTYPE html>
+<!-- V2353: protected tutorial misses consume true NEXT SET; last-resort full entry-edge recovery on two bounced singles. -->
 <!-- V2347: identical upper/lower HUD widths on tablets; square game canvas and Party Goal --- Level preserved. -->
 
 
@@ -33606,24 +33608,77 @@ function v408StartLevel3BarrierDemo() {
 }
 
 
+// V2353: in protected tutorial levels (A/B) a bounced set is NOT retried
+// indefinitely. Consume the real NEXT SET, preserving its planned size 1..3.
+// A fully blocked entry edge is freed only after two failed one-guest sets.
+const v408ProtectedEntryRecoveryV2353 = (() => {
+  let trackedLevel = null;
+  let trackedSide = null;
+  let failedSingles = 0;
+
+  function reset() {
+    trackedSide = null;
+    failedSingles = 0;
+  }
+
+  function blockedEdgeCells(side) {
+    if (!Array.isArray(field) || !Number.isInteger(gridRows) ||
+        !Number.isInteger(gridCols) || gridRows <= 0 || gridCols <= 0) return null;
+    const cells = [];
+    if (side === 'top' || side === 'bottom') {
+      const row = side === 'top' ? 0 : gridRows - 1;
+      for (let col = 0; col < gridCols; col++) {
+        if (!field[row] || !field[row][col]) return null;
+        cells.push([row,col]);
+      }
+    } else if (side === 'left' || side === 'right') {
+      const col = side === 'left' ? 0 : gridCols - 1;
+      for (let row = 0; row < gridRows; row++) {
+        if (!field[row] || !field[row][col]) return null;
+        cells.push([row,col]);
+      }
+    } else return null;
+    return cells;
+  }
+
+  function registerFailedSet(block, side, didBounce) {
+    if (trackedLevel !== level) { trackedLevel = level; reset(); }
+    const isFailedSingle = didBounce && Number(block && block.length) === 1;
+    if (!isFailedSingle || !['top','bottom','left','right'].includes(side)) {
+      reset();
+      return false;
+    }
+    if (trackedSide !== side) { trackedSide = side; failedSingles = 0; }
+    failedSingles++;
+    if (failedSingles < 2) return false;
+
+    const blocked = blockedEdgeCells(side);
+    if (!blocked) { reset(); return false; }
+    // No points, Party Goal progress or invented group clears: this is purely
+    // an escape from an otherwise impossible protected tutorial situation.
+    for (const [row,col] of blocked) field[row][col] = null;
+    reset();
+    drawGrid();
+    return true;
+  }
+  return Object.freeze({registerFailedSet});
+})();
+
 function v408RetryProtectedTutorialBlock(block, side, indices) {
   if (!block) return true;
 
-  const incomingDirection = block._bounceOriginDirection || block.direction || "down";
-  const retryTemplate = v408MakeBasicBlock(
-    block.color || (level <= 1 ? OBJECTIVE_TUTORIAL_COLOR : "#4A90E2"),
-    block.length || 1
-  );
+  const incomingDirection = block._bounceOriginDirection || block.direction || 'down';
   const wasBounce = !!block._returningToOuterWall || !!block._bounceOriginDirection;
   const bounceAlreadyExplained =
-    wasBounce &&
-    typeof v410BounceGuidanceCount !== 'undefined' &&
+    wasBounce && typeof v410BounceGuidanceCount !== 'undefined' &&
     Number(v410BounceGuidanceCount) >= 1;
 
-  // Levels 1-2 are protected practice. A Barrier contact must never leave the
-  // active set removed while gameplay waits for a tutorial overlay. Retry the
-  // same formation immediately and let the explanation be non-blocking.
+  // These levels have no Barrier damage. Count actual blocked, bounced
+  // one-guest entrances; never clear the field for sets that merely missed.
+  v408ProtectedEntryRecoveryV2353.registerFailedSet(block, side, wasBounce);
   pulseBarrierWallImpact(side, indices);
+  block._returningToOuterWall = false;
+  block._atOuterWallPendingBarrierImpact = false;
   fallingBlock = null;
   gamePaused = false;
 
@@ -33631,32 +33686,36 @@ function v408RetryProtectedTutorialBlock(block, side, indices) {
     v410BounceGuidanceCount = Math.max(1, Number(v410BounceGuidanceCount) || 0);
   }
 
-  v408SpawnSpecificDirection(incomingDirection, retryTemplate);
+  // Use the existing NEXT SET, not a clone of the blocked formation. The
+  // authoritative creation pipeline consumes it, advances the tutorial queue
+  // and updates the NEXT SET preview exactly once.
+  useVertical = incomingDirection === 'up' || incomingDirection === 'down';
+  directionToggle = useVertical;
+  updateControls();
+  fallingBlock = useVertical
+    ? createBlock(incomingDirection)
+    : createBlockH(incomingDirection);
+  drawGrid();
+  if (fallingBlock) drawFallingBlock();
   v408RestartFallLoop();
 
   if (!bounceAlreadyExplained) {
     const title = wasBounce
-      ? "GIVE THE BLOCK A CLEAR WAY IN"
-      : "MOVE THE DANCE FLOOR INTO THE BLOCK'S PATH";
+      ? 'GIVE THE NEXT SET A CLEAR WAY IN'
+      : 'MOVE THE DANCE FLOOR INTO THE BLOCK\'S PATH';
     const body = wasBounce
-      ? "It bounced because its route into the dance floor was blocked. Move the dance floor earlier to give it a clear way in."
-      : "The block passed the dance floor. Try that direction again.";
-
+      ? 'That set could not enter. The next set is coming — move the dance floor to make room.'
+      : 'The block passed the dance floor. Catch the next set.';
     const icons = window.V471_ICONS || {};
     if (typeof window.v471ShowHint === 'function') {
-      window.v471ShowHint(
-        title,
-        body,
-        icons.barrier || icons.directions || null,
-        3000
-      );
+      window.v471ShowHint(title, body, icons.barrier || icons.directions || null, 3000);
     } else if (typeof v468Toast === 'function') {
       v468Toast(title, body, 3000);
     }
   }
-
   return true;
 }
+
 function v408StartLevel3FinalPractice(){return window.bpLevel23OnboardingV839.invoke('v408StartLevel3FinalPractice',this,arguments);}
 window.bpLevel23OnboardingV839.define('v408StartLevel3FinalPractice','v408', function(){}); /* cleanup16 bootstrap; authoritative core installed below */
 function v408StartLevel4AfterBasics(){return window.bpLevel23OnboardingV839.invoke('v408StartLevel4AfterBasics',this,arguments);}
@@ -49755,10 +49814,13 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     const signature = `${done}/${steps.length}/${computedGoalColor}/${earnedSignature}`;
     const previousSignature = v606LastTutorialGoalSignature;
 
-    // V2251: the first Party Goal must stay on screen between actual group
-    // clears. Rebuilding every progress dot on each block movement causes a
-    // visible blink, especially in mobile browsers. Real progress still renders.
-    if(Number(level) === 1 && signature === previousSignature &&
+    // V2354: the single stable-render rule applies to ALL ordinary tutorial
+    // Party Goals (A-D), not only Goal 1. In Goal 2 (three blue groups), the
+    // level-step callback used to rebuild unchanged circles on every landing,
+    // producing a visible one-frame flash. Only re-render after real progress,
+    // goal-colour/step changes, or when the goal panel needs first-time repair.
+    if(Number(level) >= 1 && Number(level) <= 4 &&
+       signature === previousSignature &&
        goalHosts().every(host => {
          const panel = host.querySelector('.v606-party-goal-panel');
          return panel && panel.dataset.v606Mode === V973_GOAL_MODES.TUTORIAL &&
@@ -72808,8 +72870,16 @@ try { showTutorialLevelBanner(); } catch (_) {}
       }
     });
 
-    // Structure is now exact; repair dynamic contents from the exact restored game state.
+    // V2354: restore dynamic presentation from game state, but NEVER let an old
+    // HUD snapshot decide whether the Party Goal spans all four columns or only
+    // the middle two. Repair / Multi / Photo / Skip discovery flags are the
+    // authority. This runs synchronously on EVERY snapshot replay (including
+    // delayed Continue Game passes), so the obsolete geometry cannot flash.
     reconcileAuthoritativeDynamicHud();
+    try {
+      const progressive = window.bpProgressiveHudV873 || window.bpProgressiveHudV872;
+      if (progressive && typeof progressive.rebuild === 'function') progressive.rebuild();
+    } catch (_) {}
     return true;
   }
 
@@ -75971,9 +76041,9 @@ window.bpRepairSelectorV945 = Object.freeze({
 
 <script id="v1033-protected-barrier-retry-diagnostic">
 window.bpProtectedBarrierRetryV1033 = Object.freeze({
-  version: 'v1034',
+  version: 'v2353',
   levels: [1, 2],
-  behavior: 'immediate-retry-nonblocking-guidance'
+  behavior: 'advance-real-next-set; clear-full-entry-edge-after-two-single-bounces'
 });
 </script>
 

@@ -61285,7 +61285,7 @@ window.bpBarrierResolverV825=Object.freeze({
       const sourceTitle = String(sourcePanel.querySelector('.v606-party-goal-label')?.textContent || 'PARTY GOAL');
       const isNormalPartyGoal = sourcePanel.dataset.v606Mode === 'active' && sourcePanel.dataset.total === '5';
       const displayTitle = isNormalPartyGoal
-        ? `${sourceTitle} · ${window.bpLevelPresentationV948.label(level)}`
+        ? `${sourceTitle} - ${window.bpLevelPresentationV948.label(level)}`
         : sourceTitle;
       if (targetGoalLabel.textContent !== displayTitle) targetGoalLabel.textContent = displayTitle;
     }
@@ -77180,16 +77180,15 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2116BottomHeaderRow .v2116-
    the right arrow stays aligned with the left edge of NEXT MISSION. */
 body:is(.v2075-full-party-queue,.v2238-shared-hud) .vertical-controls,
 body:is(.v2075-full-party-queue,.v2238-shared-hud) .horizontal-controls {
-  --v2129-queue-side-lane: clamp(18px, 4vw, 36px);
-  /* V2338: use more of the free lower area on mobile.
-     Result: the queue sits lower, arrows become taller,
-     and MENU/SHOP get more vertical room. */
-  top: 74.6vh !important;
-  height: 23.4vh !important;
+  --v2129-queue-side-lane: clamp(26px, 5.8vw, 48px);
+  /* V2343: on phone screens the queue gets even more breathing room.
+     It sits a touch lower and farther from the neighbouring panels. */
+  top: 74.75vh !important;
+  height: 23.25vh !important;
   box-sizing: border-box !important;
   padding-top: var(--v2116-lower-header-h) !important;
   padding-right: 6px !important;
-  padding-bottom: 1.6vh !important;
+  padding-bottom: .9vh !important;
   padding-left: 6px !important;
   gap: 6px !important;
   align-items: stretch !important;
@@ -77259,8 +77258,8 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) .v2140-queue-tube {
   /* Center the complete channel inside the already reserved side lanes. */
   left: calc(6px + (var(--v2129-queue-side-lane) - var(--v2140-tube-lane)) / 2) !important;
   right: calc(6px + (var(--v2129-queue-side-lane) - var(--v2140-tube-lane)) / 2) !important;
-  top: calc(var(--v2116-lower-header-h) + 4px) !important;
-  bottom: clamp(2px, .3vh, 5px) !important;
+  top: calc(var(--v2116-lower-header-h) + 11px) !important;
+  bottom: 0 !important;
 
   /* IMPORTANT V2147:
      The parent has NO border anymore. Both orange rails are pseudo-elements,

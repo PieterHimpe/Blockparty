@@ -6175,6 +6175,26 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   }
 </style>
 
+
+<style id="v2352-tablet-vertical-balance">
+/* V2352: tablet portrait only.
+   Goal: keep phone layout untouched, but visually rebalance the vertical gap
+   around the square playing field on tablets. The upper gap was slightly larger
+   than the lower gap, so we:
+   1) reduce the spacing below the top HUD,
+   2) nudge the square board slightly upward.
+   Width strategy stays unchanged. */
+@media (min-width: 650px) and (orientation: portrait) {
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) .info-container {
+    margin-bottom: clamp(4px, 0.55vh, 8px) !important;
+  }
+
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) .canvas-wrapper {
+    top: 0.25vh !important;
+  }
+}
+</style>
+
 </head>
 
 

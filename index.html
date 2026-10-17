@@ -1,3 +1,7 @@
+<!-- V2364: one quiet GUESTS LEFT counter under Party Goal reward bar, from the authoritative consumed-set count. -->
+<!-- V2365: start popup emphasizes guests available and removes the redundant 250-point mention; uses guest terminology consistently. -->
+<!-- V2362: reward starts at full 250 until the first active set is actually spent, and the reward line/bar sit higher above the mission banner. -->
+<!-- V2359: variable 3-7 normal goals; finite 50-200 guests, exact save/continue, declining 250-point reward and stable bar. -->
 <!-- V2252: removed obsolete eight-group level progression and HUD updates; Party Goals/100 guests remain authoritative; Level J four landings preserved. -->
 <!-- V2331: start screen with 3 visible buttons now uses a true 3-column grid, so the trio is correctly centered as a group. -->
 <!-- V2332: during the tutorial-to-Level-1 handoff, the top card now shows a neutral PARTY IS ABOUT TO START message instead of the five-star Party Goal countdown. -->
@@ -31,7 +35,7 @@
 
 <!DOCTYPE html>
 <!-- V2353: protected tutorial misses consume true NEXT SET; last-resort full entry-edge recovery on two bounced singles. -->
-<!-- V2347: identical upper/lower HUD widths on tablets; square game canvas and Party Goal --- Level preserved. -->
+<!-- V2357: mission-only Party Goal intro removed; mission queue uses planned incoming sets and three equal reward columns. -->
 
 
 <html lang="en">
@@ -2609,7 +2613,7 @@ width: 100%;
 
 #partyMissionTextCard::before,
 #partyMissionTextCard::after {
-  content: "✦  ✧  ✦  ✧  ✦";
+  content: "•  ·  •  ·  •";
   position: absolute;
   left: 50%;
   width: max-content;
@@ -2706,7 +2710,7 @@ width: 100%;
 /* Four small gold decorations instead of ten large pink neon stars. */
 #partyMissionTextCard.party-mission-start::before,
 #partyMissionTextCard.party-mission-start::after {
-  content: "✦       ✦";
+  content: "•       •";
   font-size: clamp(13px, 3.8vw, 17px);
   letter-spacing: 0.05rem;
   color: #FFD876;
@@ -2839,7 +2843,7 @@ width: 100%;
 
 #partyMissionTextCard.feature-reward-card::before,
 #partyMissionTextCard.feature-reward-card::after {
-  content: "✦       ✦";
+  content: "•       •";
   font-size: clamp(13px, 3.8vw, 17px);
   letter-spacing: 0.05rem;
   color: #FFD876;
@@ -3107,7 +3111,7 @@ width: 100%;
 
 #rewardCards {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
   margin-top: 1rem;
 }
@@ -3222,7 +3226,7 @@ width: 100%;
 }
 
 .reward-fallback-multicolor::before {
-  content: "✦";
+  content: "•";
   position: absolute;
   inset: 0;
   display: flex;
@@ -3291,6 +3295,9 @@ width: 100%;
   font-weight: 900;
   line-height: 1.02;
   text-transform: uppercase;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .reward-card-description {
@@ -3376,6 +3383,10 @@ width: 100%;
     min-height: 172px;
     padding: 0.7rem 0.35rem 0.6rem;
     border-width: 2px;
+  }
+
+  .reward-card-title {
+    font-size: clamp(0.72rem, 3.2vw, 0.95rem);
   }
 }
 
@@ -6210,8 +6221,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 
 <div id="tutorialLevelBanner" aria-live="polite" aria-atomic="true" role="status">
   <div id="tutorialLevelBannerInner">
-    <span class="tutorial-level-star tutorial-level-star-left">✦</span>
-    <span class="tutorial-level-star tutorial-level-star-right">✦</span>
+    <span class="tutorial-level-star tutorial-level-star-left">•</span>
+    <span class="tutorial-level-star tutorial-level-star-right">•</span>
     <img id="tutorialLevelBannerImage" src="" alt="">
     <div id="v422Level4ColorIntro" aria-hidden="true">
       <span class="v422-level4-color-swatch"></span>
@@ -6596,7 +6607,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch11()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>.</span><span>.</span>
+      <span>●</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
@@ -6610,7 +6621,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch12()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>.</span>
+      <span>●</span><span>●</span><span>.</span>
       <span>.</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
@@ -6624,7 +6635,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch13()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
+      <span>●</span><span>●</span><span>●</span>
       <span>.</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
@@ -6638,8 +6649,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch14()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>.</span><span>.</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
   </div>
@@ -6652,8 +6663,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch15()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>.</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
   </div>
@@ -6666,8 +6677,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch16()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
   </div>
@@ -6680,9 +6691,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch17()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>.</span><span>.</span> 
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>.</span><span>.</span> 
     </div>
   </div>
   <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -6694,9 +6705,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch18()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>.</span> 
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>.</span> 
     </div>
   </div>
   <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -6708,9 +6719,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch19()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span> 
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span> 
     </div>
   </div>
   <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -6779,7 +6790,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch21()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>.</span><span>.</span>
+      <span>●</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
@@ -6793,7 +6804,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch22()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>.</span>
+      <span>●</span><span>●</span><span>.</span>
       <span>.</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
@@ -6807,7 +6818,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch23()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
+      <span>●</span><span>●</span><span>●</span>
       <span>.</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
@@ -6821,8 +6832,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch24()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>.</span><span>.</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>.</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
   </div>
@@ -6835,8 +6846,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch25()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>.</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>.</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
   </div>
@@ -6849,8 +6860,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch26()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
       <span>.</span><span>.</span><span>.</span> 
     </div>
   </div>
@@ -6863,9 +6874,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch27()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>.</span><span>.</span> 
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>.</span><span>.</span> 
     </div>
   </div>
   <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -6877,9 +6888,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch28()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>.</span> 
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>.</span> 
     </div>
   </div>
   <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -6891,9 +6902,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 <div onclick="startPracticeWithPreFilledGridch29()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
   <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
     <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span>
-      <span>★</span><span>★</span><span>★</span> 
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span>
+      <span>●</span><span>●</span><span>●</span> 
     </div>
   </div>
   <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -6971,7 +6982,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch31()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -6985,7 +6996,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch32()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -6999,7 +7010,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch33()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7013,8 +7024,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch34()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7027,8 +7038,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch35()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7041,8 +7052,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch36()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7055,9 +7066,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch37()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7069,9 +7080,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch38()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7083,9 +7094,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch39()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7155,7 +7166,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch41()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7169,7 +7180,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch42()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7183,7 +7194,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch43()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7197,8 +7208,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch44()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7211,8 +7222,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch45()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7225,8 +7236,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch46()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7239,9 +7250,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch47()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7253,9 +7264,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch48()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7267,9 +7278,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch49()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7338,7 +7349,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch51()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7352,7 +7363,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch52()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7366,7 +7377,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch53()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7380,8 +7391,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch54()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7394,8 +7405,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch55()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7408,8 +7419,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch56()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7422,9 +7433,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch57()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7436,9 +7447,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch58()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7450,9 +7461,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch59()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7522,7 +7533,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch61()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7536,7 +7547,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch62()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7550,7 +7561,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch63()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7564,8 +7575,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch64()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7578,8 +7589,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch65()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7592,8 +7603,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch66()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7606,9 +7617,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch67()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7620,9 +7631,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch68()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7634,9 +7645,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch69()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7706,7 +7717,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch71()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7720,7 +7731,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch72()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7734,7 +7745,7 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch73()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
@@ -7748,8 +7759,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch74()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7762,8 +7773,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch75()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7776,8 +7787,8 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch76()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
         <span>.</span><span>.</span><span>.</span> 
       </div>
     </div>
@@ -7790,9 +7801,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch77()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>.</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>.</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7804,9 +7815,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch78()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>.</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>.</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -7818,9 +7829,9 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
   <div onclick="startPracticeWithPreFilledGridch79()" style="display: flex; justify-content: space-between; align-items: center; border: 2px solid #C7772A; border-radius: 10px; background: rgba(255, 255, 255, 0.07); padding: 4px 6px; min-width: 50px;">
     <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
       <div class="practice-text" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; justify-items: center; align-items: center; font-size: 1rem; line-height: 1; color: #FFE680;">
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span>
-        <span>★</span><span>★</span><span>★</span> 
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span>
+        <span>●</span><span>●</span><span>●</span> 
       </div>
     </div>
     <div style="display: flex; justify-content: center; align-items: center; width: 50px;">
@@ -12743,7 +12754,7 @@ function createDjUnlockStars() {
   if (!layer) return;
 
   const starColors = ["#FFD86A", "#FFFFFF", "#72F6A5", "#FF9AA2", "#B86BFF"];
-  const starSymbols = ["✦", "✧", "★", "✶"];
+  const starSymbols = ["•", "·", "●", "•"];
 
   for (let i = 0; i < 24; i++) {
     const star = document.createElement("div");
@@ -13064,11 +13075,11 @@ const PARTY_MISSION_TEXTS = {
     failBody: "The outer Party Barrier was damaged during the mission."
   },
   4: {
-    startTitle: "⭐ 50+ BLOCK BONANZA",
+    startTitle: "● 50+ BLOCK BONANZA",
     startBody: "Have 50 or more blocks on the floor 10 times within 100 blocks.",
-    successTitle: "⭐ DANCE FLOOR PACKED!",
+    successTitle: "● DANCE FLOOR PACKED!",
     successBody: "You mastered the crowded dance floor.",
-    failTitle: "⭐ NOT ENOUGH PARTY!",
+    failTitle: "● NOT ENOUGH PARTY!",
     failBody: "The dance floor was not crowded often enough."
   },
   5: {
@@ -13291,7 +13302,7 @@ function showPartyMissionText(title, body, kind = "start", footer = "", onClose 
 
   if (eyebrowEl) {
     eyebrowEl.textContent =
-      kind === "start" ? `★ PARTY MISSION ${currentPartyMissionId} OF 7 ★` :
+      kind === "start" ? `● PARTY MISSION ${currentPartyMissionId} OF 7 ●` :
       kind === "success" ? "MISSION COMPLETE!" :
       "MISSION FAILED";
   }
@@ -13351,6 +13362,7 @@ function showPartyMissionText(title, body, kind = "start", footer = "", onClose 
     if (typeof onClose === "function") {
       onClose();
     }
+    if (kind === 'fail') bpMissionFlowV2358.completeResult(currentPartyMissionId);
   };
 
   const close = (event) => {
@@ -13397,6 +13409,10 @@ function showPartyMissionStart(id, unlockAlreadyShown = false) {
   const mission = PARTY_MISSION_TEXTS[id];
   if (!mission) return;
 
+  // V2357: a mission has one introduction: its own mission card. If a
+  // previous ordinary level queued the Party Goal start card, dismiss it.
+  window.bpPartyGoalStartCardV649?.dismiss?.();
+
   // V2221: the mission introduction card already explains the unlock. Mark the
   // feature as available, without launching the redundant unlock animation/modal.
   // The existing mission presentation queue still serializes this one start card.
@@ -13417,6 +13433,7 @@ function showPartyMissionStart(id, unlockAlreadyShown = false) {
 function showPartyMissionResult(success, id = currentPartyMissionId) {
   const mission = PARTY_MISSION_TEXTS[id];
   if (!mission) return;
+  bpMissionFlowV2358.result(id,success);
 
   if (success) {
     showPartyMissionText(
@@ -14607,7 +14624,14 @@ function showRewardChoice() {
 
   rewardChoiceOpen = true;
   rewardChoiceResolved = false;
-  currentRewardChoices = drawThreeValidRewards();
+  const savedChoices = bpMissionFlowV2358.state().rewardIds;
+  currentRewardChoices = (savedChoices.length===3
+    ? savedChoices.map(id=>PARTY_REWARDS.find(r=>r.id===id)).filter(Boolean)
+    : []);
+  if(currentRewardChoices.length!==3) currentRewardChoices=drawThreeValidRewards();
+  bpMissionFlowV2358.setRewardChoices(currentRewardChoices.map(r=>r.id));
+  // The same three reward options survive Continue Game.
+  setTimeout(()=>{try{window.bpV840SaveLiveResume?.();}catch(_){}},0);
 
   title.textContent = "CHOOSE YOUR REWARD";
   subtitle.textContent = "Pick one of the three rewards. The other two will disappear.";
@@ -14635,6 +14659,9 @@ function choosePartyReward(rewardId) {
 
   // Directe beloningen en de resterende duur van actieve beloningen worden samen met deze game bewaard.
   saveActiveRewards();
+  bpMissionFlowV2358.rewardSelected();
+  // A selected reward must NEVER be applied twice after an interrupted continue.
+  try { window.bpV840SaveLiveResume?.(); } catch(_) {}
 
   const overlay = document.getElementById("rewardChoiceOverlay");
   const title = document.getElementById("rewardChoiceTitle");
@@ -14669,17 +14696,104 @@ function closeRewardChoice() {
   rewardChoiceResolved = false;
   currentRewardChoices = [];
   gamePaused = false;
+  bpMissionFlowV2358.completeResult(currentPartyMissionId);
 }
 
 
 // Welk level activeert de challenge? AANPASSEN
-let challengeLevel = window.bpMissionDashboardTestV2217.enabled ? window.bpMissionDashboardTestV2217.firstMissionTriggerInternalLevel : (CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[0] : 15);
-let challenge2Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[1] : 20;
-let challenge3Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[2] : 25;
-let challenge4Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[3] : 30;
-let challenge5StartLevel = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[4] : 35;
-let challenge6Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[5] : 40;
-let challenge7Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[6] : 45;
+let challengeLevel = window.bpMissionDashboardTestV2217.enabled ? window.bpMissionDashboardTestV2217.firstMissionTriggerInternalLevel : (CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[0] : 16);
+let challenge2Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[1] : 21;
+let challenge3Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[2] : 26;
+let challenge4Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[3] : 31;
+let challenge5StartLevel = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[4] : 36;
+let challenge6Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[5] : 41;
+let challenge7Level = CHALLENGE_TEST_MODE ? PARTY_MISSION_TEST_LEVELS[6] : 46;
+
+
+/* V2358: one authoritative milestone phase independent of the numeric level.
+   The level indexes the NEXT normal Party Goal, even while its preceding
+   Party Mission is pending, running, or awaiting its result/reward dismissal.
+   This state belongs to BOTH LIVE CONTINUE and immutable SAVE PARTY snapshots. */
+const bpMissionFlowV2358 = (() => {
+  const KEY = 'bpMissionFlowV2358';
+  let status = {phase:'normal', milestone:0, missionId:0, success:null, rewardIds:[]};
+  const clone = () => ({...status});
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify({version:1,...status})); } catch(_) {} };
+  const read = () => {
+    try { const v=JSON.parse(localStorage.getItem(KEY)||'null');
+      if(v && v.version===1 && ['normal','active','result','reward-selected'].includes(v.phase))
+        return {phase:v.phase,milestone:Number(v.milestone)||0,missionId:Number(v.missionId)||0,success:v.success===true,rewardIds:Array.isArray(v.rewardIds)?v.rewardIds.slice(0,3):[]};
+    } catch(_) {}
+    return null;
+  };
+  return Object.freeze({
+    key:KEY,
+    state:clone,
+    isAwaitingResult(){ return status.phase==='result'; },
+    holdsMissionQueue(){ return status.phase==='active'||status.phase==='result'||status.phase==='reward-selected'; },
+    begin(id, lv) {
+      // Manual mission replays do not become new milestone transitions.
+      if(status.phase!=='normal') return false;
+      if(Number(lv)!==Number(level)) return false;
+      status={phase:'active',milestone:Number(lv),missionId:Number(id),success:null,rewardIds:[]};
+      persist(); return true;
+    },
+    result(id, success){
+      if(status.phase==='active' && status.missionId===Number(id)){
+        status.phase='result'; status.success=!!success; persist();
+      }
+    },
+    setRewardChoices(ids){
+      if(status.phase!=='result') return;
+      status.rewardIds=Array.isArray(ids)?ids.slice(0,3):[]; persist();
+    },
+    rewardSelected(){
+      if(status.phase!=='result') return false;
+      status.phase='reward-selected';persist();return true;
+    },
+    resumeOutcome(){
+      if(status.phase==='result' && status.missionId){
+        const saved=clone();
+        setTimeout(() => {
+          if(status.phase==='result' && status.missionId===saved.missionId){
+            try { currentPartyMissionId=saved.missionId; showPartyMissionResult(saved.success,saved.missionId); } catch(e) { console.error(e); }
+          }
+        },0);
+      } else if(status.phase==='reward-selected') {
+        this.completeResult(status.missionId);
+      }
+    },
+    completeResult(id){
+      if(!['result','reward-selected'].includes(status.phase)||status.missionId!==Number(id)) return false;
+      status.phase='normal'; persist();
+      // Transition only after the result/reward is actually dismissed.
+      try { window.bpLevelQueueV2075?.ensure?.(); } catch(_) {}
+      try { updateLevelDisplay(); updateLevelAndBpmDisplay(); } catch(_) {}
+      // Commit the post-mission stable state immediately. Otherwise an app
+      // closed on the next falling set would resurrect the last active mission.
+      try { window.bpV840SaveLiveResume?.(); } catch(_) {}
+      return true;
+    },
+    restore(){
+      const saved=read();
+      status=saved || {phase:'normal',milestone:0,missionId:0,success:null,rewardIds:[]};
+      // Old V2357 saves have no phase key: the V740 mission snapshot already
+      // knows the exact mission ID; its active flags are restored separately.
+      if(!saved){
+        try {
+          const old=JSON.parse(localStorage.getItem('partyMissionRuntimeV740')||'null');
+          const id=Number(old?.activeMissionId)||0;
+          if(id>=1&&id<=7) status={phase:'active',milestone:Number(localStorage.getItem('testLevel'))||0,missionId:id};
+        } catch(_) {}
+      }
+      // A stale phase from a different saved level must never block a run.
+      if(status.phase!=='normal' && status.milestone!==(Number(localStorage.getItem('testLevel'))||Number(level)))
+        status={phase:'normal',milestone:0,missionId:0,success:null,rewardIds:[]};
+      persist(); return clone();
+    },
+    reset(){status={phase:'normal',milestone:0,missionId:0,success:null,rewardIds:[]};persist();}
+  });
+})();
 
 let originalChallengeLevel = challengeLevel;
 let originalChallenge2Level = challenge2Level;
@@ -17460,7 +17574,7 @@ function updateHighStats() {
 //  const highRound = localStorage.getItem("allTimeHighRound") || "0";
 //  const display = document.getElementById("allTimeDisplay");
 //  if (display) {
-//    display.textContent = `★ ${highScore} | ⟳ ${highRound}`;
+//    display.textContent = `● ${highScore} | ⟳ ${highRound}`;
 //  }
 //}
 
@@ -17483,7 +17597,9 @@ function updateHighStats() {
 function updateAllTimeDisplay() {
   const highScore = localStorage.getItem("allTimeHighScore") || "0";
   const storedHighestLevel = parseInt(localStorage.getItem("allTimeHighestLevel") || "0");
-  const highestLevel = Math.max(storedHighestLevel, Number(level) || 1);
+  const recordLevel = bpMissionFlowV2358.holdsMissionQueue()
+    ? Math.max(11, (Number(level)||11)-1) : (Number(level)||1);
+  const highestLevel = Math.max(storedHighestLevel, recordLevel);
   if (highestLevel > storedHighestLevel) {
     localStorage.setItem("allTimeHighestLevel", String(highestLevel));
   }
@@ -19057,14 +19173,16 @@ function applyTutorialRecenterAfterLevelIntro() {
 }
 
 function v832CoreUpdateLevelDisplay() {
-  document.getElementById("levelValue").textContent = window.bpLevelPresentationV948.value(level);
+  // Missions sit between ordinary levels. The next level is not achieved yet.
+  const displayedLevel = bpMissionFlowV2358.holdsMissionQueue()
+    ? Math.max(11, (Number(level)||11)-1) : (Number(level)||1);
+  document.getElementById("levelValue").textContent = window.bpLevelPresentationV948.value(displayedLevel);
   const extra = document.getElementById("levelDisplayExtra");
-  if (extra) extra.textContent = window.bpLevelPresentationV948.value(level);
+  if (extra) extra.textContent = window.bpLevelPresentationV948.value(displayedLevel);
 
-  // V534: Highest Level is an all-time stat and updates the moment a new level is reached.
   const storedHighestLevel = parseInt(localStorage.getItem("allTimeHighestLevel") || "0");
-  if ((Number(level) || 1) > storedHighestLevel) {
-    localStorage.setItem("allTimeHighestLevel", String(Number(level) || 1));
+  if (displayedLevel > storedHighestLevel) {
+    localStorage.setItem("allTimeHighestLevel", String(displayedLevel));
   }
   if (typeof updateAllTimeDisplay === "function") updateAllTimeDisplay();
 
@@ -19076,7 +19194,7 @@ function v832CoreUpdateLevelDisplay() {
   showTutorialLevelBanner(level);
 
   // Niet-blokkerende analytics: kan het spel nooit tegenhouden.
-  trackSelectedLevelsReached(level);
+  trackSelectedLevelsReached(displayedLevel);
 }
 
 // ===== v832: AUTHORITATIVE HUD / LEVEL / MISSION DISPLAY PIPELINES =====
@@ -19295,7 +19413,7 @@ if (level === 1 && !movementTutorialFinishedNormalPlay && !level1FixedColor) {
   level1FixedColor = "#C7772A";
 }
 
-// ⭐⭐⭐ Level 10 – eerste 5 blokken krijgen dezelfde kleur ⭐⭐⭐
+// ●●● Level 10 – eerste 5 blokken krijgen dezelfde kleur ●●●
 if (level === 10 && level10Count < 5) {
 
   if (!level10FixedColor) {
@@ -22427,9 +22545,9 @@ function createPromoParticle(shape, color, size, x, y) {
   particle.style.setProperty("--particle-size", `${size}px`);
 
   if (shape === "star") {
-    particle.textContent = "★";
+    particle.textContent = "●";
   } else if (shape === "sparkle") {
-    particle.textContent = Math.random() < 0.5 ? "✦" : "✧";
+    particle.textContent = Math.random() < 0.5 ? "•" : "·";
   }
 
   document.body.appendChild(particle);
@@ -26493,13 +26611,10 @@ if (level === challengeLevel && !challengeRewardGiven) {
   if (isAnyChallengeActive()) { // Mission 1 stays in visible LEVEL 2 during V2217 QA.
     if (!window.bpMissionDashboardTestV2217.enabled) challengeLevel++;
   } else {
+    bpMissionFlowV2358.begin(1, level);
     challengeActive = true;
-    // V2217 QA: trigger Mission 1 upon entering visible LEVEL 2;
-    // the normal +1 at mission start stays in production.
-    if (!window.bpMissionDashboardTestV2217.enabled) level++;
-    if (typeof trackHighestLevelReached === "function") {
-      trackHighestLevelReached(level);
-    }
+    // V2358: mission occupies no ordinary level. `level` already denotes
+    // the next normal Party Goal after the five just completed.
     updateLevelAndBpmDisplay()
     updateLevelDisplay();
     challengeHeartCount = 0;
@@ -26519,11 +26634,8 @@ if (level === challenge2Level && !challenge2RewardGiven) {
   if (isAnyChallengeActive()) {
     challenge2Level++;
   } else {
+    bpMissionFlowV2358.begin(2, level);
     challenge2Active = true;
-    level++;
-    if (typeof trackHighestLevelReached === "function") {
-      trackHighestLevelReached(level);
-    }
     challenge2MultiCount = 0;
     challenge2BlockCounter = 0;
     challenge2RewardGiven = false;
@@ -26541,11 +26653,8 @@ if (level === challenge3Level && !challenge3Started) {
   if (isAnyChallengeActive()) {
     challenge3Level++;
   } else {
+    bpMissionFlowV2358.begin(3, level);
     challenge3Active = true;
-    level++;
-    if (typeof trackHighestLevelReached === "function") {
-      trackHighestLevelReached(level);
-    }
     challenge3Started = true;
     challenge3Failed = false;
     challenge3Success = false;
@@ -26564,11 +26673,8 @@ if (level === challenge4Level && !challenge4RewardGiven) {
   if (isAnyChallengeActive()) {
     challenge4Level++;
   } else {
+    bpMissionFlowV2358.begin(4, level);
     challenge4Active = true;
-    level++;
-    if (typeof trackHighestLevelReached === "function") {
-      trackHighestLevelReached(level);
-    }
     challenge4Count = 0;
     challenge4FullFieldMoments = 0;
     updateLevelAndBpmDisplay()
@@ -26585,11 +26691,8 @@ if (level === challenge5StartLevel && !challenge5Started) {
     challenge5StartLevel++;
   } else {
     challenge5Started = true;
+    bpMissionFlowV2358.begin(5, level);
     challenge5Active = true;
-    level++;
-    if (typeof trackHighestLevelReached === "function") {
-      trackHighestLevelReached(level);
-    }
     challenge5Done = false;
     challenge5Success = false;
     challenge5BlockCounter = 0;
@@ -26619,11 +26722,8 @@ if (level === challenge6Level && !challenge6Done && !challenge6RewardGiven) {
   if (isAnyChallengeActive()) {
     challenge6Level++;
   } else {
+    bpMissionFlowV2358.begin(6, level);
     challenge6Active = true;
-    level++;
-    if (typeof trackHighestLevelReached === "function") {
-      trackHighestLevelReached(level);
-    }
     challenge6BlockCounter = 0;
     challenge6SixGroupCount = 0;
     challenge6RewardGiven = false;
@@ -26640,11 +26740,8 @@ if (level === challenge7Level && !challenge7Done && !challenge7RewardGiven) {
   if (isAnyChallengeActive()) {
     challenge7Level++;
   } else {
+    bpMissionFlowV2358.begin(7, level);
     challenge7Active = true;
-    level++;
-    if (typeof trackHighestLevelReached === "function") {
-      trackHighestLevelReached(level);
-    }
     challenge7BlockCount = 0;
     challenge7GroupCount = 0;
     challenge7RewardGiven = false;
@@ -29491,7 +29588,7 @@ function updateChallenge7StatusCell() {
 
 
 levelDisplay.addEventListener("click", () => {
-  // V2226: The visible ★ MISSIONS button forwards its click here. During
+  // V2226: The visible ● MISSIONS button forwards its click here. During
   // ordinary post-tutorial play the overview must be available immediately,
   // even before Mission 1 unlocks; individual replay cards remain locked.
   // Keep the old discovery lock during tutorial levels A–J.
@@ -41914,7 +42011,7 @@ body.v473-block-d-card .tutorial-tap-to-continue { display:none !important; }
   });
 
   // V948: Internal level 10 is player LEVEL J and remains ordinary play.
-  // Party Mission 1 is owned by the normal challenge scheduler at challengeLevel (=15).
+  // Party Mission 1 is owned by the normal challenge scheduler at challengeLevel (=16).
   // Keep the central set-start wrapper neutral here; no mission may be opened in level 10.
   const v473BaseRegisterCentralTutorialBlockStart= window.bpRemainingOnboardingEventPipelineV926.snapshot("registerCentralTutorialBlockStart");
   window.bpRemainingOnboardingEventPipelineV926.registerSnapshotLayer("registerCentralTutorialBlockStart", "v473-master-block-d:registerCentralTutorialBlockStart:1", function(){
@@ -43408,7 +43505,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         kicker:'GOAL COMPLETE!',
         headline:'5, 6, 7 AND 8 CLEARED!',
         groups, groupsRowClass:'is-exact-sizes',
-        reward:'★ +100 PTS'
+        reward:'● +100 PTS'
       },onClose);
     }
     return false;
@@ -43505,7 +43602,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         groups:groupsForState.complete,
         groupsRowClass:'is-two-groups',
         groupsAriaLabel:'Orange and blue cleared',
-        reward:'★ +100 PTS'
+        reward:'● +100 PTS'
       }
     };
     return window.bpShowPartyGoalCardV1012(states[stage], onClose);
@@ -43583,7 +43680,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
       return window.bpShowPartyGoalCardV1012({
         owner:'goal4-v1012', goalNumber:4, stage:'complete',
         kicker:'GOAL COMPLETE!', headline:'ALL 3 COLORS CLEARED!',
-        groups, reward:'★ +100 PTS'
+        groups, reward:'● +100 PTS'
       }, onClose);
     }
     return false;
@@ -45733,7 +45830,7 @@ window.bpFreshTutorialStartPipeline.register('v512-exact-score-party-goal-celebr
     const row = window.bpTutorialGoalGroupsV2306?.html(groups,'is-five-divas',count+' of 5 ex-Divas cleared') || '';
     const instruction = '<span class="bp-party-goal-diva-instruction">TURN 5 DIVAS NORMAL,<br>THEN CLEAR THEM IN GROUPS OF 5+</span>';
     const body = instruction + row +
-      (stage === 'complete' ? '<span class="bp-party-goal-diva-reward">★ +100 PTS</span>' :
+      (stage === 'complete' ? '<span class="bp-party-goal-diva-reward">● +100 PTS</span>' :
        stage === 'start' ? '<span class="bp-party-goal-diva-reward">REWARD +100 PTS</span>' : '');
     const title = stage === 'start' ? 'YOUR SIXTH PARTY GOAL' :
       stage === 'complete' ? 'PARTY GOAL COMPLETE!' : count+' OF 5 DIVAS CLEARED!';
@@ -46304,7 +46401,7 @@ window.bpFreshTutorialStartPipeline.register('v512-exact-score-party-goal-celebr
       headline, groups, groupsRowClass:'is-seven-groups',
       groupsAriaLabel:count+' of 7 color groups cleared',
       subline:stage === 'start' ? 'MAKE A GROUP OF 5+ IN EVERY COLOR' : '',
-      reward:stage === 'start' ? 'REWARD +100 PTS' : stage === 'complete' ? '★ +100 PTS' : ''
+      reward:stage === 'start' ? 'REWARD +100 PTS' : stage === 'complete' ? '● +100 PTS' : ''
     },onClose);
   }
 
@@ -48503,13 +48600,13 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
 (function(){
   'use strict';
 
-  const POST_GOAL_TARGET = 5;
+  const POST_GOAL_DEFAULT_TARGET = 5;
   const POST_GOAL_COOLDOWN_SETS = 5;
-  // V2208: 100 standard points + up to 100 speed points for a 100-guest level.
-  // Each resolved guest subtracts exactly one speed point (never below zero).
-  const POST_GOAL_BASE_REWARD = 100;
-  const POST_GOAL_MAX_BONUS = 100;
-  const POST_GOAL_BONUS_DECAY_PER_GUEST = 1;
+  // V2359: an ordinary Party Goal starts at 250 points. Its potential reward
+  // decreases with the FRACTION of the level's guests already consumed.
+  const POST_GOAL_BASE_REWARD = 0;
+  const POST_GOAL_MAX_BONUS = 250;
+  const POST_GOAL_BONUS_DECAY_PER_GUEST = 0; // points use remaining / initialGuests, not a fixed per-guest decay
   const POST_GOAL_KEY = 'v634PostTutorialPartyGoalColorV2';
   const POST_GOAL_COLORS = [
     '#4A90E2', // Blue
@@ -48535,6 +48632,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     ignoreNextSpawn: false,
     introShown: false,
     bonusRemaining: POST_GOAL_MAX_BONUS,
+    initialGuests: 100,
     targets: [],
     completed: []
   };
@@ -48554,34 +48652,51 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     return safeLevel() >= 11;
   }
 
-  // V2209: The finite level queue is the single source for the speed reward.
-  // If the HUD shows 89 guests left, the payable reward MUST be 100 + 89 = 189.
-  // Do not use the former separately-decremented bonus in an active normal level.
+  function activeGoalCount(){
+    const queue=window.bpLevelQueueV2075;
+    const saved=Array.isArray(postGoal.targets) && postGoal.targets.length>=3 && postGoal.targets.length<=7
+      ? postGoal.targets.length : null;
+    // A restored active goal owns its original recipe, independent of a newly loaded queue.
+    if (postGoal.mode==='active' || postGoal.mode==='levelcomplete') return saved || POST_GOAL_DEFAULT_TARGET;
+    return queue && typeof queue.goalCount==='function' ? queue.goalCount() : POST_GOAL_DEFAULT_TARGET;
+  }
+  function initialLevelGuests(){
+    const queue=window.bpLevelQueueV2075;
+    if (queue && typeof queue.initialGuests==='function' && queue.normalQueueFlow?.()) {
+      const n=Number(queue.initialGuests());
+      if (Number.isFinite(n)&&n>0) return n;
+    }
+    return Math.max(1,Number(postGoal.initialGuests)||100);
+  }
   function activeLevelGuestsLeftForReward(){
     try {
-      const queue = window.bpLevelQueueV2075;
-      if (!inFullParty() || !queue || typeof queue.remaining !== 'function' ||
-          typeof queue.normalQueueFlow !== 'function' || !queue.normalQueueFlow()) return null;
-      const remaining = Number(queue.remaining());
-      return Number.isFinite(remaining)
-        ? Math.max(0, Math.min(POST_GOAL_MAX_BONUS, Math.floor(remaining))) : null;
+      const queue=window.bpLevelQueueV2075;
+      if (!inFullParty() || !queue || typeof queue.remaining!=='function' || !queue.normalQueueFlow?.()) return null;
+      const total=initialLevelGuests();
+      const remaining=Number(queue.remaining());
+      if (!Number.isFinite(remaining)) return null;
+      let effectiveRemaining=Math.floor(remaining);
+      // V2362: queue.remaining() excludes the currently falling set. For the
+      // visible Party Goal reward we want the player to start at the full 250
+      // and only lose reward once that active set is actually consumed.
+      const liveSet = typeof fallingBlock !== 'undefined' ? fallingBlock : null;
+      if (liveSet) effectiveRemaining += resolvedSetGuestCount(liveSet);
+      return Math.max(0,Math.min(total,effectiveRemaining));
     } catch (_) { return null; }
   }
-
   function currentPostGoalBonus(){
-    const guestsLeft = activeLevelGuestsLeftForReward();
-    return guestsLeft !== null
-      ? guestsLeft
-      : Math.max(0, Math.min(POST_GOAL_MAX_BONUS, Number(postGoal.bonusRemaining) || 0));
+    const left=activeLevelGuestsLeftForReward();
+    const total=initialLevelGuests();
+    return left===null
+      ? Math.max(0,Math.min(250,Math.round(Number(postGoal.bonusRemaining)||0)))
+      : Math.max(0,Math.min(250,Math.round(250*left/total)));
   }
-
-  function currentPostGoalReward(){
-    return POST_GOAL_BASE_REWARD + currentPostGoalBonus();
-  }
+  function currentPostGoalReward(){ return currentPostGoalBonus(); }
 
   function partyMissionActiveForGoalPause(){
     try {
-      return typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive();
+      return (typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive()) ||
+        bpMissionFlowV2358.holdsMissionQueue();
     } catch (_) {
       return false;
     }
@@ -48626,12 +48741,11 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     if (!inFullParty() || postGoal.mode !== 'active') return false;
     if (partyGoalPausedForCurrentAction()) return false;
 
-    const before = Math.max(0, Math.min(POST_GOAL_MAX_BONUS, Number(postGoal.bonusRemaining) || 0));
+    const before = Math.max(0,Math.min(250,Number(postGoal.bonusRemaining)||0));
     const guestsLeft = activeLevelGuestsLeftForReward();
-    // Ordinary levels: use the very same finite-queue total as GUESTS LEFT IN LEVEL.
-    // Fallback preserves the previous per-guest behavior outside that queue.
-    const after = guestsLeft !== null ? guestsLeft :
-      Math.max(0, before - resolvedSetGuestCount(sourceBlock) * POST_GOAL_BONUS_DECAY_PER_GUEST);
+    const after = guestsLeft !== null
+      ? Math.round(250*guestsLeft/initialLevelGuests())
+      : Math.max(0,Math.round(before - 250*resolvedSetGuestCount(sourceBlock)/initialLevelGuests()));
     if (after === before) return false;
     postGoal.bonusRemaining = after;
     savePostGoal();
@@ -48681,17 +48795,17 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       postGoal.bonusRemaining = parsed.bonusRemaining === undefined
         ? POST_GOAL_MAX_BONUS
         : Math.max(0, Math.min(POST_GOAL_MAX_BONUS, Number(parsed.bonusRemaining) || 0));
-
+      postGoal.initialGuests=Math.max(1,Number(parsed.initialGuests)||100);
+      // V2358 checkpoints have five targets and the old 100+remaining score;
+      // migrate their already-played level without changing its target recipe.
       const targets = Array.isArray(parsed.targets)
-        ? parsed.targets.map(normalizePostGoalColor).slice(0, POST_GOAL_TARGET)
+        ? parsed.targets.map(normalizePostGoalColor).slice(0,7)
         : [];
-      const validTargets =
-        targets.length === POST_GOAL_TARGET &&
+      const validTargets = targets.length>=3 && targets.length<=7 &&
         targets.every((color) => POST_GOAL_COLORS.includes(color));
-
       postGoal.targets = validTargets ? targets : [];
       postGoal.completed = validTargets
-        ? Array.from({length:POST_GOAL_TARGET}, (_, index) => !!(Array.isArray(parsed.completed) && parsed.completed[index]))
+        ? Array.from({length:targets.length}, (_, index) => !!(Array.isArray(parsed.completed) && parsed.completed[index]))
         : [];
       postGoal.current = postGoal.completed.filter(Boolean).length;
     } catch (_) {}
@@ -48715,6 +48829,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       ignoreNextSpawn: pendingStartRemaining > 0,
       introShown: false,
       bonusRemaining: POST_GOAL_MAX_BONUS,
+      initialGuests: 100,
       targets: [],
       completed: []
     };
@@ -48751,43 +48866,71 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       : '';
   }
 
-  function generatePostGoalTargets(previousRecipe = []){
-    const previousSignature = postGoalRecipeSignature(previousRecipe);
-    let recipe = [];
-    let attempts = 0;
-
-    do {
-      recipe = Array.from({length:POST_GOAL_TARGET}, () => {
-        const index = Math.floor(Math.random() * POST_GOAL_COLORS.length);
-        return POST_GOAL_COLORS[index];
-      });
-      attempts += 1;
-    } while (previousSignature && postGoalRecipeSignature(recipe) === previousSignature && attempts < 40);
-
-    return recipe;
+  function availableOrdinaryColorInventory(){
+    const counts=Object.fromEntries(POST_GOAL_COLORS.map(c=>[c,0]));
+    try {
+      if (typeof field!=='undefined' && Array.isArray(field)) {
+        for(const column of field) if(Array.isArray(column)) for(const cell of column){
+          if (!cell || cell.isMulticolor) continue;
+          const c=normalizePostGoalColor(cell.color);
+          if (counts[c]!==undefined) counts[c]++;
+        }
+      }
+      const queue=window.bpLevelQueueV2075;
+      if(queue && queue.normalQueueFlow?.() && typeof queue.plannedSets==='function'){
+        queue.plannedSets().forEach(set=>{
+          const c=normalizePostGoalColor(set.color);
+          if (!set.isMulticolor && counts[c]!==undefined) counts[c]+=Math.max(0,Number(set.length)||0);
+        });
+      }
+    }catch(_){}
+    return counts;
+  }
+  function generatePostGoalTargets(previousRecipe = [],requestedTotal = null){
+    const count=Math.max(3,Math.min(7,Math.floor(Number(requestedTotal)||activeGoalCount())));
+    const previousSignature=postGoalRecipeSignature(previousRecipe);
+    const inventory=availableOrdinaryColorInventory();
+    // Only propose colors whose total supply (board + queue) can theoretically
+    // form every requested group. Multi bonuses are NOT required for this check.
+    // This does not guarantee that the player can place those groups correctly.
+    let result=[];
+    for(let attempt=0;attempt<180;attempt++){
+      const trial=Array.from({length:count},()=>POST_GOAL_COLORS[Math.floor(Math.random()*POST_GOAL_COLORS.length)]);
+      const demand={};
+      for(const c of trial) demand[c]=(demand[c]||0)+5;
+      if(Object.entries(demand).every(([c,n])=>(inventory[c]||0)>=n) &&
+          (!previousSignature || postGoalRecipeSignature(trial)!==previousSignature)) return trial;
+      result=trial;
+    }
+    // Deterministic safe fallback: prioritize available colors instead of
+    // silently declaring a mathematically impossible objective.
+    const budget={...inventory};
+    const safe=[];
+    for(let i=0;i<count;i++){
+      const candidates=POST_GOAL_COLORS.filter(c=>budget[c]>=5);
+      if(!candidates.length) break;
+      const color=candidates[Math.floor(Math.random()*candidates.length)];
+      safe.push(color); budget[color]-=5;
+    }
+    return safe.length===count ? safe : result;
   }
 
   function ensurePostGoalRecipe(){
-    const validTargets =
-      Array.isArray(postGoal.targets) &&
-      postGoal.targets.length === POST_GOAL_TARGET &&
-      postGoal.targets.every((color) => POST_GOAL_COLORS.includes(normalizePostGoalColor(color)));
-
-    if (!validTargets) {
-      postGoal.targets = generatePostGoalTargets();
-      postGoal.completed = Array(POST_GOAL_TARGET).fill(false);
-      postGoal.current = 0;
+    const target=activeGoalCount();
+    const validTargets=Array.isArray(postGoal.targets) && postGoal.targets.length===target &&
+      postGoal.targets.every(c=>POST_GOAL_COLORS.includes(normalizePostGoalColor(c)));
+    if(!validTargets){
+      postGoal.targets=generatePostGoalTargets([],target);
+      postGoal.completed=Array(postGoal.targets.length).fill(false);
+      postGoal.current=0;
       savePostGoal();
       return;
     }
-
-    postGoal.targets = postGoal.targets.map(normalizePostGoalColor);
-    if (!Array.isArray(postGoal.completed) || postGoal.completed.length !== POST_GOAL_TARGET) {
-      postGoal.completed = Array(POST_GOAL_TARGET).fill(false);
-    } else {
-      postGoal.completed = postGoal.completed.map(Boolean);
-    }
-    postGoal.current = postGoal.completed.filter(Boolean).length;
+    postGoal.targets=postGoal.targets.map(normalizePostGoalColor);
+    if(!Array.isArray(postGoal.completed)||postGoal.completed.length!==target)
+      postGoal.completed=Array(target).fill(false);
+    else postGoal.completed=postGoal.completed.map(Boolean);
+    postGoal.current=postGoal.completed.filter(Boolean).length;
   }
 
   function goalHosts(){
@@ -48932,7 +49075,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
   // V973 — Party Goal presentation has one authority.
   // Content and layout mode used to travel through separate DOM/class mirrors. During
   // tutorial J -> full-party LEVEL 1 that could briefly (or persistently) combine the
-  // new five-star countdown content with the old seven-color tutorial presentation.
+  // a waiting-state countdown with a seven-colour tutorial presentation.
   // Every renderer now declares exactly one mutually-exclusive mode on the panel.
   const V973_GOAL_MODES = Object.freeze({
     TUTORIAL: 'tutorial',
@@ -48952,13 +49095,13 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     panel.dataset.v606Mode = normalized;
 
     const seven = normalized === V973_GOAL_MODES.TUTORIAL_SEVEN;
-    const stars = normalized === V973_GOAL_MODES.PENDING || normalized === V973_GOAL_MODES.COOLDOWN;
-
-    // These legacy classes remain only as compatibility hooks for older styling/animation.
-    // They are derived here from the authoritative panel mode; no renderer owns them directly.
     host.classList.toggle('v950-seven-color-goal', seven);
-    host.classList.toggle('v641-static-star-countdown', stars);
-    if (dots) dots.classList.toggle('v950-seven-color-layout', seven);
+    if (dots) {
+      dots.classList.toggle('v950-seven-color-layout', seven);
+      // Only an active normal goal may reuse a cached coloured recipe.
+      // A waiting, tutorial or cooldown presentation must invalidate it.
+      if (normalized !== V973_GOAL_MODES.ACTIVE) delete dots.dataset.v2359RecipeSignature;
+    }
 
     if (normalized !== V973_GOAL_MODES.COOLDOWN) {
       host.classList.remove('v634-cooldown-last');
@@ -49200,14 +49343,15 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
   function renderColorGoal(targets, completed, subText){
     ensureGoalPanels();
 
-    const safeTargets = Array.from({length:POST_GOAL_TARGET}, (_, index) => {
+    const goalTotal=Math.max(3,Math.min(7,Array.isArray(targets)?targets.length:POST_GOAL_DEFAULT_TARGET));
+    const safeTargets = Array.from({length:goalTotal}, (_, index) => {
       const color = normalizePostGoalColor(Array.isArray(targets) ? targets[index] : '');
       return POST_GOAL_COLORS.includes(color) ? color : POST_GOAL_COLORS[0];
     });
-    const safeCompleted = Array.from({length:POST_GOAL_TARGET}, (_, index) =>
+    const safeCompleted = Array.from({length:goalTotal}, (_, index) =>
       !!(Array.isArray(completed) && completed[index])
     );
-    const safeTotal = POST_GOAL_TARGET;
+    const safeTotal = goalTotal;
     const safeCurrent = safeCompleted.filter(Boolean).length;
 
     goalHosts().forEach((host) => {
@@ -49238,10 +49382,24 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       if (sub) sub.textContent = String(subText || '');
 
       if (dots) {
-        dots.innerHTML = '';
+        const sig=safeTargets.join('|')+'#'+safeCompleted.map(x=>x?'1':'0').join('');
+        // V2363: a matching count is not enough. An earlier waiting renderer
+        // could have replaced five coloured goals with five unrelated spans.
+        const colouredSlots = Array.from(dots.children);
+        const correctColouredSlots = colouredSlots.length === safeTotal && colouredSlots.every((node,index) =>
+          node.classList.contains('v606-party-goal-dot') &&
+          node.classList.contains('v619-color-target') &&
+          node.style.getPropertyValue('--v619-goal-color').trim() === safeTargets[index] &&
+          node.classList.contains('done') === safeCompleted[index]
+        );
+        const unchanged=dots.dataset.v2359RecipeSignature===sig && correctColouredSlots;
+        if(!unchanged){
+          dots.replaceChildren();
+          dots.dataset.v2359RecipeSignature=sig;
+        }
         dots.setAttribute('aria-label', `${safeCurrent} of ${safeTotal} requested color groups completed`);
 
-        for (let i = 0; i < safeTotal; i++) {
+        if(!unchanged) for (let i = 0; i < safeTotal; i++) {
           const dot = document.createElement('span');
           const color = safeTargets[i];
           const done = safeCompleted[i];
@@ -49353,14 +49511,8 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
             ? `Party Goal paused; ${remaining} sets remain before it starts`
             : `${remaining} sets until the first Party Goal starts`
         );
-        for (let i = 0; i < 5; i++) {
-          const star = document.createElement('span');
-          const filled = i < remaining;
-          star.className = 'v641-pending-star ' + (filled ? 'filled' : 'empty');
-          star.textContent = filled ? '★' : '☆';
-          star.setAttribute('aria-hidden', 'true');
-          dots.appendChild(star);
-        }
+        // No progress icons during the short handoff: its caption owns the countdown.
+        // Never generate decorative countdown markers that can leak into a real goal.
       }
     });
   }
@@ -49395,14 +49547,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
             ? `Party Goal cooldown paused; ${remaining} sets remain`
             : `${remaining} sets until the next Party Goal`
         );
-        for (let i = 0; i < POST_GOAL_COOLDOWN_SETS; i++) {
-          const star = document.createElement('span');
-          const filled = i < remaining;
-          star.className = 'v641-pending-star ' + (filled ? 'filled' : 'empty');
-          star.textContent = filled ? '★' : '☆';
-          star.setAttribute('aria-hidden', 'true');
-          dots.appendChild(star);
-        }
+        // The countdown is already expressed in the caption, without old icons.
       }
     });
 
@@ -49453,6 +49598,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       return;
     }
     const previousRecipe = Array.isArray(postGoal.targets) ? postGoal.targets.slice() : [];
+    const nextGoalCount=Math.max(3,Math.min(7,Number(window.bpLevelQueueV2075?.goalCount?.())||5));
     postGoal.mode = 'active';
     postGoal.current = 0;
     postGoal.cooldownRemaining = 0;
@@ -49461,9 +49607,10 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     postGoal.ignoreNextSpawn = false;
     // The first planned formation may already be on the field when the goal starts.
     // Initialise from the SAME remaining count used in the HUD, not a separate 100.
-    postGoal.bonusRemaining = activeLevelGuestsLeftForReward() ?? POST_GOAL_MAX_BONUS;
-    postGoal.targets = generatePostGoalTargets(previousRecipe);
-    postGoal.completed = Array(POST_GOAL_TARGET).fill(false);
+    postGoal.initialGuests=initialLevelGuests();
+    postGoal.bonusRemaining=currentPostGoalBonus();
+    postGoal.targets = generatePostGoalTargets(previousRecipe,nextGoalCount);
+    postGoal.completed = Array(postGoal.targets.length).fill(false);
     savePostGoal();
     renderPostGoal();
     if (window.bpAnalyticsV861) {
@@ -49528,7 +49675,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     // One completed five-colour Party Goal = one streak success. Register at
     // the actual result, not on an animation, score event, or level-number tick.
     window.bpLongestStreakV2335?.completeLevel?.(safeLevel());
-    postGoal.current = POST_GOAL_TARGET;
+    postGoal.current = postGoal.targets.length;
     renderPostGoal();
     animateHosts('v606-goal-hit', 440);
 
@@ -49580,6 +49727,9 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
             baseReward: POST_GOAL_BASE_REWARD,
             bonusEarned: Math.max(0, earnedReward - POST_GOAL_BASE_REWARD),
             completedInternalLevel,
+            total:postGoal.targets.length,
+            targets:postGoal.targets.slice(),
+            completed:postGoal.completed.slice(),
             score: Number(score) || 0,
             muted: !!(missionNowActive || suppressForMission)
           });
@@ -49641,7 +49791,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       window.bpAnalyticsV861.partyGoalProgress({
         color: clearedColor,
         current: postGoal.current,
-        total: POST_GOAL_TARGET,
+        total: postGoal.targets.length,
         reward: currentPostGoalReward(),
         bonusRemaining: postGoal.bonusRemaining
       });
@@ -49653,7 +49803,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
           color: clearedColor,
           targetIndex,
           current: postGoal.current,
-          total: POST_GOAL_TARGET,
+          total: postGoal.targets.length,
           completed: postGoal.completed.slice(),
           reward: currentPostGoalReward(),
           bonusRemaining: postGoal.bonusRemaining
@@ -49661,7 +49811,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       }
     } catch (_) {}
 
-    if (postGoal.current >= POST_GOAL_TARGET) completePostGoal();
+    if (postGoal.current >= postGoal.targets.length) completePostGoal();
   }
 
   function registerPostGoalSetStart(){
@@ -50077,6 +50227,9 @@ window.bpFreshTutorialStartPipeline.register('v606-party-goals-relocated-and-rep
     decayPerGuest: POST_GOAL_BONUS_DECAY_PER_GUEST,
     maxReward(){ return POST_GOAL_BASE_REWARD + POST_GOAL_MAX_BONUS; },
     currentReward(){ return currentPostGoalReward(); },
+    // V2364: one authoritative guests-left count for the reward and HUD.
+    // Includes the currently flying set; it is spent only when resolved.
+    guestsRemaining(){ return activeLevelGuestsLeftForReward(); },
     bonusRemaining(){ return currentPostGoalBonus(); },
     frozenByPartyMission(){ return partyMissionActiveForGoalPause(); },
     registerConsumedSet(reason = 'external'){ return consumePostGoalBonusForSet(reason); },
@@ -50214,10 +50367,10 @@ window.bpFreshTutorialStartPipeline.register('v606-party-goals-relocated-and-rep
   text-shadow: 0 0 5px rgba(255, 216, 106, .55);
 }
 .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-label::before {
-  content: '✦ ';
+  content: '• ';
 }
 .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-label::after {
-  content: ' ✦';
+  content: ' •';
 }
 .button-wrapper .reset-btn.v606-party-goal-host .v606-party-goal-dot.done {
   box-shadow:
@@ -52917,7 +53070,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
 (() => {
   'use strict';
 
-  const V632_MISSION_LEVELS = window.bpMissionDashboardTestV2217.enabled ? [12, 20, 25, 30, 35, 40, 45] : [15, 20, 25, 30, 35, 40, 45];
+  const V632_MISSION_LEVELS = window.bpMissionDashboardTestV2217.enabled ? [12, 20, 25, 30, 35, 40, 45] : [16, 21, 26, 31, 36, 41, 46];
   let v632LastBarrierSeverity = null;
   let v632NextGoalFlashTimer = null;
 
@@ -53680,28 +53833,6 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     18%{opacity:1;transform:translate(-50%,-2px) scale(1.08)}
     72%{opacity:1;transform:translate(-50%,-2px) scale(1)}
     100%{opacity:0;transform:translate(-50%,-10px) scale(.92)}
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host .v634-cooldown-dot {
-    width: 10px !important;
-    height: 10px !important;
-    min-width: 10px !important;
-    border-radius: 50%;
-    border: 1.4px solid rgba(244,198,68,.62);
-    box-sizing: border-box;
-    flex: 0 0 auto;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host .v634-cooldown-dot.remaining {
-    background: #C7772A;
-    border-color: #ffc868;
-    box-shadow: 0 0 5px rgba(232,138,45,.52);
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host .v634-cooldown-dot.passed {
-    background: rgba(35,23,22,.65);
-    border-color: rgba(244,198,68,.26);
-    box-shadow: none;
   }
 
   .button-wrapper .reset-btn.v606-party-goal-host.v634-cooldown-tick {
@@ -54752,39 +54883,6 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
     flex: 0 0 auto;
   }
 
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v606-party-goal-dots {
-    gap: 6px !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v634-cooldown-dot,
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item {
-    width: 18px !important;
-    height: 18px !important;
-    min-width: 18px !important;
-    border-radius: 6px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-size: 10px !important;
-    font-weight: 900 !important;
-    line-height: 1 !important;
-    box-sizing: border-box !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.remaining {
-    background: linear-gradient(180deg, rgba(47,25,34,.96), rgba(19,16,31,.96));
-    border: 1.4px solid #f4c644;
-    color: #fff1b8;
-    box-shadow: 0 0 7px rgba(244,198,68,.38);
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.passed {
-    background: rgba(28,22,28,.60);
-    border: 1.2px solid rgba(244,198,68,.24);
-    color: rgba(255,230,128,.42);
-    box-shadow: none;
-  }
 </style>
 
 <script id="v638-party-goal-bubbles-and-countdown-runtime">
@@ -54890,69 +54988,12 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
     });
   }
 
-  function decoratePendingCountdown() {
-    const host = visibleGoalHost();
-    if (!host) return;
 
-    const sub = host.querySelector('.v606-party-goal-sub');
-    const subText = String(sub?.textContent || '').trim().toUpperCase();
-    const pending = subText.startsWith('STARTS IN');
-
-    host.classList.toggle('v638-pending-start', pending);
-    if (!pending) return;
-
-    const symbols = ['♪', '★', '♫', '✦', '♬'];
-    const dots = Array.from(host.querySelectorAll('.v606-party-goal-dots > span'));
-    dots.forEach((dot, index) => {
-      dot.classList.add('v638-party-countdown-item');
-      dot.textContent = symbols[index % symbols.length];
-      dot.setAttribute('aria-hidden', 'true');
-      if (dot.classList.contains('remaining')) {
-        dot.classList.remove('passed');
-      } else if (dot.classList.contains('passed')) {
-        dot.classList.remove('remaining');
-      }
-    });
-  }
-
-  /* v641: disabled. Pending countdown is rendered directly as static stars. */
 })();
 </script>
 
 
-<style id="v639-party-goal-stars-and-matching-card-style">
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v606-party-goal-dots {
-    gap: 5px !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item {
-    width: 17px !important;
-    height: 17px !important;
-    min-width: 17px !important;
-    border-radius: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    font-size: 13px !important;
-    font-weight: 900 !important;
-    line-height: 1 !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.remaining {
-    color: #f4c644 !important;
-    text-shadow: 0 0 6px rgba(244,198,68,.48);
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start .v638-party-countdown-item.passed {
-    color: rgba(255,230,128,.30) !important;
-    text-shadow: none !important;
-  }
-
+<style id="v639-party-goal-matching-card-style">
   #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card {
     max-width: min(88vw, 390px) !important;
     padding: 8px 12px 9px !important;
@@ -55051,32 +55092,11 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
   }
 </style>
 
-<script id="v639-party-goal-stars-and-matching-card-runtime">
+<script id="v639-party-goal-matching-card-runtime">
 (() => {
   'use strict';
 
   const V639_PARTY_GOAL_IMAGE = window.__BP_SHARED_ASSETS__[33];
-
-  function v639ApplyStarCountdown() {
-    const host = document.querySelector('.button-wrapper .reset-btn.v606-party-goal-host.v638-pending-start');
-    if (!host) return;
-
-    const dots = Array.from(host.querySelectorAll('.v606-party-goal-dots > span'));
-    dots.forEach(dot => {
-      dot.classList.add('v638-party-countdown-item');
-      const remaining = dot.classList.contains('remaining');
-      const passed = dot.classList.contains('passed');
-
-      if (remaining) {
-        dot.textContent = '★';
-      } else if (passed) {
-        dot.textContent = '☆';
-      } else {
-        dot.textContent = '☆';
-      }
-      dot.setAttribute('aria-hidden', 'true');
-    });
-  }
 
   function v639BuildPartyGoalCard(title, text, colors) {
     const safeTitle = String(title || '');
@@ -55268,91 +55288,6 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
     background-size: 100% 100% !important;
     background-position: center center !important;
   }
-  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v606-party-goal-dots {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 5px !important;
-    min-height: 18px !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v641-pending-star {
-    display: inline-flex !important;
-    width: 17px !important;
-    height: 17px !important;
-    min-width: 17px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    font-family: Arial, sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    line-height: 17px !important;
-    transform: none !important;
-    animation: none !important;
-    transition: none !important;
-    filter: none !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v641-pending-star.filled {
-    color: #f4c644 !important;
-    text-shadow: 0 0 5px rgba(244,198,68,.42) !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v641-pending-star.empty {
-    color: rgba(244,198,68,.40) !important;
-    text-shadow: none !important;
-  }
-
-  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v634-cooldown-dot,
-  .button-wrapper .reset-btn.v606-party-goal-host.v641-static-star-countdown .v638-party-countdown-item {
-    animation: none !important;
-    transition: none !important;
-  }
-
-  /* V973: the visible top Party Goal is a mirror, so its star geometry is keyed to
-     the panel's authoritative presentation mode, not to a separately mirrored class. */
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="pending"] .v606-party-goal-dots,
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="cooldown"] .v606-party-goal-dots {
-    display: flex !important;
-    grid-template-columns: none !important;
-    grid-template-rows: none !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: clamp(8px, 2vw, 11px) !important;
-    min-height: 19px !important;
-    transform: none !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="pending"] .v641-pending-star,
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="cooldown"] .v641-pending-star {
-    display: inline-flex !important;
-    width: 17px !important;
-    height: 17px !important;
-    min-width: 17px !important;
-    min-height: 17px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    font-family: Arial, sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    line-height: 17px !important;
-    transform: none !important;
-    animation: none !important;
-    transition: none !important;
-    filter: none !important;
-  }
-
   #v468OnboardingToast.v638-party-goal-toast.v639-party-goal-card {
     width: min(94vw, 585px) !important;
     max-width: min(94vw, 585px) !important;
@@ -56135,6 +56070,15 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
     }, PARTY_GOAL_DURATION_MS);
   }
 
+  window.bpPartyGoalStartCardV649 = Object.freeze({
+    dismiss() {
+      const toast = v649GetToast();
+      if (!toast?.classList.contains('v649-party-goal-start-card')) return;
+      if (v649PartyTimer) { clearTimeout(v649PartyTimer); v649PartyTimer = null; }
+      v649HidePartyGoalCard();
+    }
+  });
+
   window.bpToastV836.registerLayer('v649', function(next, thisArg, args) {
     const [title, text = '', durationMs = 1800] = args;
     const upperTitle = String(title || '').trim().toUpperCase();
@@ -56144,6 +56088,8 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
       upperText.includes('MATCH THESE 5 COLORS');
 
     if (isPartyGoalStart) {
+      // The mission HUD replaces the ordinary Party Goal, including its modal.
+      if (typeof isAnyChallengeActive === 'function' && isAnyChallengeActive()) return;
       v649ShowPartyGoalCard(String(title), String(text));
       return;
     }
@@ -56580,13 +56526,14 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
 (() => {
   'use strict';
 
-  const V662_MISSION_LEVELS = window.bpMissionDashboardTestV2217.enabled ? [12, 20, 25, 30, 35, 40, 45] : [15, 20, 25, 30, 35, 40, 45];
+  const V662_MISSION_LEVELS = window.bpMissionDashboardTestV2217.enabled ? [12, 20, 25, 30, 35, 40, 45] : [16, 21, 26, 31, 36, 41, 46];
 
   function v662LevelNumber() {
     try { return Number(level) || 1; } catch (_) { return 1; }
   }
 
   function v662AnyMissionActive() {
+    try { if(bpMissionFlowV2358.holdsMissionQueue()) return true; } catch(_) {}
     try {
       if (typeof isAnyChallengeActive === 'function') return !!isAnyChallengeActive();
     } catch (_) {}
@@ -56618,7 +56565,8 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
     status(internalLevel) {
       const lv = Math.max(11, Math.floor(Number(internalLevel) || v662LevelNumber()));
       if (v662AnyMissionActive()) return { kind: 'active', levels: 0 };
-      if (V662_MISSION_LEVELS.includes(lv)) return { kind: 'starts', levels: 0 };
+      if (V662_MISSION_LEVELS.includes(lv) &&
+          bpMissionFlowV2358.state().phase!=='normal') return { kind: 'starts', levels: 0 };
       const next = v662NextMissionLevel(lv);
       return next === null
         ? { kind: 'all-complete', levels: null }
@@ -56650,7 +56598,7 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
     const discovered = v662ChallengeFeatureDiscovered();
     let targetLevel = null;
 
-    const firstMissionLevel = window.bpMissionDashboardTestV2217.enabled ? 12 : 15;
+    const firstMissionLevel = window.bpMissionDashboardTestV2217.enabled ? 12 : 16;
     if (!discovered && currentLevel < firstMissionLevel) {
       targetLevel = firstMissionLevel;
     } else {
@@ -58590,6 +58538,8 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
         upperText.includes('MATCH THESE 5 COLORS');
 
       if (isPartyGoalStart) {
+        // No Party Goal modal, nor its delayed pause/unpause timer, in missions.
+        if (typeof isAnyChallengeActive === 'function' && isAnyChallengeActive()) return;
         if (pauseTimer) {
           clearTimeout(pauseTimer);
           pauseTimer = null;
@@ -58604,7 +58554,14 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
         const visibleFor = Math.max(2400, Math.round((Number(durationMs) || 1800) * 1.5));
         pauseTimer = setTimeout(() => {
           if (!pausedByV697) return;
-          try { gamePaused = previousPauseState; } catch (_) {}
+          // Never unpause the mission's own start/result overlay.
+          const missionCard = document.getElementById('partyMissionTextCard');
+          const missionOverlay = document.getElementById('tutorialOverlay');
+          const missionDialogVisible = !!(missionCard && missionCard.style.display !== 'none' &&
+            missionOverlay && missionOverlay.style.display === 'flex');
+          if (!missionDialogVisible) {
+            try { gamePaused = previousPauseState; } catch (_) {}
+          }
           pausedByV697 = false;
           pauseTimer = null;
         }, visibleFor + 40);
@@ -59781,9 +59738,10 @@ window.bpBarrierResolverV825=Object.freeze({
   const V740_MISSION_KEY = 'partyMissionRuntimeV740';
   const V740_BARRIER_KEY = 'testBarrierWallStates';
   const V740_BIGGROUP_KEY = 'testBigGroupCount';
+  const V2358_PHASE_KEY = bpMissionFlowV2358.key;
 
   // These keys must be part of SAVE NOW's immutable manual snapshot.
-  [V740_MISSION_KEY, V740_BARRIER_KEY, V740_BIGGROUP_KEY].forEach((key) => {
+  [V740_MISSION_KEY, V740_BARRIER_KEY, V740_BIGGROUP_KEY, V2358_PHASE_KEY].forEach((key) => {
     if (Array.isArray(MANUAL_PARTY_SAVE_KEYS) && !MANUAL_PARTY_SAVE_KEYS.includes(key)) {
       MANUAL_PARTY_SAVE_KEYS.push(key);
     }
@@ -60150,7 +60108,11 @@ window.bpBarrierResolverV825=Object.freeze({
 
     v740RestoreBarrierAndProgress();
     if (missionSnapshot) v740ApplyMissionSnapshot(missionSnapshot);
-
+    bpMissionFlowV2358.restore();
+    // Post-restore queue selection must follow the persisted mission phase,
+    // never the mere fact that the internal level is 16/21/26...
+    try { window.bpLevelQueueV2075?.ensure?.(); } catch(_) {}
+    bpMissionFlowV2358.resumeOutcome();
     return result;
   });
 })();
@@ -61410,6 +61372,15 @@ window.bpBarrierResolverV825=Object.freeze({
     sourceHost = found.host;
     sourcePanel = found.panel;
 
+    // V2361: capture presentation mode and mission state BEFORE any child
+    // synchronization. The reward bar uses both values, as do the later
+    // mission banner and tutorial presentation. Declaring them below the bar
+    // previously threw a temporal-dead-zone ReferenceError, interrupting the
+    // entire HUD sync after label/reward and hiding all circles/mascots/bar.
+    const goalMode = String(sourcePanel.dataset.v606Mode || 'waiting');
+    let missionIsActive = false;
+    try { missionIsActive = typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive(); } catch (_) {}
+
     // The tutorial Diva goal is owned by bpGoal6ExDivaV2048. A 5-step goal
     // elsewhere in the game must never acquire its visuals.
     const divaGoalState = Number(level) === 6 && !!level6DivaTutorialActive
@@ -61454,9 +61425,10 @@ window.bpBarrierResolverV825=Object.freeze({
     const targetGoalLabel = syncSimpleNode('.v606-party-goal-label');
     if (targetGoalLabel) {
       const sourceTitle = String(sourcePanel.querySelector('.v606-party-goal-label')?.textContent || 'PARTY GOAL');
-      const isNormalPartyGoal = sourcePanel.dataset.v606Mode === 'active' && sourcePanel.dataset.total === '5';
+      const isNormalPartyGoal = sourcePanel.dataset.v606Mode === 'active' &&
+        Number(sourcePanel.dataset.total)>=3 && Number(sourcePanel.dataset.total)<=7;
       const displayTitle = isNormalPartyGoal
-        ? `${sourceTitle} xxx ${window.bpLevelPresentationV948.label(level)}`
+        ? `${sourceTitle} - ${window.bpLevelPresentationV948.label(level)}`
         : sourceTitle;
       if (targetGoalLabel.textContent !== displayTitle) targetGoalLabel.textContent = displayTitle;
     }
@@ -61473,12 +61445,14 @@ window.bpBarrierResolverV825=Object.freeze({
           // V2204: This upper HUD is the ONE owner of reward + queue-left copy.
           // The gameplay renderer supplies only "REWARD +N", never a second countdown.
           // Do not copy textContent after inserting block spans: that flattens the line break.
-          if (sourcePanel.dataset.v606Mode === 'active' && sourcePanel.dataset.total === '5' && /^REWARD\s*\+/i.test(base)) {
+          if (sourcePanel.dataset.v606Mode === 'active' &&
+              Number(sourcePanel.dataset.total)>=3 && Number(sourcePanel.dataset.total)<=7 && /^REWARD\s*\+/i.test(base)) {
             const rewardLine = document.createElement('span');
             rewardLine.className = 'v2203-reward-line';
-            // V2337: the upper Party Goal shows only the reward line.
-            // The remaining guest count duplicates the same progress information.
-            const authoritativeRewardText = `REWARD +${100 + Math.min(100, remaining)}`;
+            // V2362: show the same authoritative reward value as the bar, including
+            // the currently falling set so the level starts at the full 250.
+            const authoritativeRewardValue = window.bpPartyGoalRewardV844?.currentReward?.() ?? 250;
+            const authoritativeRewardText = `REWARD ${authoritativeRewardValue}`;
             rewardLine.textContent = authoritativeRewardText;
             if (targetSub.textContent !== authoritativeRewardText || targetSub.children.length !== 1) {
               targetSub.replaceChildren(rewardLine);
@@ -61491,6 +61465,45 @@ window.bpBarrierResolverV825=Object.freeze({
         }
       } catch (_) {}
     }
+
+    // V2359: single stable visual reward bar; update width only on consumed guests.
+    // The displayed text and bar use the same authoritative queue remainder.
+    const normalGoalNow = goalMode==='active' && Number(sourcePanel.dataset.total)>=3 && Number(sourcePanel.dataset.total)<=7 &&
+      Number(level)>=11 && !missionIsActive;
+    let rewardBar=targetPanel.querySelector(':scope > .v2359-reward-track');
+    if(normalGoalNow){
+      if(!rewardBar){
+        rewardBar=document.createElement('div');
+        rewardBar.className='v2359-reward-track';
+        rewardBar.setAttribute('role','progressbar');
+        rewardBar.setAttribute('aria-valuemin','0');
+        rewardBar.setAttribute('aria-valuemax','250');
+        const fill=document.createElement('div');
+        fill.className='v2359-reward-fill';
+        rewardBar.appendChild(fill);
+        targetPanel.appendChild(rewardBar);
+      }
+      const value=Math.max(0,Math.min(250,Number(window.bpPartyGoalRewardV844?.currentReward?.() ?? 250)));
+      const fill=rewardBar.firstElementChild;
+      const percent=100*value/250;
+      if(fill && fill.style.width!==`${percent}%`) fill.style.width=`${percent}%`;
+      if(rewardBar.getAttribute('aria-valuenow')!==String(value)) rewardBar.setAttribute('aria-valuenow',String(value));
+      rewardBar.setAttribute('aria-label',`${value} points available when Party Goal is completed`);
+    }else if(rewardBar){rewardBar.remove();}
+
+    // V2364: quiet, single-line countdown underneath the gold reward bar.
+    // Keep the DOM node stable; only update its number, never re-render goals.
+    let guestsLeftLabel=targetPanel.querySelector(':scope > .v2364-guests-left');
+    const guestsLeft=normalGoalNow ? window.bpPartyGoalRewardV844?.guestsRemaining?.() : null;
+    if(normalGoalNow && Number.isFinite(guestsLeft)){
+      if(!guestsLeftLabel){
+        guestsLeftLabel=document.createElement('div');
+        guestsLeftLabel.className='v2364-guests-left';
+        targetPanel.appendChild(guestsLeftLabel);
+      }
+      const copy=`${Math.max(0,Math.floor(guestsLeft))} GUESTS LEFT`;
+      if(guestsLeftLabel.textContent!==copy) guestsLeftLabel.textContent=copy;
+    }else if(guestsLeftLabel){guestsLeftLabel.remove();}
 
     const sourceDots = sourcePanel.querySelector('.v606-party-goal-dots');
     if (sourceDots && !divaGoalHere) {
@@ -61548,8 +61561,6 @@ window.bpBarrierResolverV825=Object.freeze({
     // countdown. Reuse v662's existing mirrored countdown; NEVER derive another
     // next-mission target here, because mission progress and tests can shift it.
     const missionButton = document.getElementById('v2119MissionField');
-    let missionIsActive = false;
-    try { missionIsActive = typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive(); } catch (_) {}
     const countdown = (missionButton && missionButton.classList.contains('v2186-mission-countdown'))
       ? String(missionButton.dataset.v2186LevelsToNext || '') : '';
     const numericCountdown = /^\d+$/.test(countdown) ? Number(countdown) : null;
@@ -61567,12 +61578,12 @@ window.bpBarrierResolverV825=Object.freeze({
       if (missionBanner.dataset.state !== desired) {
         missionBanner.dataset.state = desired;
         if (missionIsActive) {
-          missionBanner.innerHTML = '<span class="v2211-mission-caption">★ PARTY MISSION</span>' +
+          missionBanner.innerHTML = '<span class="v2211-mission-caption">● PARTY MISSION</span>' +
             '<span class="v2211-mission-count">ACTIVE!</span>';
         } else {
-          missionBanner.innerHTML = '<span class="v2211-mission-caption">★ NEXT PARTY MISSION</span>' +
+          missionBanner.innerHTML = '<span class="v2211-mission-caption">● NEXT PARTY MISSION</span>' +
             `<span class="v2211-mission-count">IN <strong>${numericCountdown}</strong> ` +
-            (numericCountdown === 1 ? 'LEVEL ★' : 'LEVELS ★') + '</span>';
+            (numericCountdown === 1 ? 'LEVEL ●' : 'LEVELS ●') + '</span>';
         }
         missionBanner.classList.toggle('v2211-one-level', !missionIsActive && numericCountdown === 1);
       }
@@ -61585,7 +61596,6 @@ window.bpBarrierResolverV825=Object.freeze({
 
     // V973: content and presentation travel through one authoritative panel mode.
     // Never infer countdown/tutorial layout from independently mirrored host classes.
-    const goalMode = String(sourcePanel.dataset.v606Mode || 'waiting');
     if (targetPanel.dataset.v606Mode !== goalMode) targetPanel.dataset.v606Mode = goalMode;
     syncWaitingTutorialColors(targetPanel, goalMode);
 
@@ -61674,7 +61684,6 @@ window.bpBarrierResolverV825=Object.freeze({
     target.classList.toggle('v2267-colors-waiting',
       goalMode === 'waiting' && !!targetPanel.querySelector(':scope > .v2262-color-progress'));
     target.classList.toggle('v950-seven-color-goal', goalMode === 'tutorial-seven');
-    target.classList.toggle('v641-static-star-countdown', goalMode === 'pending' || goalMode === 'cooldown');
 
     SYNC_HOST_CLASSES.forEach((cls) => {
       target.classList.toggle(cls, sourceHost.classList.contains(cls));
@@ -63531,8 +63540,10 @@ window.bpBarrierResolverV825=Object.freeze({
     box-sizing: border-box !important;
   }
 
-  #v812PartyGoalTakeover .v812-group-slot:nth-child(4) { grid-column: 2 / span 2 !important; }
-  #v812PartyGoalTakeover .v812-group-slot:nth-child(5) { grid-column: 4 / span 2 !important; }
+  #v812PartyGoalTakeover .v812-groups[data-count="5"] .v812-group-slot:nth-child(4) { grid-column: 2 / span 2 !important; }
+  #v812PartyGoalTakeover .v812-groups[data-count="5"] .v812-group-slot:nth-child(5) { grid-column: 4 / span 2 !important; }
+  #v812PartyGoalTakeover .v812-groups[data-count="4"] .v812-group-slot:nth-child(4) { grid-column: 3 / span 2 !important; }
+  #v812PartyGoalTakeover .v812-groups[data-count="7"] .v812-group-slot:nth-child(7) { grid-column: 3 / span 2 !important; }
 
   #v812PartyGoalTakeover .v812-group-slot.v812-done {
     opacity: 1 !important;
@@ -63584,6 +63595,36 @@ window.bpBarrierResolverV825=Object.freeze({
     margin: 5px 0 11px !important;
   }
 
+  #v812PartyGoalTakeover.v812-start .v812-footer {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 1px !important;
+    margin: 9px 0 11px !important;
+  }
+
+  #v812PartyGoalTakeover .v812-start-guests {
+    display: block !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(1.18rem, 5vw, 1.65rem) !important;
+    line-height: 1 !important;
+    font-weight: 1000 !important;
+    color: #ffe680 !important;
+    text-shadow: 0 2px 0 rgba(0,0,0,.35) !important;
+    letter-spacing: .02em !important;
+  }
+
+  #v812PartyGoalTakeover .v812-start-available {
+    display: block !important;
+    font-family: 'Baloo Bhaina 2', sans-serif !important;
+    font-size: clamp(.72rem, 2.8vw, .98rem) !important;
+    line-height: 1.05 !important;
+    font-weight: 900 !important;
+    color: #f8dca2 !important;
+    letter-spacing: .04em !important;
+  }
+
   #v812PartyGoalTakeover.v812-complete .v812-footer {
     color: #7ef7dd !important;
     text-shadow: 0 0 10px rgba(80,227,194,.35) !important;
@@ -63623,35 +63664,7 @@ window.bpBarrierResolverV825=Object.freeze({
     #v812PartyGoalTakeover .v812-subline { margin: 4px 0 5px !important; }
     #v812PartyGoalTakeover .v812-footer { margin: 3px 0 6px !important; }
   }
-  /* V2216: Both end-of-level outcomes use the same transition card. */
-  #v812PartyGoalTakeover:is(.v812-complete, .v812-failed) .v2215-goal-transition {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    margin: 0 auto 12px !important;
-    padding: 9px 7px !important;
-    gap: 4px !important;
-    border: 1px solid rgba(255,216,106,.47) !important;
-    border-radius: 12px !important;
-    background: rgba(27,13,39,.72) !important;
-    font-family: 'Baloo Bhaina 2', sans-serif !important;
-    text-align: center !important;
-  }
-  #v812PartyGoalTakeover:is(.v812-complete, .v812-failed) .v2215-next-level {
-    color: #FFE680 !important;
-    font-weight: 1000 !important;
-    font-size: clamp(1.02rem, 4.45vw, 1.48rem) !important;
-    line-height: 1.05 !important;
-  }
-  #v812PartyGoalTakeover:is(.v812-complete, .v812-failed) .v2215-next-mission {
-    color: #8BEBDD !important;
-    font-weight: 900 !important;
-    font-size: clamp(.67rem, 2.85vw, .95rem) !important;
-    line-height: 1.17 !important;
-  }
+  /* V2360: result and next-level announcement are separate steps. */
   #v812PartyGoalTakeover:is(.v812-complete, .v812-failed) .v812-shell {
     max-height: calc(100dvh - 28px) !important;
   }
@@ -63660,14 +63673,6 @@ window.bpBarrierResolverV825=Object.freeze({
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
   }
-  @media (max-height: 700px) {
-    #v812PartyGoalTakeover:is(.v812-complete, .v812-failed) .v2215-goal-transition {
-      padding: 5px !important;
-      margin-bottom: 7px !important;
-      gap: 2px !important;
-    }
-  }
-
   /* Not an award: less celebratory text color while keeping the card recognizable. */
   #v812PartyGoalTakeover.v812-failed .v812-kicker {
     color: #FFE0A0 !important;
@@ -63720,6 +63725,152 @@ window.bpBarrierResolverV825=Object.freeze({
   let musicPausedByTakeover = false;
   let fifthMatchSnapshot = null;
   let activeGoalRecipe = null;
+
+  // V2360: One transition authority for ordinary levels: result -> OK ->
+  // next Party Goal announcement, OR the existing Party Mission introduction.
+  // Saved alongside both manual and stable-live checkpoints. The new level is
+  // already committed when the player sees the previous level's result.
+  const V2360_TRANSITION_KEY = 'bpV2360PendingGoalTransition';
+  let goalTransition = null;
+  function readGoalTransition() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(V2360_TRANSITION_KEY) || 'null');
+      return parsed && parsed.schema === 2360 &&
+        (parsed.stage === 'result' || parsed.stage === 'intro') &&
+        Number.isInteger(parsed.nextInternal) ? parsed : null;
+    } catch (_) { return null; }
+  }
+  function saveGoalTransition() {
+    try {
+      if (goalTransition) localStorage.setItem(V2360_TRANSITION_KEY, JSON.stringify(goalTransition));
+      else localStorage.removeItem(V2360_TRANSITION_KEY);
+    } catch (_) {}
+  }
+  function clearGoalTransition() { goalTransition = null; saveGoalTransition(); }
+  function commitLiveTransition() {
+    try { window.bpV840SaveLiveResume?.(); } catch (_) {}
+  }
+  function currentTransition() {
+    if (!goalTransition) goalTransition = readGoalTransition();
+    if (goalTransition && goalTransition.nextInternal !== levelNow()) {
+      // During advanceLevel we intentionally have the OLD level for one tick.
+      if (goalTransition.nextInternal !== levelNow() + 1) clearGoalTransition();
+    }
+    return goalTransition;
+  }
+  try {
+    if (Array.isArray(MANUAL_PARTY_SAVE_KEYS) &&
+        !MANUAL_PARTY_SAVE_KEYS.includes(V2360_TRANSITION_KEY)) {
+      MANUAL_PARTY_SAVE_KEYS.push(V2360_TRANSITION_KEY);
+    }
+  } catch (_) {}
+
+  function capturePreviousGoal(beforeInternal, state) {
+    if (beforeInternal < 11 || !state || !Array.isArray(state.targets) ||
+        state.targets.length < 3 || !Array.isArray(state.completed) ||
+        state.completed.length !== state.targets.length) return false;
+    const done = state.completed.every(Boolean) || state.mode === 'levelcomplete';
+    goalTransition = {
+      schema: 2360, stage: 'result', nextInternal: beforeInternal + 1,
+      completedInternalLevel: beforeInternal,
+      outcome: done ? 'complete' : 'failed',
+      previous: {
+        targets: state.targets.slice(), total: state.targets.length,
+        completed: state.completed.map(Boolean),
+        current: state.completed.filter(Boolean).length,
+        completedInternalLevel: beforeInternal,
+        reward: done ? Math.max(0, Math.min(250, Number(window.bpPartyGoalRewardV844?.currentReward?.()) || 0)) : 0
+      },
+      next: null
+    };
+    saveGoalTransition();
+    return true;
+  }
+
+  function captureNextGoal(payload) {
+    const tx = currentTransition();
+    if (!tx || tx.stage !== 'result' || levelNow() !== tx.nextInternal) return false;
+    tx.next = {
+      targets: Array.isArray(payload?.targets) ? payload.targets.slice() : [],
+      total: Math.max(3, Math.min(7, Number(payload?.total) || payload?.targets?.length || 5)),
+      level: tx.nextInternal
+    };
+    saveGoalTransition();
+    return true;
+  }
+
+  function showPendingResult() {
+    const tx = currentTransition();
+    if (!tx || tx.stage !== 'result' || levelNow() !== tx.nextInternal) return false;
+    if (!tx.previous || !Array.isArray(tx.previous.targets)) return false;
+    renderCard(tx.previous, tx.outcome === 'complete' ? 'complete' : 'failed');
+    return true;
+  }
+
+  function announceAfterResult() {
+    const tx = currentTransition();
+    if (!tx || tx.stage !== 'result') { hide(); return; }
+    // The mission already has its own detailed start popup. v722 keeps it
+    // queued until the previous result is dismissed; never show an extra
+    // Party Goal start popup before the mission.
+    const missionWaiting = missionActive() ||
+      !!window.bpMissionFlowV2358?.holdsMissionQueue?.();
+    if (missionWaiting) {
+      clearGoalTransition();
+      commitLiveTransition();
+      hide();
+      return;
+    }
+    tx.stage = 'intro';
+    saveGoalTransition();
+    commitLiveTransition();
+    hide();
+    const goal = tx.next || window.bpPostGoalLevelV2075?.state?.() || null;
+    if (goal && Array.isArray(goal.targets) && goal.targets.length >= 3) {
+      renderCard({targets:goal.targets, total:goal.targets.length}, 'start');
+    } else {
+      clearGoalTransition();
+    }
+  }
+
+  function resumeTransitionFromSave() {
+    // Reload the checkpoint's copy, not the transient state from the abandoned run.
+    goalTransition = readGoalTransition();
+    const tx = currentTransition();
+    if (!tx || tx.nextInternal !== levelNow()) return false;
+    if (tx.stage === 'result') return showPendingResult();
+    if (tx.stage === 'intro' && !missionActive()) {
+      const next = tx.next || window.bpPostGoalLevelV2075?.state?.();
+      if (next && Array.isArray(next.targets) && next.targets.length >= 3) {
+        renderCard({targets:next.targets,total:next.targets.length},'start');
+        return true;
+      }
+    }
+    return false;
+  }
+
+  window.bpGoalTransitionV2360 = Object.freeze({
+    beforeAdvance: capturePreviousGoal,
+    afterAdvance() {
+      if (!currentTransition() || currentTransition().nextInternal !== levelNow()) return;
+      // OnComplete is deferred by the existing group-resolution pipeline.
+      // This fallback also covers mission-bound successes (previously muted).
+      setTimeout(showPendingResult, 40);
+      // Record the already-committed next level + pending popup in the
+      // stable-live snapshot; manual Save Party includes the same key.
+      setTimeout(() => {
+        try { window.bpV840SaveLiveResume?.(); } catch (_) {}
+      }, 150);
+    },
+    showPendingResult,
+    isPendingResult: () => !!(currentTransition() && currentTransition().stage === 'result'),
+    resumeFromSave: resumeTransitionFromSave,
+    clear: clearGoalTransition
+  });
+  try {
+    window.bpFreshPartyStartPipeline?.register?.('v2360-goal-transition', clearGoalTransition);
+    window.bpFreshTutorialStartPipeline?.register?.('v2360-goal-transition', clearGoalTransition);
+  } catch (_) {}
 
   function levelNow() {
     try { return Number(level) || 1; } catch (_) { return 1; }
@@ -63867,7 +64018,7 @@ window.bpBarrierResolverV825=Object.freeze({
   function hide() {
     const overlay = document.getElementById('v812PartyGoalTakeover');
     if (overlay) {
-      overlay.classList.remove('v812-visible', 'v812-complete', 'v812-failed');
+      overlay.classList.remove('v812-visible', 'v812-complete', 'v812-failed', 'v812-start');
       overlay.innerHTML = '';
     }
     resumeIfOwned();
@@ -63895,15 +64046,19 @@ window.bpBarrierResolverV825=Object.freeze({
   }
 
   function renderCard(payload, mode) {
-    // A failed previous level can be summarized even when the new level
-    // immediately triggers a Party Mission. All other cards keep the old guard.
-    if (!allowed() && mode !== 'failed') return;
+    // A result belongs to the PREVIOUS ordinary level. It must still be shown
+    // if the already-committed next activity is a Party Mission.
+    if (!allowed() && mode !== 'failed' &&
+        !(mode === 'complete' && currentTransition()?.stage === 'result')) return;
+    if (mode === 'start' && captureNextGoal(payload)) return;
 
     const overlay = ensureOverlay();
     const complete = mode === 'complete';
     const failed = mode === 'failed';
     const start = mode === 'start';
-    const total = 5;
+    const total = Math.max(3,Math.min(7,Number(payload?.total) ||
+      (Array.isArray(payload?.targets) ? payload.targets.length :
+      (Array.isArray(activeGoalRecipe) ? activeGoalRecipe.length : 5))));
     const current = complete ? total : Math.max(0, Math.min(total, Number(payload?.current) || 0));
 
     if (mode === 'progress' && current >= total) {
@@ -63940,13 +64095,18 @@ window.bpBarrierResolverV825=Object.freeze({
       earnedIndex = Math.max(0, Math.min(total - 1, Number(fifthMatchSnapshot.targetIndex)));
     }
 
-    const reward = Math.max(100, Number(payload?.reward) || 100);
+    const reward = Math.max(0,Math.min(250,Number(payload?.reward) || 0));
     const remaining = Math.max(0, total - current);
 
     let kicker = 'PARTY GOAL';
-    let headline = 'CLEAR THESE 5 GROUPS!';
-    let subline = '5+ BLOCKS EACH';
-    let footer = 'EARN 100 PTS + UP TO 100 SPEED BONUS';
+    let headline = `CLEAR THESE ${total} GROUPS!`;
+    let subline = '5+ GUESTS EACH';
+    let footer = 'FINISH WITH GUESTS LEFT';
+    let startGuests = null;
+    if (start) {
+      startGuests = Math.max(1, Number(window.bpLevelQueueV2075?.initialGuests?.()) || 100);
+      kicker = `PARTY GOAL · ${window.bpLevelPresentationV948?.label?.(levelNow()) || `LEVEL ${Math.max(1,levelNow()-10)}`}`;
+    }
 
     if (mode === 'progress') {
       kicker = `PARTY GOAL · ${current} OF ${total}`;
@@ -63955,9 +64115,9 @@ window.bpBarrierResolverV825=Object.freeze({
       footer = `${current} OF ${total} GROUPS CLEARED`;
     } else if (complete) {
       kicker = 'GOAL COMPLETE!';
-      headline = 'ALL 5 GROUPS CLEARED!';
+      headline = `ALL ${total} GROUPS CLEARED!`;
       subline = '';
-      footer = `★ +${reward} POINTS WON`;
+      footer = `● +${reward} POINTS WON`;
     } else if (failed) {
       kicker = 'PARTY GOAL NOT COMPLETED';
       headline = `${current} OF ${total} GROUPS CLEARED`;
@@ -63985,52 +64145,23 @@ window.bpBarrierResolverV825=Object.freeze({
 
     const groups = document.createElement('div');
     groups.className = 'v812-groups';
+    groups.dataset.count=String(total);
     recipe.forEach((color, index) => {
       groups.appendChild(makeSlot(color, !!completed[index], mode === 'progress' && index === earnedIndex));
     });
 
     const footerEl = document.createElement('div');
     footerEl.className = 'v812-footer';
-    footerEl.textContent = footer;
-
-    // Both success and failure announce the actual *new* playable level.
-    // Use the same in-card transition; never create another modal.
-    const transitionEl = (complete || failed) ? document.createElement('div') : null;
-    if (transitionEl) {
-      transitionEl.className = 'v2215-goal-transition';
-      const firstNext = Math.max(11, Math.floor(Number(payload?.completedInternalLevel) || levelNow()) + 1);
-      const updateTransition = () => {
-        if (!transitionEl.isConnected) return;
-        // Prefer the committed live level (also handles the mission level jump).
-        const nextInternal = Math.max(firstNext, levelNow());
-        const levelLabel = window.bpLevelPresentationV948?.label(nextInternal) ||
-          `LEVEL ${Math.max(1, nextInternal - 10)}`;
-        const horizon = window.bpMissionHorizonV2215?.status(nextInternal);
-        const levelLine = transitionEl.querySelector('.v2215-next-level');
-        const missionLine = transitionEl.querySelector('.v2215-next-mission');
-        if (levelLine) levelLine.textContent = `STARTING ${levelLabel}`;
-        if (missionLine) {
-          missionLine.textContent = horizon?.kind === 'active'
-            ? '★ PARTY MISSION ACTIVE ★'
-            : horizon?.kind === 'starts'
-              ? '★ PARTY MISSION STARTS NOW ★'
-              : horizon?.kind === 'all-complete'
-                ? '★ ALL PARTY MISSIONS REACHED ★'
-                : Number.isFinite(horizon?.levels)
-                  ? `★ NEXT PARTY MISSION IN ${horizon.levels} ${horizon.levels === 1 ? 'LEVEL' : 'LEVELS'} ★`
-                  : '★ NEXT PARTY MISSION AHEAD ★';
-        }
-      };
-      const levelLine = document.createElement('div');
-      levelLine.className = 'v2215-next-level';
-      const missionLine = document.createElement('div');
-      missionLine.className = 'v2215-next-mission';
-      transitionEl.append(levelLine, missionLine);
-      // The level changes after checkMatches finishes. The second read catches
-      // the final displayed level even when a Party Mission starts immediately.
-      requestAnimationFrame(updateTransition);
-      setTimeout(updateTransition, 120);
-      setTimeout(updateTransition, 300);
+    if (start && Number.isFinite(startGuests)) {
+      const guestsMain = document.createElement('span');
+      guestsMain.className = 'v812-start-guests';
+      guestsMain.textContent = `${startGuests} GUESTS`;
+      const guestsSub = document.createElement('span');
+      guestsSub.className = 'v812-start-available';
+      guestsSub.textContent = 'AVAILABLE THIS LEVEL';
+      footerEl.replaceChildren(guestsMain, guestsSub);
+    } else {
+      footerEl.textContent = footer;
     }
 
     const ok = document.createElement('button');
@@ -64041,6 +64172,11 @@ window.bpBarrierResolverV825=Object.freeze({
       event.preventDefault();
       event.stopPropagation();
       if ((performance.now() - shownAt) < MANUAL_DISMISS_DELAY_MS) return;
+      if (complete || failed) { announceAfterResult(); return; }
+      if (start && currentTransition()?.stage === 'intro') {
+        clearGoalTransition();
+        commitLiveTransition();
+      }
       hide();
     });
 
@@ -64049,7 +64185,6 @@ window.bpBarrierResolverV825=Object.freeze({
     card.appendChild(sublineEl);
     card.appendChild(groups);
     card.appendChild(footerEl);
-    if (transitionEl) card.appendChild(transitionEl);
     card.appendChild(ok);
     shell.appendChild(card);
 
@@ -64057,6 +64192,7 @@ window.bpBarrierResolverV825=Object.freeze({
     overlay.appendChild(shell);
     overlay.classList.toggle('v812-complete', complete);
     overlay.classList.toggle('v812-failed', failed);
+    overlay.classList.toggle('v812-start', start);
 
     pauseWithoutPenalty({ pauseMusic: complete || failed });
     neutralizeOldTopCellCelebration();
@@ -64092,7 +64228,7 @@ window.bpBarrierResolverV825=Object.freeze({
         renderCard({
           ...(payload || {}),
           current: 0,
-          completed: [false,false,false,false,false]
+          completed: Array(Math.max(3,Math.min(7,Number(payload?.total)||payload?.targets?.length||5))).fill(false)
         }, 'start');
       } catch (_) {}
       return result;
@@ -64111,24 +64247,31 @@ window.bpBarrierResolverV825=Object.freeze({
   if (window.bpPartyGoalV634 && typeof window.bpPartyGoalV634.onComplete === 'function') {
     const baseComplete = window.bpPartyGoalV634.onComplete;
     window.bpPartyGoalV634.onComplete = function(payload) {
+      const completionTotal=Math.max(3,Math.min(7,Number(payload?.total)||
+        (Array.isArray(fifthMatchSnapshot?.targets)?fifthMatchSnapshot.targets.length:0)||
+        (Array.isArray(activeGoalRecipe)?activeGoalRecipe.length:0)||5));
       const completionRecipe =
-        (Array.isArray(fifthMatchSnapshot?.targets) && fifthMatchSnapshot.targets.length >= 5)
-          ? fifthMatchSnapshot.targets.slice(0, 5)
-          : (Array.isArray(activeGoalRecipe) && activeGoalRecipe.length >= 5)
-            ? activeGoalRecipe.slice(0, 5)
-            : authoritativeRecipe(5, payload);
+        (Array.isArray(fifthMatchSnapshot?.targets) && fifthMatchSnapshot.targets.length >= completionTotal)
+          ? fifthMatchSnapshot.targets.slice(0,completionTotal)
+          : (Array.isArray(activeGoalRecipe) && activeGoalRecipe.length >= completionTotal)
+            ? activeGoalRecipe.slice(0,completionTotal)
+            : authoritativeRecipe(completionTotal,payload);
 
       const result = baseComplete.apply(this, arguments);
       try {
-        if (payload && payload.muted) {
+        if (currentTransition()?.stage === 'result') {
+          // V2360 owns the result and announces the next goal on OK.
+          fifthMatchSnapshot = null;
+          activeGoalRecipe = null;
+        } else if (payload && payload.muted) {
           fifthMatchSnapshot = null;
           activeGoalRecipe = null;
         } else {
           renderCard({
             ...(payload || {}),
-            total: 5,
-            current: 5,
-            completed: [true,true,true,true,true],
+            total: completionTotal,
+            current: completionTotal,
+            completed: Array(completionTotal).fill(true),
             targets: completionRecipe,
             color: fifthMatchSnapshot?.color,
             targetIndex: fifthMatchSnapshot?.targetIndex
@@ -64143,11 +64286,11 @@ window.bpBarrierResolverV825=Object.freeze({
   // The complete old-level progress mask is supplied before its replacement.
   window.bpPartyGoalOutcomeV2216 = Object.freeze({
     showFailure(payload) {
-      if (!payload || !Array.isArray(payload.targets) || payload.targets.length < 5 ||
-          !Array.isArray(payload.completed) || payload.completed.length < 5) return false;
-      const count = payload.completed.slice(0, 5).filter(Boolean).length;
-      if (count >= 5) return false;
-      renderCard({ ...payload, current: count }, 'failed');
+      if (!payload || !Array.isArray(payload.targets) || payload.targets.length < 3 ||
+          !Array.isArray(payload.completed) || payload.completed.length !== payload.targets.length) return false;
+      const count = payload.completed.filter(Boolean).length;
+      if (count >= payload.targets.length) return false;
+      if (currentTransition()?.stage !== 'result') renderCard({ ...payload, current: count }, 'failed');
       return true;
     }
   });
@@ -64504,6 +64647,8 @@ window.bpBarrierResolverV825=Object.freeze({
 
   function v840SaveLiveResume(){
     if (!v840InFullParty() || v840GameOverActive) return false;
+    // Result and reward-choice states are fully serializable in V2358.
+    // Save them as distinct phases, not as an ordinary level or a replay.
     if (window.v545MainMenuOpen || !window.v545GameplayActive) return false;
 
     try {
@@ -64545,6 +64690,8 @@ window.bpBarrierResolverV825=Object.freeze({
     if (!snapshot) return false;
 
     v840RestoreStorageMap(snapshot.storage);
+    // V2359: same-session Continue must not reuse the abandoned in-memory queue.
+    window.bpLevelQueueV2075?.invalidateRuntime?.();
 
     const wasUnlocked = !!(snapshot.runtime && snapshot.runtime.saveUnlocked);
     const storedCountdown = Math.max(
@@ -64582,6 +64729,7 @@ window.bpBarrierResolverV825=Object.freeze({
     const args = Array.prototype.slice.call(arguments, 1);
     const ok = next(...args);
     if (ok && v840CompletedTutorial()) {
+      window.bpLevelQueueV2075?.invalidateRuntime?.();
       window.bpV840ResumeMode = 'manual';
       window.bpV840PendingResumeCountdown = null;
       if (typeof saveUnlocked !== 'undefined') saveUnlocked = false;
@@ -64603,6 +64751,12 @@ window.bpBarrierResolverV825=Object.freeze({
     if ((mode === 'manual' || mode === 'live') &&
         typeof window.bpV840ReloadPostGoalFromStorage === 'function') {
       try { window.bpV840ReloadPostGoalFromStorage(); } catch (_) {}
+    }
+    if (mode === 'manual' || mode === 'live') {
+      // Wait for Continue's level, HUD, queue and mission phase to settle.
+      setTimeout(() => {
+        try { window.bpGoalTransitionV2360?.resumeFromSave(); } catch (_) {}
+      }, 120);
     }
 
     // The base loader has now created the next set and consumed the intended
@@ -65530,7 +65684,7 @@ body.v987-goal1-poster .tutorial-tap-to-continue {
         subline:'',
         image:images.threeWon || null,
         alt:'Three orange mascot groups celebrating',
-        reward:'★ +100 PTS'
+        reward:'● +100 PTS'
       }
     };
     return window.bpShowPartyGoalCardV1012(states[stage], onClose);
@@ -65571,7 +65725,7 @@ body.v987-goal1-poster .tutorial-tap-to-continue {
         subline:'',
         image:images.threeWon || null,
         alt:'Three blue mascot groups celebrating',
-        reward:'★ +100 PTS'
+        reward:'● +100 PTS'
       }
     };
     return window.bpShowPartyGoalCardV1012(states[stage], onClose);
@@ -72484,7 +72638,7 @@ try { showTutorialLevelBanner(); } catch (_) {}
 
 <style id="v973-party-goal-layout-authority">
   /* V973: Party Goal layout follows the panel's authoritative presentation mode.
-     Tutorial-seven, pending/cooldown stars and ordinary active goals are mutually exclusive. */
+     Tutorial-seven, waiting/cooldown and ordinary active goals are mutually exclusive. */
   #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] {
     justify-content: flex-start !important;
     gap: 0 !important;
@@ -76652,12 +76806,22 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
 
   // The level has 100 guests, but the snake still has its original 90-guest
   // physical window. Extra guests wait offscreen until visible slots open.
-  const TOTAL_GUESTS = window.bpMissionDashboardTestV2217.enabled
+  const LEGACY_GUESTS = window.bpMissionDashboardTestV2217.enabled
     ? window.bpMissionDashboardTestV2217.ordinaryLevelGuests : 100;
+  // V2359: every new normal level owns and persists ONE selected goal/guest budget.
+  // Test dashboard short levels retain their fixed budget for developer tests.
+  const GOAL_VARIANTS = Object.freeze({
+    3:[120,75,60,50], 4:[140,90,75,60], 5:[160,100,85,70],
+    6:[180,115,95,80], 7:[200,125,110,95]
+  });
   const MISSION_WINDOW_GUESTS = 90;
   const SNAKE_VISUAL_SLOTS = 90;
   const STORE_KEY = window.bpMissionDashboardTestV2217.enabled ? 'bpV2217ShortLevelQueueTest' : 'bpV2075FullPartyQueueState';
-  const state = { level: null, sets: [], nextId: 1, goalStartedLevel: null, mode: 'normal' };
+  const state = { level: null, sets: [], nextId: 1, goalStartedLevel: null, mode: 'normal', totalGuests:LEGACY_GUESTS, goalCount:5, difficulty:1 };
+  try {
+    if (typeof MANUAL_PARTY_SAVE_KEYS !== 'undefined' && Array.isArray(MANUAL_PARTY_SAVE_KEYS) &&
+        !MANUAL_PARTY_SAVE_KEYS.includes(STORE_KEY)) MANUAL_PARTY_SAVE_KEYS.push(STORE_KEY);
+  } catch (_) {}
   let observedMissionThisRun = false;
   // Successful ordinary Party Goal ends its level early. Completion is
   // committed after the entire group-resolution pass, not mid-group.
@@ -76665,7 +76829,10 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
 
   function safeLevel(){ try { return Number(level) || 1; } catch(_) { return 1; } }
   function active(){ return safeLevel() >= 11; }
-  function missionActive(){ try { return typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive(); } catch(_) { return false; } }
+  function missionActive(){
+    try { return (typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive()) ||
+      bpMissionFlowV2358.holdsMissionQueue(); } catch(_) { return false; }
+  }
   function normalQueueFlow(){ return active() && !missionActive(); }
   function missionQueueFlow(){ return active() && missionActive(); }
 
@@ -76741,6 +76908,23 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
     };
   }
 
+  function weightedChoice(weights){
+    const sum=weights.reduce((a,b)=>a+b,0);
+    let r=Math.random()*sum;
+    for(let i=0;i<weights.length;i++){ r-=weights[i]; if(r<0) return i; }
+    return weights.length-1;
+  }
+  function selectOrdinaryGoal(){
+    if (window.bpMissionDashboardTestV2217.enabled) return {count:5,total:LEGACY_GUESTS,difficulty:1};
+    // No difficulty labels are shown to the player. Weights: easy 20%, normal 50%,
+    // hard 25%, very hard 5%; goal weights favour the familiar five-group recipe.
+    const count=[3,4,5,6,7][weightedChoice([15,20,30,20,15])];
+    const difficulty=weightedChoice([20,50,25,5]);
+    const target=GOAL_VARIANTS[count][difficulty];
+    // ±5% small variance, rounded to groups of five; never outside 50–200.
+    const varied=Math.round((target*(.95+Math.random()*.1))/5)*5;
+    return {count,total:Math.max(50,Math.min(200,varied)),difficulty};
+  }
   function addNormalGuests(count){
     let remaining=Math.max(0,Math.floor(Number(count)||0));
     let previous=state.sets.length ? state.sets[state.sets.length-1].color : null;
@@ -76758,32 +76942,52 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
     state.nextId = 1;
     state.goalStartedLevel = null;
     state.mode = mode === 'mission' ? 'mission' : 'normal';
+    const variant = state.mode === 'mission' ? {count:5,total:MISSION_WINDOW_GUESTS,difficulty:1} : selectOrdinaryGoal();
+    state.totalGuests=variant.total;
+    state.goalCount=variant.count;
+    state.difficulty=variant.difficulty;
     if(state.mode === 'mission') observedMissionThisRun = true;
-    addNormalGuests(state.mode === 'mission' ? MISSION_WINDOW_GUESTS : TOTAL_GUESTS);
+    if (state.mode === 'mission') {
+      let room = MISSION_WINDOW_GUESTS;
+      while (room > 0) {
+        const set = newMissionPlan(room);
+        state.sets.push(set);
+        room -= set.length;
+      }
+    } else {
+      addNormalGuests(state.totalGuests);
+    }
     persist();
     return state.sets;
   }
 
-  // Mission queue: rolling 90-guest VISUAL window, never a finite level limit.
-  // Preserve the gameplay generator (heart / Multicolor / Diva mission rules).
-  // The queue owns planned guest colors; the core generator owns actual special
-  // status and formation size. After each entry the tail is replenished.
+  // Mission queue: one authoritative rolling 90-guest plan, with no finite
+  // mission guest limit. The incoming formations, NEXT SET and visible snake
+  // share color, length and specials. Forced mission sequences are projected
+  // into this plan; after each entry the far tail is replenished.
   function newMissionPlan(room){
     const p=palette();
     const previous=state.sets.length ? state.sets[state.sets.length-1].color : null;
     const choices=p.filter(c => String(c).toUpperCase()!==String(previous || '').toUpperCase());
     const pool=choices.length ? choices : p;
     const color=pool[Math.floor(Math.random()*pool.length)];
-    const special=rollPlannedSpecials(safeLevel());
-    let length=pickLength(room);
-    if(special.isMulticolor) length=1;
+    const ordinal = state.nextId++;
+    const forcedRepair = typeof challengeActive !== 'undefined' && challengeActive &&
+      ordinal <= challengeRepairRushSequence;
+    // Repair Rush starts with 33 guaranteed single-block R formations. These
+    // are exactly what the mission generator produces, not random placeholders.
+    const forcedMulti = typeof challenge2Active !== 'undefined' && challenge2Active &&
+      ordinal % 3 === 0;
+    const special = rollPlannedSpecials(safeLevel());
+    let length = forcedRepair || forcedMulti ? 1 : pickLength(room);
+    if (special.isMulticolor) length=1;
     return {
-      id:`${state.level}-mission-${state.nextId++}`,
+      id:`${state.level}-mission-${ordinal}`,
       color, length,
-      isSpecial:!!special.isSpecial,
-      isMulticolor:!!special.isMulticolor,
-      isDiva:!!special.isDiva,
-      divaCountdown:special.isDiva ? special.divaCountdown : null
+      isSpecial:forcedRepair || (!!special.isSpecial && !forcedMulti),
+      isMulticolor:forcedMulti || (!forcedRepair && !!special.isMulticolor),
+      isDiva:!forcedRepair && !!special.isDiva,
+      divaCountdown:!forcedRepair && special.isDiva ? special.divaCountdown : null
     };
   }
 
@@ -76810,15 +77014,27 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
     if(!candidate || typeof candidate!=='object') return candidate;
     const plan=state.sets[0];
     if(!plan) return candidate;
-    // Keep core mission mechanics and lengths, only use the planned color.
-    // Thus a forced heart, multicolor or diva remains exactly as generated.
+    // The mission's saved queue is authoritative for the next incoming set.
+    // Preserve explicit mission mechanics (forced Repair Rush and every-third
+    // Multicolor) instead of silently replacing them with random future icons.
+    const repairForced = typeof challengeActive !== 'undefined' && challengeActive &&
+      !!candidate.isSpecial && Number(candidate.length) === 1;
+    const multiForced = typeof challenge2Active !== 'undefined' && challenge2Active &&
+      Number(challenge2BlockCounter) % 3 === 2 && !!candidate.isMulticolor;
+    if (repairForced || multiForced) {
+      plan.length=1;
+      plan.isSpecial=!!candidate.isSpecial;
+      plan.isMulticolor=!!candidate.isMulticolor;
+      plan.isDiva=!!candidate.isDiva;
+      plan.divaCountdown=candidate.isDiva ? candidate.divaCountdown : null;
+      balanceMissionQueue();
+    }
     candidate.color=plan.color;
-    const size=Math.max(1,Math.min(3,Number(candidate.length)||1));
-    plan.length=size;
-    plan.isSpecial=!!candidate.isSpecial;
-    plan.isMulticolor=!!candidate.isMulticolor;
-    plan.isDiva=!!candidate.isDiva;
-    plan.divaCountdown=candidate.isDiva ? candidate.divaCountdown : null;
+    candidate.length=plan.length;
+    candidate.isSpecial=!!plan.isSpecial;
+    candidate.isMulticolor=!!plan.isMulticolor;
+    candidate.isDiva=!!plan.isDiva;
+    candidate.divaCountdown=plan.isDiva ? plan.divaCountdown : null;
     candidate._v2207MissionSetId=plan.id;
     balanceMissionQueue();
     persist();
@@ -76830,10 +77046,30 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
     return nextBlock._v2207MissionSetId===state.sets[0].id;
   }
 
+  function alignRepairRushFuture(){
+    if (state.mode !== 'mission' || typeof challengeActive === 'undefined' || !challengeActive) return;
+    const knownHead = missionHeadMatchesNextBlock();
+    const repairCount = Math.max(0, Number(challengeHeartOverrideCounter) || 0);
+    let left = repairCount;
+    let changed = false;
+    for (let i=knownHead ? 1 : 0; i<state.sets.length && left>0; i++, left--){
+      const set=state.sets[i];
+      if (set.length!==1 || !set.isSpecial || set.isMulticolor || set.isDiva){
+        set.length=1;
+        set.isSpecial=true;
+        set.isMulticolor=false;
+        set.isDiva=false;
+        set.divaCountdown=null;
+        changed=true;
+      }
+    }
+    if (changed){ balanceMissionQueue(); persist(); }
+  }
+
   function remainingGuests(){ return state.sets.reduce((sum,s) => sum + Math.max(0,Number(s.length)||0), 0); }
 
   function persist(){
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ schema:2208, levelGuestLimit:state.mode==='mission'?MISSION_WINDOW_GUESTS:TOTAL_GUESTS, level:state.level, sets:state.sets, nextId:state.nextId, goalStartedLevel:state.goalStartedLevel, mode:state.mode })); } catch(_) {}
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ schema:2359, levelGuestLimit:state.totalGuests, goalCount:state.goalCount, difficulty:state.difficulty, level:state.level, sets:state.sets, nextId:state.nextId, goalStartedLevel:state.goalStartedLevel, mode:state.mode })); } catch(_) {}
   }
 
   function loadForLevel(levelNumber, desiredMode='normal'){
@@ -76841,7 +77077,7 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
       const parsed = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if(!parsed || Number(parsed.level) !== Number(levelNumber) || !Array.isArray(parsed.sets)) return false;
       if((parsed.mode === 'mission' ? 'mission' : 'normal') !== desiredMode) return false;
-      const needsSpecialMigration = ![2087,2207,2208].includes(Number(parsed.schema)) || parsed.sets.some(s =>
+      const needsSpecialMigration = ![2087,2207,2208,2359].includes(Number(parsed.schema)) || parsed.sets.some(s =>
         s && (!Object.prototype.hasOwnProperty.call(s,'isSpecial') ||
               !Object.prototype.hasOwnProperty.call(s,'isDiva') ||
               !Object.prototype.hasOwnProperty.call(s,'isMulticolor'))
@@ -76872,16 +77108,27 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
       state.nextId = Number(parsed.nextId)||1;
       state.goalStartedLevel = Number(parsed.goalStartedLevel)||null;
       state.mode = desiredMode;
-      if(state.mode === 'mission'){
+      // Existing V2358 saves retain their ORIGINAL 100-guest goal and five targets.
+      // Do not randomly reroll saved levels or replace the current NEXT SET.
+      state.totalGuests = desiredMode==='mission' ? MISSION_WINDOW_GUESTS :
+        Math.max(1,Math.floor(Number(parsed.levelGuestLimit)||LEGACY_GUESTS));
+      state.goalCount = desiredMode==='mission' ? 5 :
+        Math.max(3,Math.min(7,Math.floor(Number(parsed.goalCount)||5)));
+      state.difficulty = Number.isInteger(Number(parsed.difficulty)) ? Number(parsed.difficulty) : 1;
+      if(state.mode==='mission'){
         observedMissionThisRun=true;
         balanceMissionQueue();
       }
       // Existing 90-guest saves keep their consumed guests and current NEXT SET.
       // Append only the 10 new guests to the far end, without restarting the level.
       const previousLimit=Number(parsed.levelGuestLimit)||90;
-      const needsCapacityMigration=state.mode==='normal' && previousLimit<TOTAL_GUESTS;
-      if(needsCapacityMigration) addNormalGuests(TOTAL_GUESTS-previousLimit);
-      if(needsSpecialMigration || needsCapacityMigration || Number(parsed.schema)!==2208) persist();
+      const needsCapacityMigration=state.mode==='normal' && previousLimit<LEGACY_GUESTS &&
+        Number(parsed.schema)!==2359;
+      if(needsCapacityMigration) {
+        addNormalGuests(LEGACY_GUESTS-previousLimit);
+        state.totalGuests=LEGACY_GUESTS;
+      }
+      if(needsSpecialMigration || needsCapacityMigration || Number(parsed.schema)!==2359) persist();
       return true;
     } catch(_) { return false; }
   }
@@ -76892,30 +77139,36 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
     const mode=missionActive() ? 'mission' : 'normal';
     if(mode==='mission') observedMissionThisRun=true;
     if(state.level===lvl && state.mode===mode && Array.isArray(state.sets)){
-      if(mode==='mission' && remainingGuests()!==MISSION_WINDOW_GUESTS){
-        balanceMissionQueue();
-        persist();
+      if(mode==='mission'){
+        alignRepairRushFuture();
+        if(remainingGuests()!==MISSION_WINDOW_GUESTS){
+          balanceMissionQueue();
+          persist();
+        }
       }
       return true;
     }
 
     if(mode==='normal' && state.mode==='mission' && observedMissionThisRun){
-      // Mission has finished (success OR failure): it was an unlimited level.
-      // The next ordinary level starts with a fresh, finite 100-guest queue.
-      // Never do this on a cold load without a witnessed active mission.
+      // V2358: the mission DOES NOT CONSUME A LEVEL. The numeric level already
+      // points at the next Party Goal (6, 11, ...), and must not advance again.
+      // A finished milestone is distinguished by its persisted phase, rather
+      // than guessed from level%5 or from a now-inactive challenge flag.
       observedMissionThisRun=false;
-      advanceLevel();
+      buildQueue(lvl,'normal');
+      startGoalForCurrentLevel(true);
+      renderQueue();
       return true;
     }
     if(!loadForLevel(lvl,mode)) buildQueue(lvl,mode);
-    if(mode==='mission') balanceMissionQueue();
+    if(mode==='mission') { alignRepairRushFuture(); balanceMissionQueue(); }
     syncMode();
     renderQueue();
     return true;
   }
 
   function clearQueue(){
-    state.level=null; state.sets=[]; state.nextId=1; state.goalStartedLevel=null; state.mode='normal';
+    state.level=null; state.sets=[]; state.nextId=1; state.goalStartedLevel=null; state.mode='normal'; state.totalGuests=LEGACY_GUESTS; state.goalCount=5; state.difficulty=1;
     observedMissionThisRun=false;
     pendingGoalAdvanceLevel=null;
     try { localStorage.removeItem(STORE_KEY); } catch(_) {}
@@ -76977,10 +77230,11 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
     if(!active()) return;
     ensureQueue();
     const remaining=remainingGuests();
-    const consumed=Math.max(0,TOTAL_GUESTS-remaining);
+    const total=Math.max(1,state.totalGuests);
+    const consumed=Math.max(0,total-remaining);
     const bar=document.getElementById('levelProgressBar');
     if(missionActive()) { if(bar) bar.style.width='0%'; return; }
-    if(bar) bar.style.width = Math.max(0,Math.min(100,(consumed/TOTAL_GUESTS)*100))+'%';
+    if(bar) bar.style.width = Math.max(0,Math.min(100,(consumed/total)*100))+'%';
   }
 
   function renderNextSetFromQueue(){
@@ -76996,7 +77250,7 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
         // During missions the TRUE nextBlock owns special/size mechanics.
         // The rest of the snake is the perpetually replenished waiting window.
         const upcoming=(missionActive() && typeof nextBlock!=='undefined' && nextBlock &&
-          !nextBlock._v2075LevelBoundary && !nextBlock._v2075QueueSetId)
+          nextBlock._v2207MissionSetId === plan.id)
           ? nextBlock : plan;
         window.bpNextSetPreviewV833.renderCore(window, [
           upcoming.color,
@@ -77136,22 +77390,22 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
       window.bpLongestStreakV2335?.finishOrdinaryLevel?.(previous);
     }
     pendingGoalAdvanceLevel=null;
+    // Capture the finished goal BEFORE the next level overwrites its recipe.
+    try { window.bpGoalTransitionV2360?.beforeAdvance(previous,window.bpPostGoalLevelV2075?.state?.()); } catch (_) {}
     level=previous+1;
     bigGroupCount=0;
-    buildQueue(level);
+    // After completing Level 5/10/15..., enter the mission first. No ordinary
+    // queue/goal may be opened before the mission and its reward finish.
+    if (typeof checkLevelProgression==='function' && !missionActive()) checkLevelProgression();
+    buildQueue(level,missionActive()?'mission':'normal');
     if(typeof updateLevelAndBpmDisplay === 'function') updateLevelAndBpmDisplay();
     if(typeof updateLevelDisplay === 'function') updateLevelDisplay();
     if(typeof pauseUsesLeft !== 'undefined') pauseUsesLeft++;
     if(typeof updatePauseDisplay === 'function') updatePauseDisplay();
-    // V2217 QA: the first mission starts on entry to player-facing LEVEL 2.
-    // Ordinary levels return to the original automatic scheduler when QA is disabled.
-    if(window.bpMissionDashboardTestV2217.enabled && level===window.bpMissionDashboardTestV2217.firstMissionTriggerInternalLevel &&
-       typeof checkLevelProgression==='function' && !missionActive()) {
-      checkLevelProgression();
-    }
     if(!missionActive()) startGoalForCurrentLevel(true);
     renderQueue();
     if(typeof updateLevelProgressBar === 'function') updateLevelProgressBar();
+    try { window.bpGoalTransitionV2360?.afterAdvance(); } catch (_) {}
     return true;
   }
 
@@ -77248,13 +77502,13 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
           let expiredGoal=null;
           try { expiredGoal=window.bpPostGoalLevelV2075?.state?.() || null; } catch(_) {}
           const missed=expiredGoal && expiredGoal.mode==='active' &&
-            Array.isArray(expiredGoal.targets) && expiredGoal.targets.length>=5 &&
-            Array.isArray(expiredGoal.completed) && expiredGoal.completed.length>=5 &&
-            expiredGoal.completed.slice(0,5).some(done=>!done);
+            Array.isArray(expiredGoal.targets) && expiredGoal.targets.length>=3 &&
+            Array.isArray(expiredGoal.completed) && expiredGoal.completed.length===expiredGoal.targets.length &&
+            expiredGoal.completed.some(done=>!done);
           const snapshot=missed ? {
             completedInternalLevel:expiredLevel,
-            targets:expiredGoal.targets.slice(0,5),
-            completed:expiredGoal.completed.slice(0,5).map(Boolean)
+            targets:expiredGoal.targets.slice(),
+            completed:expiredGoal.completed.map(Boolean)
           } : null;
           const advanced=advanceLevel();
           if(advanced && snapshot){
@@ -77315,10 +77569,10 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
 
   // Fresh starts must never inherit a queue from an abandoned run.
   if(window.bpFreshPartyStartPipeline && typeof window.bpFreshPartyStartPipeline.register === 'function'){
-    window.bpFreshPartyStartPipeline.register('v2093-posttutorial-100-guest-queue', function(){ clearQueue(); syncMode(); });
+    window.bpFreshPartyStartPipeline.register('v2093-posttutorial-100-guest-queue', function(){ bpMissionFlowV2358.reset(); clearQueue(); syncMode(); });
   }
   if(window.bpFreshTutorialStartPipeline && typeof window.bpFreshTutorialStartPipeline.register === 'function'){
-    window.bpFreshTutorialStartPipeline.register('v2093-posttutorial-100-guest-queue', function(){ clearQueue(); syncMode(); });
+    window.bpFreshTutorialStartPipeline.register('v2093-posttutorial-100-guest-queue', function(){ bpMissionFlowV2358.reset(); clearQueue(); syncMode(); });
   }
 
   const v2090Hud=document.querySelector('.info-container');
@@ -77345,8 +77599,16 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v632LevelProgressText { disp
     requestGoalAdvance,
     finishPendingGoalAdvance,
     remaining:remainingGuests,
-    total:TOTAL_GUESTS,
-    snapshot(){ return {level:state.level,mode:state.mode,missionActive:missionActive(),sets:state.sets.map(s=>({...s})),remaining:remainingGuests(),goalStartedLevel:state.goalStartedLevel}; },
+    total:LEGACY_GUESTS, // legacy compatibility: real per-level total via initialGuests()
+    initialGuests(){return state.totalGuests;},
+    goalCount(){return state.goalCount;},
+    plannedSets(){return state.sets.map(s=>({...s}));},
+    snapshot(){ return {level:state.level,mode:state.mode,missionActive:missionActive(),sets:state.sets.map(s=>({...s})),remaining:remainingGuests(),initialGuests:state.totalGuests,goalCount:state.goalCount,difficulty:state.difficulty,goalStartedLevel:state.goalStartedLevel}; },
+    invalidateRuntime(){
+      // Only forget volatile queue state; never delete the persisted plan.
+      state.level=null;state.sets=[];state.nextId=1;state.goalStartedLevel=null;
+      state.mode='normal';observedMissionThisRun=false;pendingGoalAdvanceLevel=null;
+    },
     reset(){ clearQueue(); if(active()) buildQueue(safeLevel()); renderQueue(); }
   });
 
@@ -78378,9 +78640,6 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2119NextSetPreviewHost #nex
   shape-rendering: geometricPrecision;
 }
 
-#v2160QueueOverlay.v2160-paused .v2160-token-group {
-  opacity: .38;
-}
 </style>
 
 
@@ -78430,11 +78689,6 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2119NextSetPreviewHost #nex
 
   function isFullParty() {
     return !!(document.body && document.body.classList.contains('v2075-full-party-queue'));
-  }
-
-  function missionActive() {
-    try { return typeof isAnyChallengeActive === 'function' && !!isAnyChallengeActive(); }
-    catch (_) { return false; }
   }
 
   function displayColor(rawColor) {
@@ -78746,7 +79000,6 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2119NextSetPreviewHost #nex
     // Tutorial and 90-guest rolling missions keep their actual smaller supply.
     const visibleCapacity = Math.max(0, inTutorialTube ? VISIBLE_QUEUE_SLOTS - nextSetSize : VISIBLE_QUEUE_SLOTS);
     const tokens = queueTokensFromSnapshot(snapshot).slice(0, visibleCapacity);
-    const paused = !inTutorialTube && missionActive();
     const vw = Math.max(1, window.innerWidth);
     const vh = Math.max(1, window.innerHeight);
 
@@ -78757,10 +79010,9 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2119NextSetPreviewHost #nex
       cardBorder: cardStyle.borderLeftWidth,
       cardRadius: cardStyle.borderTopLeftRadius,
       line, lane, radius,
-      paused,
       level: snapshot && snapshot.level || 0,
       sets: snapshot && Array.isArray(snapshot.sets)
-        ? snapshot.sets.map((set) => [set.id, set.length, !!set.isDiva, !!set.isMulticolor, set.color])
+        ? snapshot.sets.map((set) => [set.id, set.length, !!set.isSpecial, !!set.isDiva, !!set.isMulticolor, !!set.isFreePicture, set.color])
         : []
     });
 
@@ -78780,8 +79032,6 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2119NextSetPreviewHost #nex
     overlay.style.setProperty('left', '0px', 'important');
     overlay.style.setProperty('top', '0px', 'important');
     overlay.style.display = 'block';
-    overlay.classList.toggle('v2160-paused', paused);
-
     setCardGeometry(cardRect, cardStyle);
 
     tubeOuter.setAttribute('d', geometry.d);
@@ -79561,7 +79811,7 @@ body.v472-block-c-card .bp-party-goal-groups-row.is-five-divas {
    The two heart mascots and five real progress dots share the exact same grid
    row. There are no independently positioned/translated items to overlap. */
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] {
   position: relative !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr) !important;
@@ -79580,15 +79830,15 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
 }
 /* No decorative pseudo elements in this compact active-goal card. */
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"]::before,
+.v606-party-goal-panel[data-v606-mode="active"][data-total]::before,
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"]::after {
+.v606-party-goal-panel[data-v606-mode="active"][data-total]::after {
   content: none !important;
   display: none !important;
   background: none !important;
 }
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v606-party-goal-label {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v606-party-goal-label {
   grid-column: 1 / -1 !important;
   grid-row: 1 !important;
   align-self: center !important;
@@ -79603,7 +79853,7 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
   white-space: nowrap !important;
 }
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v606-party-goal-dots {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v606-party-goal-dots {
   grid-column: 2 !important;
   grid-row: 2 !important;
   position: relative !important;
@@ -79624,7 +79874,7 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
   overflow: visible !important;
 }
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v606-party-goal-dot {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v606-party-goal-dot {
   position: relative !important;
   inset: auto !important;
   width: clamp(15px, 4.1vw, 18px) !important;
@@ -79640,14 +79890,14 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
   transform: none !important;
 }
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v606-party-goal-sub {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v606-party-goal-sub {
   grid-column: 1 / -1 !important;
   grid-row: 3 !important;
   align-self: center !important;
   display: block !important;
   width: 100% !important;
   max-width: 100% !important;
-  margin: 0 !important;
+  margin: -5px 0 0 !important;
   padding: 0 !important;
   font-size: clamp(1.06rem, 3.8vw, 1.3rem) !important;
   line-height: 1.08 !important;
@@ -79657,15 +79907,15 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
   white-space: normal !important;
 }
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v606-party-goal-sub .v2203-reward-line {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v606-party-goal-sub .v2203-reward-line {
   display: block !important;
 }
 /* Existing left/right mascots are real grid items, beside (not on top of)
    the goal dots. Center alignment remains correct at different card widths. */
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v614-party-goal-image.v615-left,
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v614-party-goal-image.v615-left,
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v614-party-goal-image.v615-right {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v614-party-goal-image.v615-right {
   display: block !important;
   grid-row: 2 !important;
   position: relative !important;
@@ -79678,16 +79928,105 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
   pointer-events: none !important;
 }
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v614-party-goal-image.v615-left {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v614-party-goal-image.v615-left {
   grid-column: 1 !important;
   justify-self: end !important;
 }
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop >
-.v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v614-party-goal-image.v615-right {
+.v606-party-goal-panel[data-v606-mode="active"][data-total] .v614-party-goal-image.v615-right {
   grid-column: 3 !important;
   justify-self: start !important;
 }
 
+
+/* V2359: all normal 3-7 colour goals share the same responsive card geometry.
+   A compact gold bar uses the existing spare fourth row; never change HUD height. */
+body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"] .v2359-reward-track {
+  grid-column:1 / -1 !important;
+  grid-row:4 !important;
+  display:block !important;
+  width: min(88%, 240px) !important;
+  height:7px !important;
+  justify-self:center !important;
+  align-self:start !important;
+  border-radius:12px !important;
+  overflow:hidden !important;
+  border:1px solid #94724C !important;
+  box-sizing:border-box !important;
+  background:#604637 !important;
+  margin:-4px 0 0 !important;
+  padding:0 !important;
+}
+body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"] .v2359-reward-fill {
+  display:block !important;
+  height:100% !important;
+  background:linear-gradient(90deg,#DFA43F,#FFD66C) !important;
+  border-radius:inherit !important;
+  transition:width 180ms linear !important;
+}
+/* V2364: the counter shares the reward row, below the same progress bar.
+   The mission teaser stays independent at the very bottom of the card. */
+body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"] .v2364-guests-left {
+  grid-column:1 / -1 !important;
+  grid-row:4 !important;
+  justify-self:center !important;
+  align-self:start !important;
+  display:block !important;
+  margin:9px 0 0 !important;
+  padding:0 !important;
+  color:#DCC69F !important;
+  font-size:clamp(7px,2.1vw,9px) !important;
+  font-weight:800 !important;
+  line-height:1 !important;
+  letter-spacing:.02em !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  pointer-events:none !important;
+}
+/* Reserve room for the new line above the mission strip on shorter phones.
+   Keep the same four-row grid and unchanged game field dimensions. */
+@media (max-width:600px) and (max-height:800px) {
+  body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"][data-total] {
+    grid-template-rows:20px 31px 26px minmax(0,1fr) !important;
+  }
+}
+@media (max-width:600px) and (max-height:740px) {
+  body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"][data-total] {
+    grid-template-rows:18px 27px 23px minmax(0,1fr) !important;
+  }
+}
+@media (max-width:600px) and (max-height:660px) {
+  body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"][data-total] {
+    grid-template-rows:17px 25px 20px minmax(0,1fr) !important;
+  }
+  body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"][data-total] .v606-party-goal-sub {
+    font-size:15px !important;
+  }
+}
+@media (max-width:600px) and (max-height:620px) {
+  body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"][data-total] {
+    grid-template-rows:16px 23px 18px minmax(0,1fr) !important;
+  }
+  body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"][data-total] .v606-party-goal-sub {
+    font-size:13px !important;
+  }
+}
+body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"]:is([data-total="6"],[data-total="7"]) .v606-party-goal-dots {
+  gap:clamp(2px,.55vw,4px) !important;
+}
+body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"]:is([data-total="6"],[data-total="7"]) .v614-party-goal-image {
+  width:clamp(22px,6vw,28px) !important;
+  height:clamp(22px,6vw,28px) !important;
+}
+body.v2075-full-party-queue #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"]:is([data-total="6"],[data-total="7"]) .v606-party-goal-dot {
+  width:clamp(12px,3.4vw,16px) !important;
+  height:clamp(12px,3.4vw,16px) !important;
+  min-width:clamp(12px,3.4vw,16px) !important;
+  min-height:clamp(12px,3.4vw,16px) !important;
+  max-width:clamp(12px,3.4vw,16px) !important;
+  max-height:clamp(12px,3.4vw,16px) !important;
+  flex-basis:clamp(12px,3.4vw,16px) !important;
+}
 /* V2337: readable mission teaser in the existing Party Goal card.
    Highlighted with a stronger background so it stands out more.
    No new HUD row, no larger card, no resized circles or snake. */
@@ -79945,7 +80284,7 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v742PartyGoalTop .v2217-miss
     const signature=[info.id,info.title,info.objective,info.label,info.value,info.limit,info.sub].join('|');
     if(signature===lastSignature) return;
     lastSignature=signature;
-    card.querySelector('.v2217-mission-eyebrow').textContent=`★ PARTY MISSION ${info.id} ★`;
+    card.querySelector('.v2217-mission-eyebrow').textContent=`● PARTY MISSION ${info.id} ●`;
     card.querySelector('.v2217-mission-title').textContent=info.title;
     card.querySelector('.v2217-mission-objective').textContent=info.objective;
     card.querySelector('.v2217-mission-main-label').textContent=`${info.symbol} ${info.label}`;

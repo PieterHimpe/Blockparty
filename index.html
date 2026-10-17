@@ -61285,7 +61285,7 @@ window.bpBarrierResolverV825=Object.freeze({
       const sourceTitle = String(sourcePanel.querySelector('.v606-party-goal-label')?.textContent || 'PARTY GOAL');
       const isNormalPartyGoal = sourcePanel.dataset.v606Mode === 'active' && sourcePanel.dataset.total === '5';
       const displayTitle = isNormalPartyGoal
-        ? `${sourceTitle} - ${window.bpLevelPresentationV948.label(level)}`
+        ? `${sourceTitle} x ${window.bpLevelPresentationV948.label(level)}`
         : sourceTitle;
       if (targetGoalLabel.textContent !== displayTitle) targetGoalLabel.textContent = displayTitle;
     }
@@ -75987,6 +75987,41 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) .info-container {
   height: calc(16vh + 50px) !important;
   min-height: 0 !important;
   align-content: start !important;
+}
+
+/* V2344: tablet layouts have a shorter available top-band height
+   than six independently sized vh tracks plus their gaps and padding.
+   Make the six tracks share the actual container height, so the mission strip
+   cannot run behind the playing field. The phone geometry stays unchanged. */
+@media (min-width: 650px) and (min-height: 600px) {
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) .info-container {
+    height: clamp(174px, calc(16vh + 50px), 212px) !important;
+    grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
+    box-sizing: border-box !important;
+    margin-bottom: clamp(10px, 1.2vh, 16px) !important;
+  }
+  /* Keep the existing Repairs label and counter as two legible lines.
+     This uses the existing nodes; no duplicate repair status is created. */
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) #livesDisplay .v2107-repairs-row {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) #livesDisplay .v2107-repairs-label {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    min-height: 13px !important;
+    line-height: 1.15 !important;
+  }
+}
+
+/* Compact landscape phones have a short HUD band as well. Preserve their
+   existing height but let rows share it instead of extending beyond it. */
+@media (orientation: landscape) and (max-height: 599px) {
+  body:is(.v2075-full-party-queue,.v2238-shared-hud) .info-container {
+    grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
+    margin-bottom: clamp(8px, 1.2vh, 12px) !important;
+  }
 }
 
 /* V2233: same four existing tool/counter nodes, now in a symmetrical 2+2 grid.

@@ -1,4 +1,5 @@
 <!-- V2364: one quiet GUESTS LEFT counter under Party Goal reward bar, from the authoritative consumed-set count. -->
+<!-- V2367: safe HUD snapshot restoration for BOTH saved game and live continue; rebuild dynamic Party Goal instead of replaying positional markup. -->
 <!-- V2365: start popup emphasizes guests available and removes the redundant 250-point mention; uses guest terminology consistently. -->
 <!-- V2362: reward starts at full 250 until the first active set is actually spent, and the reward line/bar sit higher above the mission banner. -->
 <!-- V2359: variable 3-7 normal goals; finite 50-200 guests, exact save/continue, declining 250-point reward and stable bar. -->
@@ -72942,6 +72943,30 @@ try { showTutorialLevelBanner(); } catch (_) {}
     return cur;
   }
 
+  // V2367: the Party Goal is a STATE-DERIVED mirror, not saved markup.
+  // Adding GUESTS LEFT / reward bars changes its anonymous child positions.
+  // Never copy old classes/styles/text to that subtree on manual or live resume.
+  const DERIVED_GOAL_ID = 'v742PartyGoalTop';
+  function insideDerivedGoal(el) {
+    return !!el && (el.id === DERIVED_GOAL_ID || !!el.closest?.('#' + DERIVED_GOAL_ID));
+  }
+  function pathInside(path, prefix) {
+    return Array.isArray(path) && Array.isArray(prefix) &&
+      path.length >= prefix.length && prefix.every((index, i) => index === path[i]);
+  }
+  function savedDerivedGoalPath(states) {
+    const saved = (states || []).find(state => state.id === DERIVED_GOAL_ID);
+    return saved && Array.isArray(saved.path) ? saved.path : null;
+  }
+  function stableSavedClassMatches(el, state) {
+    // For older checkpoints, anonymous nodes have no identity beyond a DOM path.
+    // Reject them if layout changes shifted that path onto another element.
+    const saved = String(state.cls || '').split(/\s+/).filter(Boolean);
+    const current = el.classList;
+    if (!saved.length || !current || !current.length) return false;
+    return saved.some(name => current.contains(name) && name !== 'info-cell');
+  }
+
   function managedAttrs(el) {
     const out = {};
     Array.from(el.attributes || []).forEach((attr) => {
@@ -73003,7 +73028,9 @@ try { showTutorialLevelBanner(); } catch (_) {}
     if (!root) return null;
 
     const nodes = [captureNode(root, root)]
-      .concat(Array.from(root.querySelectorAll('*')).map((el) => captureNode(root, el)))
+      .concat(Array.from(root.querySelectorAll('*'))
+        .filter(el => !insideDerivedGoal(el))
+        .map((el) => captureNode(root, el)))
       .filter(Boolean);
 
     const topOrder = Array.from(root.children).map((el) => el.id || '').filter(Boolean);
@@ -73046,13 +73073,32 @@ try { showTutorialLevelBanner(); } catch (_) {}
     });
   }
 
-  function resolveNode(root, state) {
+  function resolveNode(root, state, states) {
     if (!state) return null;
     let el = null;
-    if (state.id) el = document.getElementById(state.id);
-    if (!el || !root.contains(el)) el = nodeAtPath(root, state.path);
-    if (!el) return null;
+    if (state.id) {
+      // An id identifies one element. Never fall back to the same *position*
+      // when the original id disappeared after a version upgrade.
+      el = document.getElementById(state.id);
+      if (!el || !root.contains(el)) return null;
+    } else {
+      // Anonymous saved children must still belong to the same identified
+      // parent. Old positional snapshots from a different layout are unsafe.
+      const anchors = (states || []).filter(candidate =>
+        candidate.id && candidate.id !== DERIVED_GOAL_ID &&
+        Array.isArray(candidate.path) && candidate.path.length > 0 &&
+        pathInside(state.path, candidate.path)
+      ).sort((a,b) => b.path.length - a.path.length);
+      const anchor = anchors[0];
+      if (!anchor) return null;
+      const currentAnchor = document.getElementById(anchor.id);
+      const expectedAnchor = nodeAtPath(root, anchor.path);
+      if (!currentAnchor || !root.contains(currentAnchor) || currentAnchor !== expectedAnchor) return null;
+      el = nodeAtPath(root, state.path);
+      if (!el || !currentAnchor.contains(el) || !stableSavedClassMatches(el,state)) return null;
+    }
     if (state.tag && String(el.tagName || '').toUpperCase() !== state.tag) return null;
+    if (insideDerivedGoal(el)) return null;
     return el;
   }
 
@@ -73079,9 +73125,14 @@ try { showTutorialLevelBanner(); } catch (_) {}
     }
 
     const states = Array.isArray(snapshot.nodes) ? snapshot.nodes : [];
+    // Older saved games still contain the old Party Goal subtree. Ignore it
+    // based on the SAVED root path too, even if today's layout moved elements.
+    const oldGoalPath = savedDerivedGoalPath(states);
     states.forEach((state) => {
-      const el = state.path && state.path.length === 0 ? root : resolveNode(root, state);
-      if (!el) return;
+      if (state.id === DERIVED_GOAL_ID ||
+          (oldGoalPath && pathInside(state.path, oldGoalPath))) return;
+      const el = state.path && state.path.length === 0 ? root : resolveNode(root, state, states);
+      if (!el || insideDerivedGoal(el)) return;
 
       if (state.cls === null || state.cls === undefined) el.removeAttribute('class');
       else el.setAttribute('class', state.cls);

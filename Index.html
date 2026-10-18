@@ -1,3 +1,6 @@
+<!-- V2370: in ordinary gameplay the visible upper Party Goal shows only unfinished colour circles; canonical source/popups/tutorial remain unchanged. -->
+<!-- V2369: tutorial progress only — earned feedback above existing artwork, remaining task below; no normal-level changes. -->
+<!-- V2368: START NEW GAME preserves the explicit SAVE NOW checkpoint; only automatic progress resets. -->
 <!-- V2364: one quiet GUESTS LEFT counter under Party Goal reward bar, from the authoritative consumed-set count. -->
 <!-- V2367: safe HUD snapshot restoration for BOTH saved game and live continue; rebuild dynamic Party Goal instead of replaying positional markup. -->
 <!-- V2365: start popup emphasizes guests available and removes the redundant 250-point mention; uses guest terminology consistently. -->
@@ -43421,11 +43424,45 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
     const rowsHtml = (cfg.rows && cfg.rows.length)
       ? '<span class="bp-party-goal-rows">' + bpPartyGoalRowHtmlV1012(cfg.rows) + '</span>'
       : '';
+    // V2369: tutorial progress cards give feedback first, then show precisely
+    // what is still required BELOW the artwork. Never apply to normal levels,
+    // initial instructions, or completion/mission cards.
+    let remainingHtml = '';
+    if (stage === 'progress' && Number(level) <= 10 && goalNumber >= 1 && goalNumber <= 7) {
+      let remainingCopy = '';
+      let remainingDetail = '';
+      if (tutorialTriplet) {
+        const left = Math.max(0, 3 - earnedGroups);
+        const colorName = goalNumber === 2 ? 'BLUE' : 'ORANGE';
+        remainingCopy = `${left} ${colorName} ${left === 1 ? 'GROUP' : 'GROUPS'}`;
+        remainingDetail = '5+ GUESTS EACH';
+      } else if (goalNumber === 3 || goalNumber === 4) {
+        // Existing coloured rows underneath list the missing colours and sizes.
+        remainingCopy = !rowsHtml ? 'COMPLETE THE REMAINING COLORS' : '';
+      } else if (goalNumber === 5) {
+        const outstanding = groups.filter(group => !group.done).map(group => 'EXACT ' + Number(group.size));
+        remainingCopy = outstanding.join(' · ');
+        remainingDetail = 'DIFFERENT COLORS FOR EACH SIZE';
+      } else if (goalNumber === 7) {
+        const outstanding = groups.filter(group => !group.done).map(group => String(group.label || '').toUpperCase());
+        remainingCopy = outstanding.join(' · ');
+        remainingDetail = '5+ GUESTS IN EACH COLOR';
+      }
+      if (remainingCopy || remainingDetail || rowsHtml) {
+        remainingHtml = '<span class="bp-party-goal-remaining" aria-label="Remaining tutorial goal">' +
+          '<span class="bp-party-goal-remaining-title">STILL TO DO</span>' +
+          (remainingCopy ? '<span class="bp-party-goal-remaining-copy">' + remainingCopy + '</span>' : '') +
+          (remainingDetail ? '<span class="bp-party-goal-remaining-detail">' + remainingDetail + '</span>' : '') +
+          '</span>';
+      }
+    }
     const rewardHtml = cfg.reward
       ? '<span class="bp-party-goal-reward' + (stage === 'complete' ? ' bp-party-goal-complete-reward' : '') + '">' + cfg.reward + '</span>'
       : '';
 
-    const body = kickerHtml + headlineHtml + sublineHtml + imageHtml + rowsHtml + rewardHtml;
+    const body = kickerHtml + headlineHtml +
+      (stage === 'progress' && goalNumber >= 1 && goalNumber <= 7 && Number(level) <= 10 ? '' : sublineHtml) +
+      imageHtml + remainingHtml + rowsHtml + rewardHtml;
     const token = presenter.show({
       owner: cfg.owner || ('party-goal-' + cfg.goalNumber + '-v1012'),
       bodyClass:'v987-goal1-poster',
@@ -43585,7 +43622,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         groups:groupsForState.orange,
         groupsRowClass:'is-two-groups',
         groupsAriaLabel:'Orange cleared, blue still needed',
-        rows:[{colorClass:'blue', label:'BLUE', target:V503_GOAL3_MIN_GROUP_SIZE+'+ BLOCKS'}]
+        rows:[{colorClass:'blue', label:'BLUE', target:V503_GOAL3_MIN_GROUP_SIZE+'+ GUESTS'}]
       },
       blue: {
         owner:'goal3-v1012', goalNumber:3, stage:'progress',
@@ -43594,7 +43631,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         groups:groupsForState.blue,
         groupsRowClass:'is-two-groups',
         groupsAriaLabel:'Blue cleared, orange still needed',
-        rows:[{colorClass:'orange', label:'ORANGE', target:V503_GOAL3_MIN_GROUP_SIZE+'+ BLOCKS'}]
+        rows:[{colorClass:'orange', label:'ORANGE', target:V503_GOAL3_MIN_GROUP_SIZE+'+ GUESTS'}]
       },
       complete: {
         owner:'goal3-v1012', goalNumber:3, stage:'complete',
@@ -43639,15 +43676,15 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         kicker:'1 OF 3',
         headline: done[0] + ' CLEARED!',
         subline:'STILL TO DO',
-        rows:left.map(color => ({ colorClass: color.toLowerCase(), label: color, target:'5+ BLOCKS' })),
+        rows:left.map(color => ({ colorClass: color.toLowerCase(), label: color, target:'5+ GUESTS' })),
         reward:''
       };
     }
     return {
       kicker:'2 OF 3',
-      headline:'ONE MORE!',
+      headline:'2 COLORS CLEARED!',
       subline:'',
-      rows:left.map(color => ({ colorClass: color.toLowerCase(), label: color, target:'5+ BLOCKS' })),
+      rows:left.map(color => ({ colorClass: color.toLowerCase(), label: color, target:'5+ GUESTS' })),
       reward:''
     };
   }
@@ -45829,8 +45866,17 @@ window.bpFreshTutorialStartPipeline.register('v512-exact-score-party-goal-celebr
       image:divaCharacter, ringColor:'#FFD86A'
     }));
     const row = window.bpTutorialGoalGroupsV2306?.html(groups,'is-five-divas',count+' of 5 ex-Divas cleared') || '';
-    const instruction = '<span class="bp-party-goal-diva-instruction">TURN 5 DIVAS NORMAL,<br>THEN CLEAR THEM IN GROUPS OF 5+</span>';
-    const body = instruction + row +
+    const instruction = stage === 'start'
+      ? '<span class="bp-party-goal-diva-instruction">TURN 5 DIVAS NORMAL,<br>THEN CLEAR THEM IN GROUPS OF 5+ GUESTS</span>' : '';
+    const remainingDivas = Math.max(0, V2048_GOAL_TARGET - count);
+    const remainingInfo = stage === 'progress' && Number(level) === 6 && remainingDivas > 0
+      ? '<span class="bp-party-goal-diva-remaining">' +
+        '<span class="bp-party-goal-remaining-title">STILL TO DO</span>' +
+        '<span class="bp-party-goal-remaining-copy">' + remainingDivas + ' MORE ' +
+        (remainingDivas === 1 ? 'DIVA' : 'DIVAS') + '</span>' +
+        '<span class="bp-party-goal-remaining-detail">TURN NORMAL AND CLEAR IN GROUPS OF 5+ GUESTS</span>' +
+        '</span>' : '';
+    const body = instruction + row + remainingInfo +
       (stage === 'complete' ? '<span class="bp-party-goal-diva-reward">● +100 PTS</span>' :
        stage === 'start' ? '<span class="bp-party-goal-diva-reward">REWARD +100 PTS</span>' : '');
     const title = stage === 'start' ? 'YOUR SIXTH PARTY GOAL' :
@@ -61514,11 +61560,28 @@ window.bpBarrierResolverV825=Object.freeze({
         targetPanel.appendChild(targetDots);
       }
       if (targetDots.className !== sourceDots.className) targetDots.className = sourceDots.className;
-      if (targetDots.innerHTML !== sourceDots.innerHTML) targetDots.innerHTML = sourceDots.innerHTML;
+      // V2370: completed targets remain in the authoritative source and in the
+      // progress/result popups. Only the ordinary-game upper HUD omits them.
+      // Keep the existing DOM intact between updates to avoid the old flash bug.
+      const visibleSourceDots = normalGoalNow
+        ? Array.from(sourceDots.children).filter(node =>
+            !node.classList.contains('v606-party-goal-dot') || !node.classList.contains('done'))
+        : Array.from(sourceDots.children);
+      const desiredDotMarkup = normalGoalNow
+        ? visibleSourceDots.map(node => node.outerHTML).join('')
+        : sourceDots.innerHTML;
+      if (targetDots.innerHTML !== desiredDotMarkup) targetDots.innerHTML = desiredDotMarkup;
+      const remainingGoalsLabel = normalGoalNow
+        ? `${visibleSourceDots.filter(node => node.classList.contains('v606-party-goal-dot')).length} colour groups still needed`
+        : null;
       for (const attr of sourceDots.getAttributeNames()) {
         if (attr === 'class') continue;
-        const wanted = sourceDots.getAttribute(attr);
+        const wanted = attr === 'aria-label' && remainingGoalsLabel
+          ? remainingGoalsLabel : sourceDots.getAttribute(attr);
         if (targetDots.getAttribute(attr) !== wanted) targetDots.setAttribute(attr, wanted);
+      }
+      if (remainingGoalsLabel && targetDots.getAttribute('aria-label') !== remainingGoalsLabel) {
+        targetDots.setAttribute('aria-label', remainingGoalsLabel);
       }
     }
 
@@ -64596,13 +64659,6 @@ window.bpBarrierResolverV825=Object.freeze({
     } catch (_) {}
   }
 
-  function v840ClearManualCheckpoint(){
-    try {
-      localStorage.removeItem(MANUAL_PARTY_SNAPSHOT_KEY);
-      localStorage.removeItem('manualSavedPartyV1');
-    } catch (_) {}
-  }
-
   function v840BuildSnapshotFromCurrentStorage(runtimeOverride = null){
     const storage = {};
     v840RelevantStorageKeys().forEach((key) => {
@@ -64872,12 +64928,14 @@ window.bpBarrierResolverV825=Object.freeze({
     }
   });
 
-  // New party means exactly that: no old automatic run and no old SAVE NOW checkpoint.
+  // V2368: START NEW GAME abandons only the automatic run. An explicit
+  // SAVE NOW checkpoint belongs to the player until another SAVE NOW replaces
+  // it. Keep both the snapshot and its legacy availability marker intact, so
+  // CONTINUE SAVED GAME remains selectable from the menu even after a new run.
   // This branch exists only after tutorial completion / level 11.
   window.bpFreshPartyStartPipeline.register('v840-dual-post-tutorial-save-architecture', function(){
     if (typeof firstUseGameStarted !== 'undefined' && firstUseGameStarted) return;
     v840ClearLive(false);
-    v840ClearManualCheckpoint();
     v840GameOverActive = false;
     window.bpV840ResumeMode = null;
     window.bpV840PendingResumeCountdown = null;
@@ -65166,6 +65224,42 @@ body.v987-goal1-poster .bp-party-goal-todo-label {
   color:#ffd96f !important;
 }
 
+/* V2369: a single, quiet "Still to do" footer for tutorial progress only. */
+body.v987-goal1-poster .bp-party-goal-remaining,
+body.v472-block-c-card .bp-party-goal-diva-remaining {
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:2px !important;
+  width:min(94%, 470px) !important;
+  margin:.22rem auto .04rem !important;
+  text-align:center !important;
+  line-height:1.14 !important;
+}
+body.v987-goal1-poster .bp-party-goal-remaining-title,
+body.v472-block-c-card .bp-party-goal-remaining-title {
+  display:block !important;
+  font-weight:900 !important;
+  color:#FFD86A !important;
+  letter-spacing:.1em !important;
+  font-size:clamp(.72rem,2.7vw,.9rem) !important;
+}
+body.v987-goal1-poster .bp-party-goal-remaining-copy,
+body.v472-block-c-card .bp-party-goal-remaining-copy {
+  display:block !important;
+  font-weight:900 !important;
+  color:#FFF2D5 !important;
+  font-size:clamp(.82rem,3vw,1.04rem) !important;
+  overflow-wrap:anywhere !important;
+}
+body.v987-goal1-poster .bp-party-goal-remaining-detail,
+body.v472-block-c-card .bp-party-goal-remaining-detail {
+  display:block !important;
+  font-weight:800 !important;
+  color:#EDD5AC !important;
+  font-size:clamp(.66rem,2.45vw,.85rem) !important;
+}
 body.v987-goal1-poster .bp-party-goal-rows {
   display:flex !important;
   flex-direction:column !important;
@@ -65658,7 +65752,7 @@ body.v987-goal1-poster .tutorial-tap-to-continue {
       start: {
         owner:'goal1-v1012', goalNumber:1, stage:'start',
         headline:'CLEAR 3 ORANGE GROUPS!',
-        subline:'5+ BLOCKS EACH',
+        subline:'5+ GUESTS EACH',
         image:images.start || null,
         alt:'Orange mascot groups',
         reward:'CLEAR ALL 3 TO EARN +100 PTS'
@@ -65699,7 +65793,7 @@ body.v987-goal1-poster .tutorial-tap-to-continue {
       start: {
         owner:'goal2-v1012', goalNumber:2, stage:'start',
         headline:'CLEAR 3 BLUE GROUPS!',
-        subline:'5+ BLOCKS EACH',
+        subline:'5+ GUESTS EACH',
         image:images.start || null,
         alt:'Blue mascot groups',
         reward:'CLEAR ALL 3 TO EARN +100 PTS'

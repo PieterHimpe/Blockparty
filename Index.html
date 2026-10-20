@@ -26190,15 +26190,16 @@ function setLevel1ArrowControlsLocked(locked) {
 }
 
 function setLevel1DropLocked(locked) {
-  // De dropknop blijft in de nieuwe tutorial altijd beschikbaar.
-  level1DropLocked = false;
+  level1DropLocked = !!locked;
 
-  const dropButtons = document.querySelectorAll("button.home-btn");
+  const dropButtons = document.querySelectorAll("button.home-btn.drop-block-button");
 
   for (const btn of dropButtons) {
     if (!btn) continue;
-    btn.disabled = false;
-    btn.style.filter = "";
+    btn.disabled = !!locked;
+    btn.setAttribute("aria-disabled", locked ? "true" : "false");
+    btn.classList.toggle("tutorial-arrow-dimmed", !!locked);
+    btn.style.filter = locked ? "grayscale(100%) opacity(0.35)" : "";
   }
 }
 
@@ -81553,7 +81554,8 @@ body.v2238-shared-hud #v2196HeaderRecordHost {
 }
 body.v2238-shared-hud #v2196HeaderRecordHost > .v2133-center-actions {
   position:absolute !important;
-  top:0 !important;
+  top:auto !important;
+  bottom:0 !important;
   left:0 !important;
   width:100% !important;
   height:max(var(--v2116-lower-header-h),calc(22.35vh - clamp(84px,9.2vh,116px))) !important;

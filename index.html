@@ -1,7 +1,9 @@
+<!-- V2414: award each tutorial Party Goal on its authoritative completion route (goals 1–5, 7 via shared card; goal 6 via Diva card), not only the legacy toast; normal Party Goal scoring unchanged. -->
 <!-- V2413: only the seven-colour tutorial: narrow-card fitting copy and three complete colour rows. -->
 <!-- V2412: ONLY seven-colour tutorial: two-line subtitle preserved by HUD mirror; completed discs fully fill. -->
 <!-- V2411: Goal 4 tutorial subtitle shortened to keep clear of the Party Goal mascots. -->
 <!-- V2410: NEXT SET Multicolor symbol is centered by its own tile in both HUD locations. -->
+<!-- V2415: Random Repair blocks stay locked until the first Barrier Repair lesson is completed; guaranteed first R and post-tutorial spawns remain available. -->
 <!-- V2407: eliminate tutorial objective flashing by stable semantic render; compact repair-era 2-color objective. -->
 <!-- V2404: Repair real Level-1 DROP SET unlock at source; keep v2392 layout unchanged. -->
 <!-- V2408: Restore orphaned Level-F Diva pauses and lost presenter close callbacks; preserve real popup and Repair locks. -->
@@ -19599,10 +19601,15 @@ if (level === 10 && level10Count < 5) {
     (djMechanics.heartMultiplier || 1)
   );
 
+  // V2415: the first R in onboarding comes ONLY from the actual first
+  // Barrier hit (prepareFirstBarrierRepairTutorial). Random R formations begin
+  // after that lesson has been completed; ordinary gameplay (level 11+) may
+  // generate them even if the player never hit a Barrier in the tutorial.
   isSpecial =
     allowSpecials &&
     level >= 5 &&
     !level5HeartTutorialActive &&
+    (level >= 11 || firstBarrierRepairTutorialCompleted === true) &&
     Math.random() < effectiveRepairSpawnChance;
 
   if (forceChallenge2Multicolor || nextBlockIsMulticolor) {
@@ -38914,9 +38921,13 @@ function v468RestoreActiveAndNextSet(snapshot) {
   // A protected A/B bounce in older versions could store an R before real
   // barrier damage. Preserve the saved formation/colour, but correct its type
   // when continuing an unfinished first Repair lesson with an intact barrier.
+  // V2415: do not rewrite the mandatory first R during an active Repair
+  // lesson when restoring a checkpoint. Before that lesson, reject stale
+  // random R's saved by an older build, including NEXT SET.
   const v698PreDamage =
     typeof firstBarrierRepairTutorialCompleted !== 'undefined' &&
     firstBarrierRepairTutorialCompleted !== true &&
+    !firstBarrierRepairTutorialActive &&
     typeof window.v825RepairGateDebug === 'function' &&
     window.v825RepairGateDebug().maySpawn === false;
   if (v698PreDamage) {
@@ -43477,6 +43488,12 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
     if(!cfg || !presenter || typeof presenter.show !== 'function') return false;
 
     const stage = cfg.stage || 'progress';
+    // V2414: completion cards use the shared presenter, not the legacy toast
+    // that v535 previously listened to. Credit the actual goal number here;
+    // v535AwardPartyGoal is idempotent and persists the one-time receipt.
+    if (stage === 'complete' && typeof window.v535AwardPartyGoal === 'function') {
+      window.v535AwardPartyGoal(Number(cfg.goalNumber));
+    }
     const title = stage === 'start'
       ? 'PARTY GOAL ' + cfg.goalNumber
       : stage === 'complete'
@@ -45938,6 +45955,11 @@ window.bpFreshTutorialStartPipeline.register('v512-exact-score-party-goal-celebr
   }
 
   function v2048ShowGoalCard(stage, onClose = null){
+    // V2414: Diva goal 6 uses its own presenter, so it must credit its reward
+    // directly when completing. The one-time goal receipt prevents duplicates.
+    if (stage === 'complete' && typeof window.v535AwardPartyGoal === 'function') {
+      window.v535AwardPartyGoal(6);
+    }
     const count = stage === 'complete' ? V2048_GOAL_TARGET :
       Math.max(0, Math.min(V2048_GOAL_TARGET, v2048ClearedExDivas));
     const topDivaImage = document.querySelector('#v742PartyGoalTop .bp-diva-progress-image');
@@ -47087,6 +47109,10 @@ body.v473-block-d-card #movementTutorialCard {
     score=before+100;
     if(typeof updateScoreDisplay==='function') updateScoreDisplay();
     if(typeof updateHighStats==='function') updateHighStats();
+    // V2414: the bonus receipt is stored immediately above. Persist the new
+    // score in the onboarding snapshot in this same turn so an immediate
+    // Continue/reload cannot restore the old score with an already-earned receipt.
+    if(typeof v468AutosaveNow==='function') v468AutosaveNow();
     if(typeof v468ScheduleAutosave==='function') v468ScheduleAutosave(0);
     return true;
   }
@@ -58802,7 +58828,11 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
 
   function v698RepairGateApplies() {
     try {
-      return typeof firstBarrierRepairTutorialCompleted !== 'undefined' &&
+      // V2415: physical damage alone never unlocks random R's during A-J.
+      // Only completion of the mandatory Repair lesson does. After onboarding
+      // (level 11+) the normal Repair spawn probability is always available.
+      return typeof level !== 'undefined' && Number(level) < 11 &&
+        typeof firstBarrierRepairTutorialCompleted !== 'undefined' &&
         firstBarrierRepairTutorialCompleted !== true;
     } catch (_) {
       return false;
@@ -58810,12 +58840,7 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
   }
 
   function v698RepairMaySpawn() {
-    // R's in a new/unfinished tutorial require ACTUAL damaged barrier segments.
-    // Protected hits and ricochets in A/B change no barrier state and never
-    // unlock a Repair. The barrier arrays are autosaved and restored, unlike
-    // a transient "hit seen" boolean. Once the Repair tutorial completes,
-    // normal play and Party Missions do not need barrier damage to spawn R.
-    return !v698RepairGateApplies() || v698BarrierActuallyDamaged();
+    return !v698RepairGateApplies();
   }
 
   function v698IsRepairBlock(block) {
@@ -58833,10 +58858,19 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
   };
 
   window.bpSpawnPipelineV831.registerGenerate('v698', function(next) {
+    // Inspect the forced formation BEFORE next() consumes forcedNextBlock.
+    // The first genuine Barrier hit must still produce its guaranteed R,
+    // even while random Repairs remain locked until the lesson completes.
+    const firstBarrierLessonRepair =
+      typeof firstBarrierRepairTutorialActive !== 'undefined' &&
+      firstBarrierRepairTutorialActive === true &&
+      typeof forcedNextBlock !== 'undefined' &&
+      v698IsRepairBlock(forcedNextBlock);
     const block = next();
     const repairMissionActive =
       typeof challengeActive !== 'undefined' && challengeActive === true;
-    if (!repairMissionActive && !v698RepairMaySpawn() && v698IsRepairBlock(block)) {
+    if (!repairMissionActive && !firstBarrierLessonRepair &&
+        !v698RepairMaySpawn() && v698IsRepairBlock(block)) {
       return { ...block, isSpecial: false };
     }
     return block;

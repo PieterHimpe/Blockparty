@@ -1,3 +1,10 @@
+<!-- V2413: only the seven-colour tutorial: narrow-card fitting copy and three complete colour rows. -->
+<!-- V2412: ONLY seven-colour tutorial: two-line subtitle preserved by HUD mirror; completed discs fully fill. -->
+<!-- V2411: Goal 4 tutorial subtitle shortened to keep clear of the Party Goal mascots. -->
+<!-- V2410: NEXT SET Multicolor symbol is centered by its own tile in both HUD locations. -->
+<!-- V2407: eliminate tutorial objective flashing by stable semantic render; compact repair-era 2-color objective. -->
+<!-- V2404: Repair real Level-1 DROP SET unlock at source; keep v2392 layout unchanged. -->
+<!-- V2408: Restore orphaned Level-F Diva pauses and lost presenter close callbacks; preserve real popup and Repair locks. -->
 <!-- V2372: Show the persisted ordinary Party Goal difficulty in its start popup and top HUD; no tutorial/mission changes. -->
 <!-- V2370: in ordinary gameplay the visible upper Party Goal shows only unfinished colour circles; canonical source/popups/tutorial remain unchanged. -->
 <!-- V2369: tutorial progress only — earned feedback above existing artwork, remaining task below; no normal-level changes. -->
@@ -14,6 +21,8 @@
 <!-- V2335: replaced Biggest Group display/popup with authoritative persistent Longest Streak (ordinary successful Party Goals), across manual/live resume. -->
 <!-- V2355: Continue Game uses discovered features; all tutorial goals A-J preserve unchanged circles, exact-size targets and seven-color discs. -->
 <!-- V2377: Only tutorial MENU/SHOP extend into the future records area; SCORE and NEXT SET stay normal-sized. -->
+<!-- V2384: one unified tutorial-goal progress footer; no duplicate coloured 5+ GUESTS rows. -->
+<!-- V2388: Skip tutorial introduction uses the exact Skip image from the Shop. -->
 <!-- V2375: fit all three record numbers inside the compact stat strip; keep double-height DROP SET. -->
 <!-- V2374: twice-height DROP SET; compact text-only MENU/SHOP; tutorial record card still shrinks upon DROP reveal. -->
 <!-- V2373: MENU/SHOP switch with the personal-records card; the original tutorial DROP reveal shrinks records rather than action buttons. -->
@@ -2441,7 +2450,8 @@ width: 100%;
 }
 
 .tutorial-arrow-dimmed {
-  filter: grayscale(100%) opacity(0.22) !important;
+  opacity: 0.24 !important;
+  filter: grayscale(100%) brightness(0.55) !important;
 }
 
 @keyframes movementArrowPulse {
@@ -6099,102 +6109,101 @@ body.v2238-shared-hud .v2133-center-action[aria-label="Shop"].feature-locked {
 
 
 <style id="v2328-seven-color-top-layout">
-  /* v2333: Goal 7 top tutorial layout -> larger title/help copy, icons aligned with the two text rows, and 1.5x larger colour discs. */
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"],
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] {
-    gap: 5px !important;
-    padding: 8px 42px 6px !important;
-    justify-content: flex-start !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-label,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-label {
-    font-size: clamp(.88rem, 3.5vw, 1.2rem) !important;
-    line-height: .95 !important;
-    margin-bottom: 1px !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-sub.v950-seven-help,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-sub.v950-seven-help {
-    min-height: 1.8rem !important;
-    font-size: clamp(.48rem, 2vw, .68rem) !important;
-    line-height: 1.08 !important;
-    white-space: normal !important;
-    text-align: center !important;
-    color: rgba(244,198,68,.92) !important;
-    max-width: 100% !important;
-    margin: 0 auto 2px !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image {
-    width: clamp(32px, 8.2vw, 40px) !important;
-    height: clamp(32px, 8.2vw, 40px) !important;
-    top: clamp(26px, 8.6vw, 36px) !important;
-    transform: translateY(-50%) !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image.v615-left,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image.v615-left {
-    left: 8px !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image.v615-right,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image.v615-right {
-    right: 8px !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dots,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dots {
-    display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(3, auto) !important;
-    justify-items: center !important;
-    align-items: center !important;
-    column-gap: clamp(7px, 2vw, 14px) !important;
-    row-gap: clamp(4px, 1vw, 6px) !important;
-    width: min(98%, 280px) !important;
-    margin: 0 auto !important;
-    transform: none !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-1,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-1 { grid-column: 2; grid-row: 1; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-2,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-2 { grid-column: 4; grid-row: 1; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-3,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-3 { grid-column: 1; grid-row: 2; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-4,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-4 { grid-column: 3; grid-row: 2; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-5,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-5 { grid-column: 5; grid-row: 2; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-6,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-6 { grid-column: 2; grid-row: 3; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-7,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-7 { grid-column: 4; grid-row: 3; }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot,
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"][data-total="7"] .v606-party-goal-dot,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"][data-total="7"] .v606-party-goal-dot {
-    width: clamp(30px, 8.7vw, 39px) !important;
-    height: clamp(30px, 8.7vw, 39px) !important;
-    min-width: clamp(30px, 8.7vw, 39px) !important;
-    min-height: clamp(30px, 8.7vw, 39px) !important;
-    max-width: clamp(30px, 8.7vw, 39px) !important;
-    max-height: clamp(30px, 8.7vw, 39px) !important;
-    flex: 0 0 clamp(30px, 8.7vw, 39px) !important;
-    border-width: 3.3px !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,.06),
-      0 0 8px color-mix(in srgb, var(--v730-goal-display-color, #C7772A) 42%, transparent) !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-seven-color-centre,
-  .button-wrapper .reset-btn.v606-party-goal-host > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-seven-color-centre {
-    width: 58% !important;
-    height: 58% !important;
-  }
+/* Authoritative seven-colour tutorial HUD, also used for TEST launches:
+   2 circles / 3 circles / 2 circles. Own compact panel padding/gap,
+   overriding the generic tutorial panel padding (38px) that clipped row 3.
+   Size adapts to the fixed-height top
+   card; no conflicting 3+4 override later in the cascade. */
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] {
+  /* The three-column mobile HUD gives this card only ~165 CSS px. */
+  gap: 0 !important;
+  padding: 4px 5px 2px !important;
+  justify-content: flex-start !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-label {
+  font-size: clamp(.68rem, 2.6vw, .84rem) !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-sub.v950-seven-help {
+  min-height: 0 !important;
+  /* One short line BELOW the two mascots; do not squeeze the copy between them. */
+  font-size: clamp(.52rem, 2.4vw, .61rem) !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  color: rgba(244,198,68,.96) !important;
+  width: 100% !important;
+  max-width: 150px !important;
+  margin: 24px auto 1px !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image {
+  width: clamp(27px, 7.6vw, 35px) !important;
+  height: clamp(27px, 7.6vw, 35px) !important;
+  top: clamp(21px, 5vw, 24px) !important;
+  transform: translateY(-50%) !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image.v615-left { left: 7px !important; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v614-party-goal-image.v615-right { right: 7px !important; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dots {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0,1fr)) !important;
+  grid-template-rows: repeat(3, auto) !important;
+  justify-items: center !important;
+  align-items: center !important;
+  /* Three compact rows, all fully inside the narrow tutorial card. */
+  width: min(100%, 150px) !important;
+  max-width: 150px !important;
+  min-height: 0 !important;
+  margin: 1px auto 0 !important;
+  padding: 0 !important;
+  column-gap: clamp(2px, .55vw, 5px) !important;
+  row-gap: clamp(2px, .6vw, 4px) !important;
+  transform: none !important;
+  flex-wrap: nowrap !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-1 { grid-column: 2; grid-row: 1; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-2 { grid-column: 4; grid-row: 1; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-3 { grid-column: 1; grid-row: 2; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-4 { grid-column: 3; grid-row: 2; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-5 { grid-column: 5; grid-row: 2; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-6 { grid-column: 2; grid-row: 3; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-7 { grid-column: 4; grid-row: 3; }
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot,
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"][data-total="7"] .v606-party-goal-dot {
+  width: clamp(17px, 5.1vw, 19px) !important;
+  height: clamp(17px, 5.1vw, 19px) !important;
+  min-width: clamp(17px, 5.1vw, 19px) !important;
+  min-height: clamp(17px, 5.1vw, 19px) !important;
+  max-width: clamp(17px, 5.1vw, 19px) !important;
+  max-height: clamp(17px, 5.1vw, 19px) !important;
+  flex: 0 0 clamp(17px, 5.1vw, 19px) !important;
+  aspect-ratio: 1 / 1 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+  border: 2.6px solid var(--v730-goal-display-color, #C7772A) !important;
+  border-radius: 50% !important;
+  background: rgba(24,17,20,.92) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.05),
+    0 0 7px color-mix(in srgb, var(--v730-goal-display-color, #C7772A) 45%, transparent) !important;
+}
+/* The seven tutorial slots always keep their assigned colour; a completed
+   slot is filled across its whole face (the same semantic .done as other goals). */
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot.done,
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"][data-total="7"] .v606-party-goal-dot.done {
+  background: var(--v730-goal-display-color, #C7772A) !important;
+  border-color: rgba(255,244,210,.92) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.34),
+    0 0 7px var(--v730-goal-display-color, #C7772A) !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot.v614-new-dot {
+  animation: v614NewDotPop 520ms cubic-bezier(.18,.89,.32,1.28) 1 !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dots::after {
+  bottom: 0 !important;
+}
 </style>
 
 
@@ -10494,12 +10503,6 @@ function showPostTutorialBarrierDamageGuidance(cause, side, indices, newlyOpened
 function resolveOuterBarrierImpact(block) {
   // V825: one authoritative Barrier resolver. Feature-specific state located
   // inside later IIFEs is reached only through explicit hooks.
-  try {
-    if (typeof window.v825MarkBarrierDamageSeen === 'function') {
-      window.v825MarkBarrierDamageSeen(block);
-    }
-  } catch (_) {}
-
   const side = getOuterWallSideForDirection(block && block.direction);
   const indices = getBarrierIndicesForOuterImpact(block) || [];
   let beforeStates = [];
@@ -10611,24 +10614,24 @@ function resolveOuterBarrierImpact(block) {
       );
       const hasRepair = typeof repairCount !== 'undefined' && Number(repairCount) > 0;
 
-      const pausedDivaValues = [];
+      const currentDivaValues = [];
       if (level === 6 && level6DivaTutorialActive) {
         for (let r = 0; r < gridRows; r++) {
           for (let c = 0; c < gridCols; c++) {
             const diva = field[r] && field[r][c];
             if (diva && diva.isDiva) {
               const n = Number(diva.divaCountdown);
-              if (Number.isFinite(n)) pausedDivaValues.push(Math.max(0, Math.floor(n)));
+              if (Number.isFinite(n)) currentDivaValues.push(Math.max(0, Math.floor(n)));
             }
           }
         }
       }
 
-      const divaPauseCopy = pausedDivaValues.length === 1
-        ? `<br><br><strong>DIVA PAUSED AT ${pausedDivaValues[0]}</strong><br>IT CONTINUES AFTER THE BARRIER IS REPAIRED.`
-        : pausedDivaValues.length > 1
-          ? `<br><br><strong>DIVAS PAUSED</strong><br>THEIR COUNTDOWNS CONTINUE AFTER THE BARRIER IS REPAIRED.`
-          : '';
+      // A Diva's countdown is based on landed sets, not elapsed seconds.
+      // The first Repair does not stop that countdown while play is running.
+      const divaCountdownCopy = currentDivaValues.length
+        ? `<br><br><strong>DIVA COUNTDOWN CONTINUES</strong><br>EACH LANDED SET COUNTS, INCLUDING THE FIRST R SET.`
+        : '';
 
       const barrierTitle = becameOpen ? 'BARRIER OPEN!' : 'PARTY BARRIER DAMAGED';
       const firstDamageSentence =
@@ -10656,7 +10659,7 @@ function resolveOuterBarrierImpact(block) {
 
       const barrierCopy = (becameOpen
         ? `${firstDamageSentence}<br>A gap is now <span class="v746-danger">open</span>.<br><span class="v746-danger">A block through an open gap = GAME OVER.</span><br>Clear a <span class="v746-repair">Repair (R) Block</span> as part of a <span class="v746-match">5+ group</span> to earn a Repair.`
-        : v940BarrierDamageSummary) + divaPauseCopy;
+        : v940BarrierDamageSummary) + divaCountdownCopy;
 
       const icons = (typeof window.v825BarrierHintIcons === 'function')
         ? window.v825BarrierHintIcons()
@@ -13641,6 +13644,16 @@ function v828CoreUpdateFeatureAvailability(options = {}) {
     );
     // V221: geen levelbadge meer tonen op vergrendelde functies.
     delete dropButtonElement.dataset.unlockLabel;
+
+    // Internal 11 = player LEVEL 1. The feature was introduced earlier;
+    // clear the legacy guided-tutorial disabled property as well as the
+    // normal feature-lock class, on BOTH direction variants.
+    if (currentLevel >= 11) {
+      dropButtonElement.disabled = false;
+      dropButtonElement.classList.remove("tutorial-arrow-dimmed");
+      dropButtonElement.style.filter = "";
+      dropButtonElement.setAttribute("aria-disabled", "false");
+    }
   });
 
   const availability = [
@@ -18632,7 +18645,9 @@ function v833CoreUpdateNextBlockDisplay(color, length = 1, isDiva = false, isSpe
       number.style.textShadow = "-0.5px -0.5px 0 #38102D, 0.5px -0.5px 0 #38102D, -0.5px 0.5px 0 #38102D, 0.5px 0.5px 0 #38102D";
       blockPreview.appendChild(number);
     } else if (isMulticolor) {
-      // Next Block toont de kleine zesdelige taart, zonder buitenrand.
+      // The Multicolor tile itself owns centering, regardless of which HUD
+      // container currently hosts NEXT SET (tutorial or normal levels).
+      blockPreview.classList.add("v699-nextset-multicolor-tile");
       const pie = document.createElement("div");
       pie.className = "v699-nextset-multicolor-pie";
       pie.style.position = "absolute";
@@ -26190,16 +26205,18 @@ function setLevel1ArrowControlsLocked(locked) {
 }
 
 function setLevel1DropLocked(locked) {
-  level1DropLocked = !!locked;
+  // The old guided Level-A lock must never disable DROP SET in ordinary Party
+  // levels (internal 11+), even if an old tutorial callback finishes late.
+  level1DropLocked = !!locked && Number(level) === 1;
 
   const dropButtons = document.querySelectorAll("button.home-btn.drop-block-button");
 
   for (const btn of dropButtons) {
     if (!btn) continue;
-    btn.disabled = !!locked;
-    btn.setAttribute("aria-disabled", locked ? "true" : "false");
-    btn.classList.toggle("tutorial-arrow-dimmed", !!locked);
-    btn.style.filter = locked ? "grayscale(100%) opacity(0.35)" : "";
+    btn.disabled = level1DropLocked;
+    btn.setAttribute("aria-disabled", level1DropLocked ? "true" : "false");
+    btn.classList.toggle("tutorial-arrow-dimmed", level1DropLocked);
+    btn.style.filter = level1DropLocked ? "grayscale(100%) opacity(0.35)" : "";
   }
 }
 
@@ -36502,6 +36519,8 @@ function v448SyncControlLocks() {
       control.classList.remove("v448-auto-input-locked");
     }
   });
+  // V2405: same current-state refresh for the visible DROP SET; no extra timer.
+  if (typeof window.bpV2405SyncDropCard === 'function') window.bpV2405SyncDropCard();
 }
 
 function v448FindGameplayControl(target) {
@@ -38892,6 +38911,21 @@ function v468RestoreActiveAndNextSet(snapshot) {
 
   forcedNextBlock = v468SetTemplate(snapshot && snapshot.forcedNextSet);
 
+  // A protected A/B bounce in older versions could store an R before real
+  // barrier damage. Preserve the saved formation/colour, but correct its type
+  // when continuing an unfinished first Repair lesson with an intact barrier.
+  const v698PreDamage =
+    typeof firstBarrierRepairTutorialCompleted !== 'undefined' &&
+    firstBarrierRepairTutorialCompleted !== true &&
+    typeof window.v825RepairGateDebug === 'function' &&
+    window.v825RepairGateDebug().maySpawn === false;
+  if (v698PreDamage) {
+    [activeTemplate, nextBlock, forcedNextBlock].forEach(set => {
+      if (set && set.isSpecial && !set.isMulticolor &&
+          !set.isFreePicture && !set.isDiva) set.isSpecial = false;
+    });
+  }
+
   if (activeTemplate) {
     activeTemplate.direction = v978NormalizeResumeDirection(activeTemplate.direction);
     useVertical = activeTemplate.direction === "down" || activeTemplate.direction === "up";
@@ -40808,6 +40842,10 @@ body.v472-block-c-card .v453-fast-forward {
 
   let v472DivaCountdownHintShown=false;
   let v472DivaTransformedShown=false;
+  // Level F: if Diva becomes normal during the mandatory first Repair,
+  // defer only its explanation, not its counter or transformation.
+  let v472DivaAfterRepairExplanationPending=false;
+  let v472DivaAfterRepairColor=null;
   let v472Level6PostDivaSets=0;
   let v472SkipFirstPostTransformResolution=false;
 
@@ -40826,9 +40864,9 @@ body.v472-block-c-card .v453-fast-forward {
       !!level6DivaTutorialActive &&
       !v472DivaTransformedShown
     ){
-      // The player should still receive this explanation after Repair. Because
-      // the Diva itself is frozen during Repair, the next real countdown step
-      // will naturally trigger the card again.
+      // The player should still receive this explanation after Repair.
+      // Do not let a Repair card suppress it permanently; the next eligible
+      // Diva countdown step will show the explanation if still relevant.
       v472DivaCountdownHintShown=false;
     }
   };
@@ -41246,13 +41284,9 @@ body.v472-block-c-card .v453-fast-forward {
     return function(){
     const wasLevel6=level===6&&level6DivaTutorialActive;
 
-    // V820: the first Repair lesson owns the onboarding completely.
-    // Any Diva already on the field keeps exactly the same countdown value
-    // while the player earns/uses the mandatory Repair.
-    if(wasLevel6&&v472RepairExclusive()){
-      return;
-    }
-
+    // The Repair tutorial owns popups, but does NOT freeze Diva logic.
+    // Every landed set (including the first R set) must advance the countdown.
+    const repairExclusive=wasLevel6&&v472RepairExclusive();
     const before=[];
     if(wasLevel6){
       for(let r=0;r<gridRows;r++)for(let c=0;c<gridCols;c++){
@@ -41263,7 +41297,9 @@ body.v472-block-c-card .v453-fast-forward {
 
     const result=v472BaseUpdateDivaCountdowns.apply(this,arguments);
 
-    if(wasLevel6&&!v472DivaCountdownHintShown){
+    // Do not interrupt the mandatory Repair popup with the first Diva hint.
+    // Keep the hint pending so a later ordinary landing can introduce it.
+    if(wasLevel6&&!repairExclusive&&!v472DivaCountdownHintShown&&!v472DivaTransformedShown){
       let stepped=false;
       for(const item of before){
         const b=field[item.r]&&field[item.r][item.c];
@@ -41294,9 +41330,28 @@ body.v472-block-c-card .v453-fast-forward {
     v472Level6PostDivaSets=0;
     v472SkipFirstPostTransformResolution=true;
     tutorialDivaPulseRow=row;tutorialDivaPulseCol=col;tutorialDivaPulseUntil=Date.now()+2200;
-    v472ShowHint('DIVA’S DONE!',`NOW A NORMAL ${v472ColorName(color)} BLOCK\nGLITTER BORDER = EX-DIVA`,V472_ICONS.normal,2600);
+    if(v472RepairExclusive()){
+      // The Diva still becomes normal immediately at 0. Its one-time card
+      // waits until BARRIER REPAIRED closes, to avoid stealing the popup.
+      v472DivaAfterRepairExplanationPending=true;
+      v472DivaAfterRepairColor=color;
+    } else {
+      v472ShowHint('DIVA’S DONE!',`NOW A NORMAL ${v472ColorName(color)} BLOCK\nGLITTER BORDER = EX-DIVA`,V472_ICONS.normal,2600);
+    }
     v468ScheduleAutosave(0);
   });
+
+  // Called once the compulsory BARRIER REPAIRED card has closed.
+  // The paused hint safely resumes the existing fall loop on dismissal.
+  window.v2387ShowDivaAfterRepairIfPending=function(){
+    if(!v472DivaAfterRepairExplanationPending || Number(level)!==6 || !level6DivaTutorialActive)return false;
+    v472DivaAfterRepairExplanationPending=false;
+    const name=v472ColorName(v472DivaAfterRepairColor);
+    v472DivaAfterRepairColor=null;
+    v472ShowPausedHint('DIVA’S DONE!',`NOW A NORMAL ${name} BLOCK\nGLITTER BORDER = EX-DIVA`,V472_ICONS.normal,2600);
+    if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);
+    return true;
+  };
 
   window.bpSpecialsOnboardingV838.replaceCore('registerLevel6PostDivaBlock','v472', function(){
     if(level!==6||!level6DivaTutorialActive||!v472DivaTransformedShown||level7MulticolorTutorialActive)return;
@@ -41335,6 +41390,8 @@ body.v472-block-c-card .v453-fast-forward {
       level5GoalCompletionPending:!!level5PartyGoalCompletionPending,
       divaCountdownHintShown:v472DivaCountdownHintShown,
       divaTransformedShown:v472DivaTransformedShown,
+      divaAfterRepairExplanationPending:v472DivaAfterRepairExplanationPending,
+      divaAfterRepairColor:v472DivaAfterRepairColor,
       level6PostDivaSets:v472Level6PostDivaSets,
       skipFirstPostTransformResolution:v472SkipFirstPostTransformResolution
     };
@@ -41374,6 +41431,8 @@ body.v472-block-c-card .v453-fast-forward {
       (Number(level)===5 && level5PartyGoalGroups===4);
     v472DivaCountdownHintShown=!!c.divaCountdownHintShown;
     v472DivaTransformedShown=!!c.divaTransformedShown;
+    v472DivaAfterRepairExplanationPending=!!c.divaAfterRepairExplanationPending;
+    v472DivaAfterRepairColor=c.divaAfterRepairColor||null;
     v472Level6PostDivaSets=Number(c.level6PostDivaSets)||0;
     v472SkipFirstPostTransformResolution=!!c.skipFirstPostTransformResolution;
 
@@ -41412,7 +41471,7 @@ window.bpFreshTutorialStartPipeline.register('v472-master-block-c', function(){
     if(typeof window.v822ResetLevel5ExactGoalState==='function') window.v822ResetLevel5ExactGoalState();
     else { level5PartyGoalGroups=0; level5PartyGoalExactColors={5:null,6:null,7:null,8:null}; }
     level5PartyGoalActive=false;level5PartyGoalCompletionPending=false;
-    v472DivaCountdownHintShown=false;v472DivaTransformedShown=false;v472Level6PostDivaSets=0;v472SkipFirstPostTransformResolution=false;
+    v472DivaCountdownHintShown=false;v472DivaTransformedShown=false;v472DivaAfterRepairExplanationPending=false;v472DivaAfterRepairColor=null;v472Level6PostDivaSets=0;v472SkipFirstPostTransformResolution=false;
 })
 })();
 </script>
@@ -42822,7 +42881,11 @@ window.bpFreshTutorialStartPipeline.register('v475-critical-onboarding-fixes', f
               gamePaused=false;
               isPaused=false;
               if(typeof updatePauseDisplay==='function')updatePauseDisplay();
-              v498RestartFallLoopIfNeeded();
+              // If Diva reached zero during the R lesson, show its delayed
+              // explanation now. Otherwise resume play as usual.
+              const divaCard=typeof window.v2387ShowDivaAfterRepairIfPending==='function' &&
+                window.v2387ShowDivaAfterRepairIfPending();
+              if(!divaCard)v498RestartFallLoopIfNeeded();
               if(typeof v468ScheduleAutosave==='function')v468ScheduleAutosave(0);
             }), 80);
           }
@@ -43364,15 +43427,6 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
     if(typeof window.v501ClearMiniChallenge === 'function') window.v501ClearMiniChallenge();
   }
 
-  function bpPartyGoalRowHtmlV1012(rows){
-    return (rows || []).map(row =>
-      '<span class="bp-party-goal-row ' + row.colorClass + '">' +
-        '<span class="bp-party-goal-row-label">' + row.label + '</span>' +
-        '<span class="bp-party-goal-row-target">' + row.target + '</span>' +
-      '</span>'
-    ).join('');
-  }
-
   function bpPartyGoalGroupsHtmlV1012(groups, rowClass = '', ariaLabel = ''){
     const visualsByColor = window.bpPartyGoalGroupImagesV812 || {};
     const ringColors = {
@@ -43460,9 +43514,6 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
     const imageHtml = groups.length
       ? bpPartyGoalGroupsHtmlV1012(groups,rowClass,cfg.groupsAriaLabel || '')
       : illustration;
-    const rowsHtml = (cfg.rows && cfg.rows.length)
-      ? '<span class="bp-party-goal-rows">' + bpPartyGoalRowHtmlV1012(cfg.rows) + '</span>'
-      : '';
     // V2369: tutorial progress cards give feedback first, then show precisely
     // what is still required BELOW the artwork. Never apply to normal levels,
     // initial instructions, or completion/mission cards.
@@ -43476,8 +43527,10 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         remainingCopy = `${left} ${colorName} ${left === 1 ? 'GROUP' : 'GROUPS'}`;
         remainingDetail = '5+ GUESTS EACH';
       } else if (goalNumber === 3 || goalNumber === 4) {
-        // Existing coloured rows underneath list the missing colours and sizes.
-        remainingCopy = !rowsHtml ? 'COMPLETE THE REMAINING COLORS' : '';
+        // The sad (unringed) group artwork already identifies the colours.
+        // Show only the remaining count; do not repeat colour/size in another card.
+        const pending = groups.filter(group => !group.done).length;
+        remainingCopy = pending + (pending === 1 ? ' GROUP LEFT' : ' GROUPS LEFT');
       } else if (goalNumber === 5) {
         const outstanding = groups.filter(group => !group.done).map(group => 'EXACT ' + Number(group.size));
         remainingCopy = outstanding.join(' · ');
@@ -43487,7 +43540,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         remainingCopy = outstanding.join(' · ');
         remainingDetail = '5+ GUESTS IN EACH COLOR';
       }
-      if (remainingCopy || remainingDetail || rowsHtml) {
+      if (remainingCopy || remainingDetail) {
         remainingHtml = '<span class="bp-party-goal-remaining" aria-label="Remaining tutorial goal">' +
           '<span class="bp-party-goal-remaining-title">STILL TO DO</span>' +
           (remainingCopy ? '<span class="bp-party-goal-remaining-copy">' + remainingCopy + '</span>' : '') +
@@ -43501,7 +43554,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
 
     const body = kickerHtml + headlineHtml +
       (stage === 'progress' && goalNumber >= 1 && goalNumber <= 7 && Number(level) <= 10 ? '' : sublineHtml) +
-      imageHtml + remainingHtml + rowsHtml + rewardHtml;
+      imageHtml + remainingHtml + rewardHtml;
     const token = presenter.show({
       owner: cfg.owner || ('party-goal-' + cfg.goalNumber + '-v1012'),
       bodyClass:'v987-goal1-poster',
@@ -43660,8 +43713,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         subline:'STILL TO DO', todoLabel:true,
         groups:groupsForState.orange,
         groupsRowClass:'is-two-groups',
-        groupsAriaLabel:'Orange cleared, blue still needed',
-        rows:[{colorClass:'blue', label:'BLUE', target:V503_GOAL3_MIN_GROUP_SIZE+'+ GUESTS'}]
+        groupsAriaLabel:'Orange cleared, blue still needed'
       },
       blue: {
         owner:'goal3-v1012', goalNumber:3, stage:'progress',
@@ -43669,8 +43721,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
         subline:'STILL TO DO', todoLabel:true,
         groups:groupsForState.blue,
         groupsRowClass:'is-two-groups',
-        groupsAriaLabel:'Blue cleared, orange still needed',
-        rows:[{colorClass:'orange', label:'ORANGE', target:V503_GOAL3_MIN_GROUP_SIZE+'+ GUESTS'}]
+        groupsAriaLabel:'Blue cleared, orange still needed'
       },
       complete: {
         owner:'goal3-v1012', goalNumber:3, stage:'complete',
@@ -43706,24 +43757,19 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
 
   function v1001Goal4ProgressCopy(state){
     const done=[];
-    const left=[];
-    if(state.orange) done.push('ORANGE'); else left.push('ORANGE');
-    if(state.blue) done.push('BLUE'); else left.push('BLUE');
-    if(state.red) done.push('RED'); else left.push('RED');
+    if(state.orange) done.push('ORANGE');
+    if(state.blue) done.push('BLUE');
+    if(state.red) done.push('RED');
     if(state.count===1){
       return {
         kicker:'1 OF 3',
         headline: done[0] + ' CLEARED!',
-        subline:'STILL TO DO',
-        rows:left.map(color => ({ colorClass: color.toLowerCase(), label: color, target:'5+ GUESTS' })),
         reward:''
       };
     }
     return {
       kicker:'2 OF 3',
       headline:'2 COLORS CLEARED!',
-      subline:'',
-      rows:left.map(color => ({ colorClass: color.toLowerCase(), label: color, target:'5+ GUESTS' })),
       reward:''
     };
   }
@@ -43749,8 +43795,7 @@ window.bpFreshTutorialStartPipeline.register('v501-party-goals-countdown-autosav
       const copy=v1001Goal4ProgressCopy(progress);
       return window.bpShowPartyGoalCardV1012({
         owner:'goal4-v1012', goalNumber:4, stage:'progress',
-        kicker:copy.kicker, headline:copy.headline, subline:copy.subline,
-        todoLabel:!!copy.subline, groups, rows:copy.rows || []
+        kicker:copy.kicker, headline:copy.headline, groups
       }, onClose);
     }
     if(isComplete){
@@ -49179,7 +49224,11 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     const normalized = validModes.includes(mode) ? mode : V973_GOAL_MODES.WAITING;
 
     panel.dataset.v606Mode = normalized;
-
+    // Clear cached tutorial visuals whenever an actual mode transition occurs.
+    if (!([V973_GOAL_MODES.TUTORIAL,V973_GOAL_MODES.TUTORIAL_EXACT,V973_GOAL_MODES.TUTORIAL_SEVEN].includes(normalized))) {
+      delete panel.dataset.v2407DrawnState;
+      panel.classList.remove('v2407-compact-goal-copy');
+    }
     const seven = normalized === V973_GOAL_MODES.TUTORIAL_SEVEN;
     host.classList.toggle('v950-seven-color-goal', seven);
     if (dots) {
@@ -49193,6 +49242,25 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       host.classList.remove('v634-cooldown-last');
     }
   }
+
+  // V2407: single copy authority for compact tutorial objectives. The two
+  // colored targets are already represented by their circles below the copy.
+  // Do not rewrite the long original subtitle each time a set moves.
+  function v2407GoalCopy(levelNumber, targetCount){
+    const n=Number(levelNumber), count=Number(targetCount);
+    if(n===3 && count===2){
+      const size=Math.max(5,Number(window.bpGoal3RuleV2307?.minGroupSize)||6);
+      return 'FORM TWO GROUPS OF '+size+'+<br>ONE <span class="v2407-orange">ORANGE</span> · ONE <span class="v2407-blue">BLUE</span>';
+    }
+    if(n===2 && count===3){
+      return 'CLEAR 3 <span class="v2407-blue">BLUE</span> GROUPS';
+    }
+    if(n===4 && count===3){
+      return 'CLEAR 3 GROUPS';
+    }
+    return '';
+  }
+  window.bpTutorialGoalCopyV2407=v2407GoalCopy;
 
   function renderGoal(current, total, subText, goalColor = null, presentation = null){
     ensureGoalPanels();
@@ -49234,9 +49302,26 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     const v2275Goal3Done = v2275Goal3Pair
       ? [!!window.v503Level3OrangeDone, !!window.v503Level3BlueDone] : null;
 
+    // V2407: a signature of REAL presentation state, not movement or source-DOM
+    // mutations. Avoid clearing all the circles and subtitle every time a set moves.
+    const v2407Mode=useExactSizePresentation ? V973_GOAL_MODES.TUTORIAL_EXACT :
+      requestedMode===V973_GOAL_MODES.TUTORIAL_SEVEN ? V973_GOAL_MODES.TUTORIAL_SEVEN :
+      V973_GOAL_MODES.TUTORIAL;
+    const v2407Signature=JSON.stringify([
+      Number(level),safeTotal,safeCurrent,v2407Mode,String(subText||''),
+      (v2275Goal3Pair||v995Goal4ColorTrio)?'fixed-colors':String(goalColor||''),
+      requestedEarnedColors,requestedCompletedMask,requestedExactSizes,requestedExactColors,
+      v2275Goal3Pair?v2275Goal3Done:null,v995Goal4ColorTrio?v995Goal4Done:null
+    ]);
+
+    let v2407DidDraw=false;
     goalHosts().forEach((host) => {
       const panel = host.querySelector('.v606-party-goal-panel');
       if (!panel) return;
+      const currentDots=panel.querySelector('.v606-party-goal-dots');
+      if (panel.dataset.v2407DrawnState===v2407Signature &&
+          panel.dataset.v606Mode===v2407Mode &&
+          currentDots && currentDots.childElementCount===safeTotal) return;
 
       const previousTotal = Number(panel.dataset.v614Total || 0);
       const previousCurrent = Number(panel.dataset.v614Current || 0);
@@ -49294,14 +49379,20 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const oneMore = safeTotal === 5 && safeCurrent === 4;
       host.classList.toggle('v614-one-more', oneMore);
       if (label) label.textContent = oneMore ? 'ONE MORE!' : 'PARTY GOAL';
-      if (sub) {
-        sub.classList.toggle('v950-seven-help', useSevenColorPalette);
-        if (useSevenColorPalette) {
-          sub.innerHTML = 'SEND EACH COLOUR GROUP<br>TO THE PARTY';
-        } else {
-          sub.textContent = String(subText || '');
-        }
-      }
+       const v2407Copy=!useSevenColorPalette && !useExactSizePresentation
+         ? v2407GoalCopy(Number(level),safeTotal) : '';
+       panel.classList.toggle('v2407-compact-goal-copy',!!v2407Copy);
+       if (sub) {
+         sub.classList.toggle('v950-seven-help', useSevenColorPalette);
+         if (useSevenColorPalette) {
+           if(sub.innerHTML!=='MATCH 5+ PER COLOUR')
+             sub.innerHTML = 'MATCH 5+ PER COLOUR';
+         } else if(v2407Copy){
+           if(sub.innerHTML!==v2407Copy) sub.innerHTML=v2407Copy;
+         } else if(sub.textContent!==String(subText||'')) {
+           sub.textContent = String(subText || '');
+         }
+       }
       if (dots) {
         dots.innerHTML = '';
         dots.setAttribute('aria-label', v2275Goal3Pair
@@ -49375,18 +49466,6 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
           if (resolvedGoalColor) {
             dot.style.setProperty('--v619-goal-color', resolvedGoalColor);
             dot.style.setProperty('--v730-goal-display-color', v730DisplayGameColor(resolvedGoalColor));
-            if (useSevenColorPalette && v995Goal4DotDone) {
-              dot.style.setProperty('--v950-fill-color', v730DisplayGameColor(paletteColor || resolvedGoalColor));
-            }
-          }
-          if (useSevenColorPalette) {
-            // CLEANUP 75: the rainbow ring and earned-color fill are separate elements.
-            // A completed disc therefore has a concrete coloured centre in the DOM;
-            // it no longer depends on two layered gradients being interpreted together.
-            const centre = document.createElement('span');
-            centre.className = 'v950-seven-color-centre';
-            centre.setAttribute('aria-hidden', 'true');
-            dot.appendChild(centre);
           }
           // V710: tijdens onboarding zijn alle nog vrije cirkels visueel identiek.
           // Alleen post-tutorial Party Goals mogen de volgende vrije cirkel accentueren.
@@ -49411,7 +49490,10 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
         }
       }
 
-      v614SetPartyGoalImage(panel, safeCurrent, safeTotal);
+       v614SetPartyGoalImage(panel, safeCurrent, safeTotal);
+       // Mark as drawn only after all target nodes and image are consistent.
+      panel.dataset.v2407DrawnState=v2407Signature;
+      v2407DidDraw=true;
 
       if (hadPrevious && previousTotal === safeTotal && safeCurrent > previousCurrent) {
         const completed = safeCurrent >= safeTotal;
@@ -49424,6 +49506,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
         }
       }
     });
+    return v2407DidDraw;
   }
 
   function renderColorGoal(targets, completed, subText){
@@ -49526,14 +49609,16 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
 
   function renderWaitingTutorialGoal(){
     ensureGoalPanels();
+    const wantedLabel = 'PARTY GOAL';
+    const wantedSub = 'COMING SOON';
     goalHosts().forEach((host) => {
       const panel = host.querySelector('.v606-party-goal-panel');
       if (!panel) return;
       const dots = panel.querySelector('.v606-party-goal-dots');
       if(panel.dataset.v606Mode === V973_GOAL_MODES.WAITING &&
          dots && dots.childElementCount === 0 &&
-         panel.querySelector('.v606-party-goal-label')?.textContent === 'PARTY GOAL' &&
-         panel.querySelector('.v606-party-goal-sub')?.textContent === 'COMING SOON') return;
+         panel.querySelector('.v606-party-goal-label')?.textContent === wantedLabel &&
+         panel.querySelector('.v606-party-goal-sub')?.textContent === wantedSub) return;
       v973SetGoalPresentationMode(host, panel, dots, V973_GOAL_MODES.WAITING);
       panel.dataset.total = '0';
       host.classList.remove('v614-one-more','v614-complete');
@@ -49542,9 +49627,9 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const label = panel.querySelector('.v606-party-goal-label');
       const sub = panel.querySelector('.v606-party-goal-sub');
 
-      if (label) label.textContent = 'PARTY GOAL';
-      if (sub) sub.textContent = 'COMING SOON';
-      if (dots) dots.innerHTML = '';
+      if (label && label.textContent !== wantedLabel) label.textContent = wantedLabel;
+      if (sub && sub.textContent !== wantedSub) sub.textContent = wantedSub;
+      if (dots && dots.childElementCount) dots.innerHTML = '';
     });
   }
 
@@ -49570,7 +49655,7 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
         if (label) label.textContent = 'PARTY';
         if (sub) sub.textContent = paused ? 'PAUSED' : 'IS ABOUT TO START';
         if (dots) {
-          dots.innerHTML = '';
+          if(dots.childElementCount) dots.replaceChildren();
           dots.setAttribute(
             'aria-label',
             paused
@@ -50005,6 +50090,23 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
      via its direct renderer without rewriting any tutorial mechanics.
      --------------------------------------------------------------------- */
   let v606LastTutorialGoalSignature = null;
+  let v2407WaitingVerificationPending=false;
+  function v2407StableWaiting(options){
+    // The old goal source occasionally removes its step elements while moving a
+    // block. Wait for it to settle before replacing a visible objective.
+    if(v606LastTutorialGoalSignature!==null && !options.verifyWaiting){
+      if(!v2407WaitingVerificationPending){
+        v2407WaitingVerificationPending=true;
+        setTimeout(()=>{
+          v2407WaitingVerificationPending=false;
+          mirrorTutorialGoalFromExistingState({animate:false,verifyWaiting:true});
+        },120);
+      }
+      return;
+    }
+    v606LastTutorialGoalSignature=null;
+    renderWaitingTutorialGoal();
+  }
 
   // V2355: one stable-render check for ALL tutorial Party Goal presentations.
   // Only state changes (or a missing/stale restored panel) may rebuild the dots.
@@ -50040,6 +50142,22 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
 
     ensureGoalPanels();
 
+    // After tutorial goal E, return to the SAME existing colour-unlock guide
+    // used in other tutorial waiting phases. It reads the saved tracker slots.
+    // The Diva-goal controller remains authoritative for when goal 6 starts.
+    const divaGoalState = Number(level) === 6 && !!level6DivaTutorialActive
+      ? window.bpGoal6ExDivaV2048?.state?.() : null;
+    const goalEComplete = Number(level) === 5 && !!level5PartyGoalActive &&
+      typeof window.v822CountLevel5ExactGoalSteps === 'function' &&
+      window.v822CountLevel5ExactGoalSteps() >= 4;
+    const beforeDivaGoal = Number(level) === 6 && !!level6DivaTutorialActive &&
+      !divaGoalState?.started;
+    if (goalEComplete || beforeDivaGoal) {
+      v606LastTutorialGoalSignature = null;
+      renderWaitingTutorialGoal();
+      return;
+    }
+
     const mission = document.getElementById('levelDisplay');
     const text = document.getElementById('challengeInfoText');
     if (!mission || !text) {
@@ -50056,8 +50174,9 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const signature='level:'+Number(level)+':exact:'+exactSizes.map((size,index)=>size+':' +(exactColors[index]||'-')).join('|');
       const previousSignature=v606LastTutorialGoalSignature;
       if(tutorialMirrorIsCurrent(signature,V973_GOAL_MODES.TUTORIAL_EXACT,4)) return;
-      renderGoal(done,4,'',null,{mode:V973_GOAL_MODES.TUTORIAL_EXACT,exactSizes,exactColors});
+      const v2407Changed=renderGoal(done,4,'',null,{mode:V973_GOAL_MODES.TUTORIAL_EXACT,exactSizes,exactColors});
       rememberTutorialMirror(signature);
+      if(!v2407Changed) return; // no new progress: never replay the animation
       const suppressMirrorAnimation=options.animate===false || !!window.bpResumeVisualRebuildActiveV962 || !!window.bpExactTopHudResumeActiveV966;
       if(!suppressMirrorAnimation && previousSignature===null){
         animateHosts('v606-new-goal',950);
@@ -50088,12 +50207,13 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       const previousSignature = v606LastTutorialGoalSignature;
       if(tutorialMirrorIsCurrent(signature,V973_GOAL_MODES.TUTORIAL_SEVEN,7)) return;
 
-      renderGoal(done, 7, '', null, {
+      const v2407Changed=renderGoal(done, 7, '', null, {
         mode: V973_GOAL_MODES.TUTORIAL_SEVEN,
         earnedColors,
         completedMask
       });
       rememberTutorialMirror(signature);
+      if(!v2407Changed) return; // no new progress: never replay the animation
 
       const suppressMirrorAnimation = options.animate === false || !!window.bpResumeVisualRebuildActiveV962 || !!window.bpExactTopHudResumeActiveV966;
       if (!suppressMirrorAnimation && previousSignature === null) {
@@ -50110,10 +50230,9 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
       steps.length > 0;
 
     if (!activeGoal) {
-      // Keep the lower cell dedicated to Party Goals even in the short pauses
-      // between two onboarding goals; the old image never returns.
-      v606LastTutorialGoalSignature = null;
-      renderWaitingTutorialGoal();
+      // Verify a genuine goal-to-waiting transition; do not show COMING SOON
+      // for one frame when the old tutorial HTML is refreshed during movement.
+      v2407StableWaiting(options);
       return;
     }
 
@@ -50135,8 +50254,9 @@ window.bpLevel23OnboardingV839.registerWrapper('startLevel3SideLaneTutorial','v5
     const previousSignature = v606LastTutorialGoalSignature;
     if(tutorialMirrorIsCurrent(signature,V973_GOAL_MODES.TUTORIAL,steps.length)) return;
 
-    renderGoal(done, steps.length, '', computedGoalColor || null);
+    const v2407Changed=renderGoal(done, steps.length, '', computedGoalColor || null);
     rememberTutorialMirror(signature);
+    if(!v2407Changed) return; // no new progress: never replay the animation
 
     const suppressMirrorAnimation = options.animate === false || !!window.bpResumeVisualRebuildActiveV962 || !!window.bpExactTopHudResumeActiveV966;
     if (!suppressMirrorAnimation && previousSignature === null) {
@@ -58669,11 +58789,8 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
 (() => {
   'use strict';
 
-  let v698BarrierDamageSeen = false;
-
-  function v698BarrierCurrentlyDamaged() {
+  function v698BarrierActuallyDamaged() {
     try {
-      if (!barrierWallStates) return false;
       return ['top','right','bottom','left'].some(side =>
         Array.isArray(barrierWallStates[side]) &&
         barrierWallStates[side].some(state => Number(state) < Number(BARRIER_STATE_INTACT))
@@ -58684,100 +58801,46 @@ window.bpFreshTutorialStartPipeline.register('v637-party-goal-toast-runtime', fu
   }
 
   function v698RepairGateApplies() {
-    // V799: the pre-damage gate is purely an onboarding rule.
-    // A fresh experienced party sets firstBarrierRepairTutorialCompleted=true,
-    // so Repair blocks are allowed from the very first generated set.
     try {
-      if (typeof firstBarrierRepairTutorialCompleted === 'undefined') return false;
-      return firstBarrierRepairTutorialCompleted !== true;
+      return typeof firstBarrierRepairTutorialCompleted !== 'undefined' &&
+        firstBarrierRepairTutorialCompleted !== true;
     } catch (_) {
       return false;
     }
   }
 
   function v698RepairMaySpawn() {
-    // Outside the first Repair tutorial there is NEVER a Barrier prerequisite.
-    if (!v698RepairGateApplies()) return true;
-
-    // During that tutorial, keep the original rule: first real Barrier damage
-    // unlocks Repair generation (including the mandatory tutorial Repair).
-    if (v698BarrierDamageSeen) return true;
-    if (v698BarrierCurrentlyDamaged()) {
-      v698BarrierDamageSeen = true;
-      return true;
-    }
-    return false;
+    // R's in a new/unfinished tutorial require ACTUAL damaged barrier segments.
+    // Protected hits and ricochets in A/B change no barrier state and never
+    // unlock a Repair. The barrier arrays are autosaved and restored, unlike
+    // a transient "hit seen" boolean. Once the Repair tutorial completes,
+    // normal play and Party Missions do not need barrier damage to spawn R.
+    return !v698RepairGateApplies() || v698BarrierActuallyDamaged();
   }
 
   function v698IsRepairBlock(block) {
-    return !!(
-      block &&
-      block.isSpecial === true &&
-      block.isMulticolor !== true &&
-      block.isFreePicture !== true &&
-      block.isDiva !== true
-    );
+    return !!(block && block.isSpecial === true &&
+      block.isMulticolor !== true && block.isFreePicture !== true &&
+      block.isDiva !== true);
   }
 
-  /* Mark the first real Barrier impact BEFORE the existing resolver runs.
-     This is important because that resolver can immediately queue the mandatory first R block. */
-  window.v825MarkBarrierDamageSeen=function(block){
-    try {
-      const side = getOuterWallSideForDirection(block && block.direction);
-      const indices = getBarrierIndicesForOuterImpact(block) || [];
-      const states = side && barrierWallStates && barrierWallStates[side]
-        ? indices.map(index => barrierWallStates[side][index])
-        : [];
-
-      if (states.length && !states.some(state => state === BARRIER_STATE_OPEN)) {
-        v698BarrierDamageSeen = true;
-      } else if (v698BarrierCurrentlyDamaged()) {
-        v698BarrierDamageSeen = true;
-      }
-    } catch (_) {}
-  };
-
-  window.v825RepairGateDebug=function(){
+  window.v825RepairGateDebug = function() {
     return {
-      damageSeen:!!v698BarrierDamageSeen,
-      gateApplies:!!v698RepairGateApplies(),
-      maySpawn:!!v698RepairMaySpawn()
+      barrierDamaged: v698BarrierActuallyDamaged(),
+      gateApplies: v698RepairGateApplies(),
+      maySpawn: v698RepairMaySpawn()
     };
   };
 
-  /* Final generation gate. It catches random, DJ-driven and stale forced R blocks.
-     V799: this stripping is allowed ONLY while the first Repair tutorial is pending.
-     In normal/full-party play a pristine Barrier does not block Repair generation. */
-  if (typeof window.generateNextBlock === 'function') {
-    window.bpSpawnPipelineV831.registerGenerate('v698', function(next) {
-      const block = next();
-      const v720RepairRushActive = (
-        typeof challengeActive !== 'undefined' && challengeActive === true
-      );
-
-      // v720 / V801: Party Mission 1 (REPAIR RUSH) deliberately forces 33 Repair Blocks in a row.
-      // The normal pre-first-Barrier-damage safety gate must not strip those mission blocks.
-      if (!v720RepairRushActive && !v698RepairMaySpawn() && v698IsRepairBlock(block)) {
-        return {
-          ...block,
-          isSpecial: false
-        };
-      }
-      return block;
-    });
-  }
-
-  /* A complete Barrier reset starts a new undamaged Barrier lifecycle only for
-     the still-pending tutorial gate. Once the Repair tutorial is complete,
-     v698RepairMaySpawn() ignores this flag entirely. */
-  if (typeof window.resetBarrierWallStates === 'function') {
-    const v698BaseResetBarrier = window.resetBarrierWallStates;
-    window.resetBarrierWallStates = function() {
-      const result = v698BaseResetBarrier.apply(this, arguments);
-      v698BarrierDamageSeen = false;
-      return result;
-    };
-  }
+  window.bpSpawnPipelineV831.registerGenerate('v698', function(next) {
+    const block = next();
+    const repairMissionActive =
+      typeof challengeActive !== 'undefined' && challengeActive === true;
+    if (!repairMissionActive && !v698RepairMaySpawn() && v698IsRepairBlock(block)) {
+      return { ...block, isSpecial: false };
+    }
+    return block;
+  });
 })();
 </script>
 
@@ -58786,7 +58849,7 @@ window.bpBarrierResolverV825=Object.freeze({
   version:'v825',
   resolverReady:()=>typeof resolveOuterBarrierImpact==='function',
   hookStatus:()=>({
-    repairDamageGate:typeof window.v825MarkBarrierDamageSeen==='function',
+    repairDamageGate:typeof window.v825RepairGateDebug==='function',
     multicolorReplacement:typeof window.v825RegisterLostScheduledMulticolor==='function',
     barrierSfx:typeof window.v825PlayBarrierImpactSfx==='function',
     barrierHint:typeof window.v825ShowBarrierHint==='function'
@@ -58797,18 +58860,26 @@ window.bpBarrierResolverV825=Object.freeze({
 
 
 <style id="v699-nextset-multicolor-preview-fix">
-  #nextBlockDisplay.info-cell #nextBlockPreview > div > .v699-nextset-multicolor-pie {
-    position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
+  /* The NEXT SET preview is moved between HUD containers. Keep this rule tied
+     to the actual Multicolor tile, not to its temporary parent container. */
+  #nextBlockPreview > .v699-nextset-multicolor-tile {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  #nextBlockPreview > .v699-nextset-multicolor-tile > .v699-nextset-multicolor-pie {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
     width: 52% !important;
     height: 52% !important;
     min-width: 0 !important;
     min-height: 0 !important;
     max-width: none !important;
     max-height: none !important;
-    transform: translate(-50%, -50%) !important;
-    transform-origin: center center !important;
+    flex: none !important;
+    transform: none !important;
     border-radius: 50% !important;
     margin: 0 !important;
     box-sizing: border-box !important;
@@ -59165,7 +59236,9 @@ window.bpBarrierResolverV825=Object.freeze({
           'Skip Block is now available. Use it whenever you want to replace the current set.',
           3000,
           close,
-          window.__BP_SHARED_ASSETS__[19]
+          // Reuse the actual Skip artwork shown in the Shop, not the
+          // old "new block coming soon" announcement image.
+          document.getElementById('skipBlockImage')?.src || ''
         );
       }else{
         setTimeout(close,3000);
@@ -61401,19 +61474,26 @@ window.bpBarrierResolverV825=Object.freeze({
     const flags = slots.map(slot => slot.classList.contains('unlocked'));
     const count = flags.filter(Boolean).length;
     const signature = flags.map(flag => flag ? '1' : '0').join('');
-    if (progress.dataset.signature === signature) return;
-
     const prev = progress.dataset.signature || '';
+    const sameUnlocks = prev === signature;
     progress.dataset.signature = signature;
     const remaining = Math.max(0, 7 - count);
     // Keep the countdown physically beside the seven unlock slots, not among the play instructions.
-    const remainingText = remaining === 0
-      ? 'ALL 7 UNLOCKED!'
-      : remaining === 1
-        ? '1 COLOR TO UNLOCK'
-        : `${remaining} COLORS TO UNLOCK`;
+    // In the pre-Diva transition, make both counts explicit; otherwise
+    // retain the established tutorial copy and seven coloured unlock slots.
+    const showingPreDivaProgress = Number(level) === 6 &&
+      !!level6DivaTutorialActive &&
+      !window.bpGoal6ExDivaV2048?.state?.()?.started;
+    const remainingText = showingPreDivaProgress
+      ? `${count} OF 7 COLORS UNLOCKED · ${remaining} TO GO`
+      : remaining === 0
+        ? 'ALL 7 UNLOCKED!'
+        : remaining === 1
+          ? '1 COLOR TO UNLOCK'
+          : `${remaining} COLORS TO UNLOCK`;
     const status = progress.querySelector('.v2280-colors-to-go');
     if (status && status.textContent !== remainingText) status.textContent = remainingText;
+    if (sameUnlocks) return;
     const row = progress.querySelector('.v2262-colors-row');
     if (row) {
       while (row.children.length < 7) {
@@ -61544,12 +61624,23 @@ window.bpBarrierResolverV825=Object.freeze({
         }
       }
     }
-    const targetSub = syncSimpleNode('.v606-party-goal-sub');
+    const targetSub = syncSimpleNode('.v606-party-goal-sub', goalMode === 'tutorial-seven');
     if (targetSub) {
+      // Only the seven-colour lesson contains an intentional two-line instruction.
+      // Preserve its source markup instead of flattening it on every board move.
+      if (goalMode === 'tutorial-seven') {
+        const sevenSource = sourcePanel.querySelector('.v606-party-goal-sub');
+        if (sevenSource && targetSub.innerHTML !== sevenSource.innerHTML) {
+          targetSub.innerHTML = sevenSource.innerHTML;
+        }
+      }
       try {
         const queueActive = Number(level) >= 11 && window.bpLevelQueueV2075 && window.bpLevelQueueV2075.active() &&
           !(window.bpLevelQueueV2075.missionQueueFlow && window.bpLevelQueueV2075.missionQueueFlow());
-        if (queueActive) {
+        // The queue-left suffix is only relevant while an actual Party Goal
+        // is active. During the introductory 'PARTY IS ABOUT TO START'
+        // handoff, preserve the source caption without a misleading count.
+        if (queueActive && goalMode === 'active') {
           const remaining = Math.max(0, Number(window.bpLevelQueueV2075.remaining()) || 0);
           const base = String(sourcePanel.querySelector('.v606-party-goal-sub')?.textContent || '')
             .replace(/\s*[•·]\s*\d+\s+LEFT\s*$/i, '')
@@ -65355,44 +65446,6 @@ body.v472-block-c-card .bp-party-goal-remaining-detail {
   color:#EDD5AC !important;
   font-size:clamp(.66rem,2.45vw,.85rem) !important;
 }
-body.v987-goal1-poster .bp-party-goal-rows {
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:center !important;
-  width:100% !important;
-  gap:.14rem !important;
-  margin-top:.04rem !important;
-}
-body.v987-goal1-poster .bp-party-goal-row {
-  width:min(90%, 430px) !important;
-  min-height:32px !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  gap:.65rem !important;
-  padding:.28rem .68rem .23rem !important;
-  border:2px solid currentColor !important;
-  border-radius:999px !important;
-  box-sizing:border-box !important;
-  box-shadow: inset 0 0 18px rgba(255,255,255,.035), 0 5px 14px rgba(0,0,0,.22) !important;
-}
-body.v987-goal1-poster .bp-party-goal-row.orange { color:#ffb52e !important; background: rgba(111,53,3,.33) !important; }
-body.v987-goal1-poster .bp-party-goal-row.blue { color:#50bfff !important; background: rgba(7,47,94,.36) !important; }
-body.v987-goal1-poster .bp-party-goal-row.red { color:#ff5d61 !important; background: rgba(95,10,18,.35) !important; }
-body.v987-goal1-poster .bp-party-goal-row-label {
-  font-size: clamp(.9rem, 3.25vw, 1.08rem) !important;
-  font-weight:900 !important;
-  letter-spacing:.05em !important;
-}
-body.v987-goal1-poster .bp-party-goal-row-target {
-  padding:.2rem .46rem .14rem !important;
-  border-radius:999px !important;
-  font-size: clamp(.72rem, 2.55vw, .9rem) !important;
-  font-weight:900 !important;
-  letter-spacing:.04em !important;
-  color:#fff7db !important;
-  background:rgba(0,0,0,.25) !important;
-}
 body.v987-goal1-poster .bp-party-goal-reward {
   display:block !important;
   margin-top:.22rem !important;
@@ -65857,16 +65910,14 @@ body.v987-goal1-poster .tutorial-tap-to-continue {
         kicker:'1 OF 3', headline:'ORANGE GROUP CLEARED!',
         subline:'2 TO GO',
         image:images.oneWon || null,
-        alt:'One orange group complete',
-        rows:[]
+        alt:'One orange group complete'
       },
       two: {
         owner:'goal1-v1012', goalNumber:1, stage:'progress', completedGroups:2,
         kicker:'2 OF 3', headline:'ONE MORE!',
         subline:'1 GROUP OF 5+',
         image:images.twoWon || null,
-        alt:'Two orange groups complete',
-        rows:[]
+        alt:'Two orange groups complete'
       },
       complete: {
         owner:'goal1-v1012', goalNumber:1, stage:'complete', completedGroups:3,
@@ -65898,16 +65949,14 @@ body.v987-goal1-poster .tutorial-tap-to-continue {
         kicker:'1 OF 3', headline:'BLUE GROUP CLEARED!',
         subline:'2 TO GO',
         image:images.oneWon || null,
-        alt:'One blue group complete',
-        rows:[]
+        alt:'One blue group complete'
       },
       two: {
         owner:'goal2-v1012', goalNumber:2, stage:'progress', completedGroups:2,
         kicker:'2 OF 3', headline:'ONE MORE!',
         subline:'1 GROUP OF 5+',
         image:images.twoWon || null,
-        alt:'Two blue groups complete',
-        rows:[]
+        alt:'Two blue groups complete'
       },
       complete: {
         owner:'goal2-v1012', goalNumber:2, stage:'complete', completedGroups:3,
@@ -72016,7 +72065,7 @@ window.bpFreshTutorialStartPipeline.register('v895-color-tracker-state-fix-scrip
 
   body .info-container.v873-opening-goal-hero:not(.v903-next-set-live)
   #v742PartyGoalTop[data-v912-goal="red"] .v606-party-goal-label::after {
-    content: "CLEAR ORANGE + BLUE + RED" !important;
+    content: "CLEAR 3 GROUPS" !important;
     color: #E53935 !important;
     display: block !important;
   }
@@ -72030,6 +72079,38 @@ window.bpFreshTutorialStartPipeline.register('v895-color-tracker-state-fix-scrip
   #v742PartyGoalTop .v912-goal-word-red {
     color: #E53935 !important;
   }
+
+/* V2407: precise compact tutorial subtitle, same top HUD CSS owner. */
+body.v2238-shared-hud #v742PartyGoalTop >
+.v606-party-goal-panel[data-v606-mode="tutorial"].v2407-compact-goal-copy {
+  /* Keep the party mascots in their existing places; text uses only centre. */
+  gap: 4px !important;
+}
+body.v2238-shared-hud #v742PartyGoalTop >
+.v606-party-goal-panel[data-v606-mode="tutorial"].v2407-compact-goal-copy .v606-party-goal-sub {
+  display: block !important;
+  position: relative !important;
+  z-index: 13 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 1px auto !important;
+  font-size: clamp(10px, 2.55vw, 12px) !important;
+  line-height: 1.18 !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  letter-spacing: 0 !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  color: #ffe9aa !important;
+}
+#v742PartyGoalTop .v2407-compact-goal-copy .v2407-orange {color:#f4a74d;}
+#v742PartyGoalTop .v2407-compact-goal-copy .v2407-blue {color:#76a9ff;}
+#v742PartyGoalTop .v2407-compact-goal-copy .v2407-red {color:#ff7676;}
+
 </style>
 <script id="v919-cleanup02-party-goal-color-controller-script">
 (function(){
@@ -72050,8 +72131,8 @@ window.bpFreshTutorialStartPipeline.register('v895-color-tracker-state-fix-scrip
   }
 
   function goalLine(num){
-    if (num === 3) return 'MAKE 1 ORANGE '+window.bpGoal3RuleV2307.minGroupSize+'+ GROUP + 1 BLUE '+window.bpGoal3RuleV2307.minGroupSize+'+ GROUP';
-    if (num === 4) return 'CLEAR ORANGE + BLUE + RED';
+    if (num === 3) return 'ORANGE '+window.bpGoal3RuleV2307.minGroupSize+'+ & BLUE '+window.bpGoal3RuleV2307.minGroupSize+'+';
+    if (num === 4) return 'CLEAR 3 GROUPS';
     if (window.bpTutorialGoalsV822 && typeof window.bpTutorialGoalsV822.getConfig === 'function') {
       const cfg = window.bpTutorialGoalsV822.getConfig(num);
       if (cfg && typeof cfg.text === 'string' && cfg.text.trim()) {
@@ -72059,7 +72140,7 @@ window.bpFreshTutorialStartPipeline.register('v895-color-tracker-state-fix-scrip
       }
     }
     if (num === 2) return 'CLEAR 3 BLUE GROUPS';
-    if (num === 4) return 'CLEAR ORANGE + BLUE + RED';
+    if (num === 4) return 'CLEAR 3 GROUPS';
     if (num === 1) return 'CLEAR 3 ORANGE GROUPS';
     if (num === 5) return 'CLEAR 4 GROUPS OF DIFFERENT COLORS';
     return '';
@@ -72085,13 +72166,19 @@ window.bpFreshTutorialStartPipeline.register('v895-color-tracker-state-fix-scrip
 
     const num = currentGoalNumber();
     const key = goalKey(num);
-    const dynamicBlueRed = num === 2 || num === 3 || num === 4;
     const total = String(panel.getAttribute('data-total') || '');
+    // The old controller must not write tutorial text into a waiting/repair handoff.
+    const dynamicBlueRed = (num === 2 || num === 3 || num === 4) &&
+      total !== '0' && panel.dataset.v606Mode === 'tutorial';
 
     /* v908 responsibility: this remains active even while data-total=0 so the
        legacy hardcoded orange label cannot leak through between goals. */
     host.classList.toggle('v908-dynamic-goal-copy', dynamicBlueRed);
     if (dynamicBlueRed && sub) {
+      const sharedCopy=window.bpTutorialGoalCopyV2407?.(num,Number(total));
+      if(sharedCopy){
+        if(sub.innerHTML!==sharedCopy) sub.innerHTML=sharedCopy;
+      } else {
       const raw = goalLine(num);
       if (raw) {
         /* Preserve the exact final DOM of the old v908 -> v912 sequence:
@@ -72117,6 +72204,7 @@ window.bpFreshTutorialStartPipeline.register('v895-color-tracker-state-fix-scrip
           html = styledLine(num, raw);
         }
         if (sub.innerHTML !== html) sub.innerHTML = html;
+      }
       }
     }
 
@@ -72827,94 +72915,8 @@ try { showTutorialLevelBanner(); } catch (_) {}
 
 
 <style id="v973-party-goal-layout-authority">
-  /* V973: Party Goal layout follows the panel's authoritative presentation mode.
-     Tutorial-seven, waiting/cooldown and ordinary active goals are mutually exclusive. */
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] {
-    justify-content: flex-start !important;
-    gap: 0 !important;
-    padding: 5px 48px 4px !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-label {
-    font-size: clamp(.68rem, 2.6vw, .92rem) !important;
-    margin: 0 0 1px !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-sub {
-    margin: 0 !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dots {
-    display: grid !important;
-    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(2, auto) !important;
-    align-items: center !important;
-    justify-items: center !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-height: 33px !important;
-    margin: 3px 0 0 !important;
-    padding: 0 1px !important;
-    box-sizing: border-box !important;
-    column-gap: clamp(3px, .9vw, 6px) !important;
-    row-gap: clamp(3px, .9vw, 6px) !important;
-    transform: translateY(-1px) !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-1 { grid-column: 2; grid-row: 1; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-2 { grid-column: 4; grid-row: 1; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-3 { grid-column: 6; grid-row: 1; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-4 { grid-column: 1; grid-row: 2; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-5 { grid-column: 3; grid-row: 2; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-6 { grid-column: 5; grid-row: 2; }
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-pos-7 { grid-column: 7; grid-row: 2; }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot,
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"][data-total="7"] .v606-party-goal-dot {
-    width: 13px !important;
-    height: 13px !important;
-    min-width: 13px !important;
-    min-height: 13px !important;
-    max-width: 13px !important;
-    max-height: 13px !important;
-    flex: 0 0 13px !important;
-    border: 2px solid var(--v730-goal-display-color, #C7772A) !important;
-    border-radius: 50% !important;
-    background: rgba(24,17,20,.92) !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,.05),
-      0 0 4px color-mix(in srgb, var(--v730-goal-display-color, #C7772A) 42%, transparent) !important;
-    position: relative !important;
-    overflow: hidden !important;
-    display: inline-grid !important;
-    place-items: center !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v950-seven-color-centre {
-    display: block !important;
-    width: 54% !important;
-    height: 54% !important;
-    border-radius: 50% !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    pointer-events: none !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot.done .v950-seven-color-centre {
-    background: var(--v950-fill-color, var(--v730-goal-display-color, #C7772A)) !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,.28),
-      0 0 5px var(--v950-fill-color, var(--v730-goal-display-color, #C7772A)) !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dot.v614-new-dot {
-    animation: v614NewDotPop 520ms cubic-bezier(.18,.89,.32,1.28) 1 !important;
-  }
-
-  #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="tutorial-seven"] .v606-party-goal-dots::after {
-    bottom: 0 !important;
-  }
-  /* V973: ordinary full-party five-target goals explicitly stay a single row. */
+  /* Ordinary, post-tutorial five-target goals stay in a single row.
+     Tutorial-seven geometry is exclusively owned by v2328 above. */
   #v742PartyGoalTop > .v606-party-goal-panel[data-v606-mode="active"][data-total="5"] .v606-party-goal-dots {
     display: flex !important;
     grid-template-columns: none !important;
@@ -73703,7 +73705,18 @@ try { showTutorialLevelBanner(); } catch (_) {}
           return null;
         }
         if(key&&status(key)===STATUS_ACTIVE){
-          // The same one-time card is already on screen in this runtime.
+          // V2408: An ACTIVE flag is not proof that the card is still visible.
+          // A prior popup can have been cancelled by Repair or replaced while
+          // the one-time state remained ACTIVE. The old branch silently threw
+          // away onClose after the caller had paused Level F forever.
+          const matchingLiveCard=!!basePresenter.isActive?.() &&
+            upper(basePresenter.activeTitle?.())===upper(options.title);
+          if(!matchingLiveCard){
+            complete(key);
+            if(typeof options.onClose==='function')setTimeout(()=>options.onClose(),0);
+          }
+          // If a matching card IS on-screen, its existing close callback owns
+          // the resume. Do not duplicate the popup or restart underneath it.
           return null;
         }
 
@@ -75380,6 +75393,19 @@ window.bpRepairSelectorV945 = Object.freeze({
     return false;
   }
 
+  function repairRequiresBlockingPause(){
+    if(!repairExclusiveActive()) return false;
+    let stage='';
+    try{stage=String(firstBarrierRepairTutorialStage || '');}catch(_){}
+    // In `waiting_for_repair` the player must still move and drop sets to
+    // finish the R repair; it is NOT a pause. `complete` is not a pause either.
+    // All other first-Repair stages remain protected as mandatory handoffs.
+    const gameplayStage=stage==='waiting_for_repair'||stage==='complete';
+    if(!gameplayStage) return true;
+    return visible(document.getElementById('barrierRepairOverlay')) ||
+      !!window.__barrierRepairUI?.active;
+  }
+
   function visibleRequiredAction(){
     const required = Array.from(document.querySelectorAll(
       '.tutorial-required-action, .tutorial-arrow-active'
@@ -75509,7 +75535,7 @@ window.bpRepairSelectorV945 = Object.freeze({
     }
 
     if(manualPauseActive()) return false;
-    if(repairExclusiveActive()) return false;
+    if(repairRequiresBlockingPause()) return false;
     if(validBlockingUiVisible()) return false;
     if(visibleRequiredAction()) return false;
     // The Continue pipeline may still be reconstructing one-time tutorials.
@@ -75785,6 +75811,27 @@ window.bpRepairSelectorV945 = Object.freeze({
         return;
       }
     } catch(_) {}
+
+    // V2408: Level F can inherit a transient `gamePaused=true` from a Diva
+    // explanation or from a goal-progress popup after match resolution. If
+    // the popup has vanished without an onClose, menu -> Continue would clear
+    // exactly this state. Reuse the existing restart path automatically ONLY
+    // when the generic guard has confirmed there is no genuine blocking UI,
+    // no manual pause, no Repair action and no required tutorial input.
+    if(Number(level)===6 && stuckFor>=4500 && !!gamePaused &&
+       !popupVisibleCache && !repairRequiresBlockingPause() &&
+       !manualPauseActive() && !validBlockingUiVisible() &&
+       !visibleRequiredAction() &&
+       !window.bpGoal6ExDivaV2048?.state?.().completionPending){
+      const recoveryPath=restartCurrentGameplay();
+      candidateSince=0;
+      lastAutoAttemptAt=now;
+      track('level6_orphan_pause_auto_recovered',{
+        recovery_path:recoveryPath,
+        stuck_seconds:Math.round(stuckFor/1000)
+      });
+      return;
+    }
 
     // Reuse the already-authoritative recovery routes for transitions that
     // were successfully earned but lost an onClose/timeout after Continue.
@@ -78266,8 +78313,8 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2119DropField .v2119-drop-i
 
 body:is(.v2075-full-party-queue,.v2238-shared-hud) #v2119DropField.feature-locked {
   pointer-events:none !important;
-  filter:grayscale(1) brightness(.55) !important;
-  opacity:.52 !important;
+  filter:grayscale(100%) brightness(.55) !important;
+  opacity:.24 !important;
 }
 
 /* The old lower DROP controls remain part of the game architecture, but their
@@ -78696,33 +78743,88 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) .horizontal-controls .button-
     });
   }
 
+  // V2405: ONE permission decision for the visible DROP SET, the actual drop
+  // action and both controller orientations. Do not infer a DROP prohibition
+  // merely because one direction reaches a wall; that is ordinary gameplay.
+  function v2405DropPermission() {
+    const internalLevel = Number(level) || 1;
+    const tutorial = internalLevel >= 1 && internalLevel <= 10;
+    const real = typeof getVisibleDropBlockButton === 'function'
+      ? getVisibleDropBlockButton()
+      : (document.getElementById('dropButtonVertical') || document.getElementById('dropButtonHorizontal'));
+
+    // Only the guided arrow exercise (an explicitly highlighted required
+    // direction), not every inactive movement arrow, forbids DROP SET.
+    const guidedArrow = tutorial && !!document.querySelector(
+      '.vertical-controls button.tutorial-arrow-active:not(:disabled), ' +
+      '.horizontal-controls button.tutorial-arrow-active:not(:disabled)'
+    );
+    const sideLane = tutorial && internalLevel === 3 &&
+      typeof v408Level3MasteryStage !== 'undefined' &&
+      v408Level3MasteryStage === 'side_lane';
+    const requiredDrop = tutorial && (
+      (typeof v408Level2DropAwaitingUse !== 'undefined' && !!v408Level2DropAwaitingUse) ||
+      !!document.querySelector('.drop-block-button.tutorial-required-action')
+    );
+    // During a guided demonstration both VISIBLE arrows may be deliberately
+    // disabled even without a highlighted required direction. Only the actual
+    // DROP exercise is exempt. Ignore the hidden orientation's arrow pair.
+    const visibleArrowPair = Array.from(document.querySelectorAll(
+      '.vertical-controls, .horizontal-controls'
+    )).find(controls => getComputedStyle(controls).display !== 'none' &&
+      controls.getClientRects().length > 0);
+    const activeArrows = visibleArrowPair
+      ? Array.from(visibleArrowPair.querySelectorAll('button.up, button.down, button.left, button.right'))
+      : [];
+    const bothArrowsLocked = tutorial && !requiredDrop && activeArrows.length === 2 &&
+      activeArrows.every(button => button.disabled ||
+        button.classList.contains('tutorial-arrow-dimmed') ||
+        button.classList.contains('v448-auto-input-locked'));
+
+    const paused = !!gamePaused || !!tutorialLevelBannerActive ||
+      (typeof isPaused !== 'undefined' && !!isPaused);
+    const featurePresentation = typeof v448IsFeatureUnlockPresentationActive === 'function' &&
+      v448IsFeatureUnlockPresentationActive();
+    // An instruction asking for DROP itself may use the tutorial-overlay;
+    // that instruction must not lock the very action it requires.
+    const popupBlocked = !requiredDrop && !!window.bpDeadlockRecoveryV962?.isPopupVisible?.();
+    const earlierLevelLocked = internalLevel < 11 && (
+      !real || !!real.disabled || real.classList.contains('feature-locked') ||
+      real.getAttribute('aria-disabled') === 'true' ||
+      !!document.body?.classList.contains('v2244-drop-locked')
+    );
+    return {
+      blocked: !!(earlierLevelLocked || guidedArrow || bothArrowsLocked ||
+        sideLane || paused || featurePresentation || popupBlocked),
+      guidedArrow, requiredDrop
+    };
+  }
+
   function syncDropCard() {
     const field = document.getElementById('v2119DropField');
     const icon = document.getElementById('v2119DropIcon');
     if (!field || !icon) return;
 
-    const real =
-      document.getElementById('dropButtonVertical') ||
-      document.getElementById('dropButtonHorizontal');
+    // The portrait and landscape source buttons have independent DOM states.
+    // Read the button belonging to the visible controller, not always portrait.
+    const real = typeof getVisibleDropBlockButton === 'function'
+      ? getVisibleDropBlockButton()
+      : (document.getElementById('dropButtonVertical') || document.getElementById('dropButtonHorizontal'));
 
     if (real) {
       const realIcon = real.querySelector('img.v586-drop-square-icon') || real.querySelector('img');
       if (realIcon && realIcon.src && icon.src !== realIcon.src) icon.src = realIcon.src;
 
-      const locked =
-        !!real.disabled ||
-        real.classList.contains('feature-locked') ||
-        real.getAttribute('aria-disabled') === 'true';
-
-      // Tutorial discovery, not the underlying original button alone, owns the
-      // visible tutorial lock. Keep the true interaction disabled until explained.
-      const pendingLesson = !!document.body?.classList.contains('v2244-drop-locked');
-      const visiblyLocked = locked || pendingLesson;
-      field.disabled = visiblyLocked;
-      field.classList.toggle('feature-locked', visiblyLocked);
-      field.setAttribute('aria-disabled', visiblyLocked ? 'true' : 'false');
     }
+    const blocked = v2405DropPermission().blocked;
+    field.disabled = blocked;
+    field.classList.toggle('feature-locked', blocked);
+    field.setAttribute('aria-disabled', blocked ? 'true' : 'false');
   }
+
+  // The existing 250ms central input synchronizer calls this on changes to
+  // pause/tutorial JS variables, which do not generate DOM mutation events.
+  window.bpV2405SyncDropCard = syncDropCard;
 
   function mountLiveNodes() {
     const nextHost = document.getElementById('v2119NextSetPreviewHost');
@@ -78793,8 +78895,23 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) .horizontal-controls .button-
     if (dropField) {
       dropField.addEventListener('click', (event) => {
         event.preventDefault();
-        if (dropField.disabled || dropField.classList.contains('feature-locked')) return;
+        if (v2405DropPermission().blocked) {
+          syncDropCard();
+          return;
+        }
         if (typeof window.dropButton === 'function') window.dropButton();
+      });
+    }
+
+    // Guard the real drop transaction as well, including keyboard and the
+    // hidden portrait/landscape controllers. Do not duplicate drop mechanics.
+    if (window.bpRuntimeDispatchV921?.registerLayer) {
+      window.bpRuntimeDispatchV921.registerLayer('dropButton', 'v2405-shared-drop-permission', function(next) {
+        if (v2405DropPermission().blocked) {
+          syncDropCard();
+          return;
+        }
+        return next();
       });
     }
 
@@ -78843,11 +78960,15 @@ body:is(.v2075-full-party-queue,.v2238-shared-hud) .horizontal-controls .button-
     window.addEventListener('resize', queueOrientationSync);
     window.addEventListener('orientationchange', queueOrientationSync);
 
-    const realDrop = document.getElementById('dropButtonVertical') || document.getElementById('dropButtonHorizontal');
-    if (window.MutationObserver && realDrop) {
-      new MutationObserver(syncDropCard).observe(realDrop, {
-        attributes:true,
-        attributeFilter:['class','disabled','aria-disabled']
+    // Both direction variants can change on a feature refresh; neither is a
+    // permanent proxy for the other.
+    if (window.MutationObserver) {
+      ['dropButtonVertical', 'dropButtonHorizontal'].forEach(id => {
+        const realDrop = document.getElementById(id);
+        if (realDrop) new MutationObserver(syncDropCard).observe(realDrop, {
+          attributes:true,
+          attributeFilter:['class','disabled','aria-disabled']
+        });
       });
     }
 
@@ -81202,7 +81323,7 @@ body.v2238-shared-hud .info-container.v2268-colors-wide #v742PartyGoalTop
 .v606-party-goal-panel:is([data-v606-mode="tutorial"],[data-v606-mode="tutorial-exact"],[data-v606-mode="tutorial-seven"])
 .v606-party-goal-sub { display: none !important; }
 body.v2238-shared-hud .info-container.v2268-colors-wide #v742PartyGoalTop
-.v606-party-goal-panel:is([data-v606-mode="tutorial"],[data-v606-mode="tutorial-exact"],[data-v606-mode="tutorial-seven"])
+.v606-party-goal-panel:is([data-v606-mode="tutorial"],[data-v606-mode="tutorial-exact"])
 .v606-party-goal-dots {
   order: 3 !important;
   width: 100% !important;
@@ -81301,7 +81422,7 @@ body.v2238-shared-hud .horizontal-controls .button-wrapper > #v2119DropField {
   display: grid !important;
   min-height: 0 !important;
   overflow: hidden !important;
-  opacity: 1 !important;
+  /* Disabled DROP SET must retain the same .24 opacity as the inactive arrows. */
   visibility: visible !important;
   transform: translateY(0) scale(1) !important;
 }
@@ -81540,7 +81661,12 @@ body.v2238-shared-hud .info-container.v2268-colors-wide #v742PartyGoalTop .v2262
 <!-- V2381: SCORE and NEXT SET keep their ordinary header height; only the
      tutorial MENU/SHOP pair extends into the future records slot. -->
 <style id="v2381-tutorial-menu-shop-layout">
-/* The tutorial uses one authoritative responsive MENU/SHOP layout.
+/* V2390: MENU/SHOP start at SCORE/NEXT SET top and finish at the arrow bottom.
+   The earlier bottom:0 on the short header host pulled them UP over the board.
+   23.1vh is the span from the fixed header top (74vh) to the arrows' bottom
+   (74.75vh + 23.25vh - .9vh). When DROP is shown, subtract its grid row
+   and the row gap, so MENU/SHOP meet DROP above the gap.
+   The tutorial uses one authoritative responsive MENU/SHOP layout.
    Before DROP: tall cards with slim 1:3 mascots.
    After DROP intro: shorter cards, broader 2:3 mascots.
    The label uses natural (not 100%) height, leaving a genuine second
@@ -81554,15 +81680,15 @@ body.v2238-shared-hud #v2196HeaderRecordHost {
 }
 body.v2238-shared-hud #v2196HeaderRecordHost > .v2133-center-actions {
   position:absolute !important;
-  top:auto !important;
-  bottom:0 !important;
+  top:0 !important;
+  bottom:auto !important;
   left:0 !important;
   width:100% !important;
-  height:max(var(--v2116-lower-header-h),calc(22.35vh - clamp(84px,9.2vh,116px))) !important;
+  height:max(var(--v2116-lower-header-h),calc(23.1vh - clamp(84px,9.2vh,116px) - clamp(6px,.7vh,10px))) !important;
   gap:clamp(6px,1vw,10px) !important;
 }
 body.v2238-shared-hud.v2244-drop-locked #v2196HeaderRecordHost > .v2133-center-actions {
-  height:max(var(--v2116-lower-header-h),22.35vh) !important;
+  height:max(var(--v2116-lower-header-h),23.1vh) !important;
 }
 body.v2261-drop-motion-ready.v2238-shared-hud #v2196HeaderRecordHost > .v2133-center-actions {
   transition:height 520ms cubic-bezier(.22,1,.36,1) !important;
@@ -81642,14 +81768,17 @@ body.v2238-shared-hud.v2244-drop-locked .horizontal-controls .button-wrapper > #
   transform:translateY(8px) scale(.97) !important;
   pointer-events:none !important;
 }
-body.v2238-shared-hud:not(.v2244-drop-locked) .vertical-controls .button-wrapper > #v2119DropField,
-body.v2238-shared-hud:not(.v2244-drop-locked) .horizontal-controls .button-wrapper > #v2119DropField {
+body.v2238-shared-hud:not(.v2244-drop-locked) .vertical-controls .button-wrapper > #v2119DropField:not(.feature-locked),
+body.v2238-shared-hud:not(.v2244-drop-locked) .horizontal-controls .button-wrapper > #v2119DropField:not(.feature-locked) {
   opacity:1 !important;
   visibility:visible !important;
   transform:translateY(0) scale(1) !important;
   pointer-events:auto !important;
 }
 </style>
+
+
+
 
 
 

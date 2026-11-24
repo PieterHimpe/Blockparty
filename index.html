@@ -1,3 +1,5 @@
+<!-- V2600: tutorial A opening speed uplift increased proportionally from 1.50x to 1.80x, tapering by the same saved phases to 1.00x before Party Goal 1. No other logic changed. -->
+<!-- V2599: tutorial A opening automatic fall speed 1.50x -> 1.45x -> 1.40x -> 1.30x -> 1.20x -> 1.10x -> normal before Party Goal 1. Existing phase/save state, no change to scoring, unlocks or Drop. -->
 <!-- V2598: Fix overly broad Android-app referrer exclusion; retain installed-mode detection and add opt-in installcheck diagnostics. -->
 <!-- V2597: Optional Google Play installation link inside existing successful tutorial and ordinary Party Goal cards; Android public browser only. No gameplay or popup transition changes. -->
 <!-- V2596: DJ Rainbow Set Rhythm: 80% chance for the next ordinary set to repeat the previous ordinary length (when it fits). Planned in the authoritative NEXT SET queue, persisted across save/continue; specials do not change the remembered size. -->
@@ -51879,11 +51881,29 @@ triggerPromoGroupCelebration = function(group, groupColor) {
     return Number.isFinite(n) && n > 0 ? n : V775_ABSOLUTE_MIN_MS;
   }
 
-  function v775RequiredMs() {
-    // Preserve v630's gameplay contract: never faster than 400 ms, while any
-    // deliberately slower current fallSpeed still wins.
-    return Math.max(V775_ABSOLUTE_MIN_MS, v775RawFallSpeedMs());
+  // V2599: only the pre-Goal-1 opening of tutorial A gets a faster cadence.
+  // Use the existing saved onboarding phase, not a spawn counter: retries,
+  // paused cards, preview spawns, save/continue and Drop cannot consume steps.
+  function v2599OpeningSpeedFactor() {
+    const state = window.bpV842FastCoreOnboarding;
+    if (Number(level) !== 1 || !state || !state.enabled) return 1;
+    switch (state.phase) {
+      case 'movement':
+      case 'first_group': return 1.80; // first 3+2 discovery sets (and retries)
+      case 'clean_set_before_drop': return 1.72;
+      case 'post_drop_practice': return 1.64;
+      case 'right_guide': return 1.48;
+      case 'direction_cycle':
+        return [1.48, 1.32, 1.16][Number(state.earlyDirectionResolved)] || 1;
+      default: return 1; // includes all_sides_complete, goal1 and every later phase
+    }
   }
+  function v775RequiredMs() {
+    // Keep the original 400 ms minimum and any intentionally slower base
+    // cadence everywhere except the explicitly accelerated opening.
+    return Math.max(V775_ABSOLUTE_MIN_MS, v775RawFallSpeedMs()) / v2599OpeningSpeedFactor();
+  }
+  window.bpV2599OpeningFallDelay = v775RequiredMs;
 
   function v775DropIsInstant() {
     return v775DropTransactionDepth > 0 ||
@@ -52345,7 +52365,7 @@ triggerPromoGroupCelebration = function(group, groupColor) {
       Number.isFinite(requested) && requested > 0 ? requested : 0;
 
     const effectiveDelay = () =>
-      Math.max(v775RequiredMs(), requestedFloor);
+      Math.max(v775RequiredMs(), requestedFloor / v2599OpeningSpeedFactor());
 
     const scheduleTimer = (waitMs = effectiveDelay()) => {
       if (generation !== v625FallLoopGeneration) return null;
@@ -66093,7 +66113,8 @@ window.bpFreshTutorialStartPipeline.register('v842-fast-core-onboarding', functi
             scheduleSave();
           }, 220);
         }
-      }, Math.max(16, Number(fallSpeed) || 400));
+      }, Math.ceil(typeof window.bpV2599OpeningFallDelay === 'function'
+        ? window.bpV2599OpeningFallDelay() : Math.max(16, Number(fallSpeed) || 400)) + 1);
     });
     scheduleSave();
   }

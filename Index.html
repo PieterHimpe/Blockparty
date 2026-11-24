@@ -1,3 +1,4 @@
+<!-- V2597: Optional Google Play installation link inside existing successful tutorial and ordinary Party Goal cards; Android public browser only. No gameplay or popup transition changes. -->
 <!-- V2596: DJ Rainbow Set Rhythm: 80% chance for the next ordinary set to repeat the previous ordinary length (when it fits). Planned in the authoritative NEXT SET queue, persisted across save/continue; specials do not change the remembered size. -->
 <!-- V2595: recovered from user-uploaded v2590; includes v2591 Color Flow queue,
  v2592 Lucky planned queue, v2594 picture-score thresholds, and v2595 DJ Love
@@ -109,6 +110,40 @@
 
 <html lang="en">
 <head>
+<script id="v2597-browser-install-offer">
+(function(){
+  'use strict';
+  const STORE_URL='https://play.google.com/store/apps/details?id=be.pieter.blockparty';
+  function eligible(){
+    try {
+      // This offer is exclusively for the public Android browser edition.
+      if(location.protocol!=='https:' || location.hostname!=='pieterhimpe.github.io' || !/^\/blockparty(?:\/|$)/i.test(location.pathname)) return false;
+      if(!/Android/i.test(navigator.userAgent||'')) return false;
+      if(navigator.standalone===true || /^android-app:\/\//i.test(document.referrer||'')) return false;
+      if(['standalone','minimal-ui','window-controls-overlay'].some(mode=>matchMedia('(display-mode: '+mode+')').matches)) return false;
+      // A manually fullscreened browser is not an installed app.
+      if(matchMedia('(display-mode: fullscreen)').matches && !document.fullscreenElement) return false;
+      return true;
+    } catch(_){return false;}
+  }
+  function track(name, surface){
+    try{if(typeof gtag==='function')gtag('event',name,{...(window.bpAnalyticsV861?.eventContext?.()||{}),game_version:'2597',offer_location:surface});}catch(_){}
+  }
+  function create(surface){
+    if(!eligible())return null;
+    const box=document.createElement('div');
+    box.className='bp2597-install-offer';
+    const text=document.createElement('span');text.className='bp2597-install-copy';text.textContent='Enjoying the party?';
+    const link=document.createElement('a');link.className='bp2597-install-link';
+    link.href=STORE_URL;link.target='_blank';link.rel='noopener noreferrer';link.textContent='INSTALL FREE';
+    link.setAttribute('aria-label','Install Block Party of Five for free on Google Play');
+    link.addEventListener('click',function(e){e.stopPropagation();track('install_button_clicked',surface);});
+    box.append(text,link);
+    return box;
+  }
+  window.bpInstallOfferV2597=Object.freeze({create});
+})();
+</script>
 <script id="v969-live-release-fresh-player-gate">
 /*
   LIVE RELEASE FRESH-PLAYER GATE
@@ -39731,6 +39766,10 @@ body.v471-block-b-card .tutorial-tap-to-continue {
     if(typeof options.prepareCard==='function')options.prepareCard(card,state.title);
     if(titleEl)titleEl.textContent=String(options.displayTitle||state.title);
     if(textEl)textEl.innerHTML=String(options.text||'').replace(/\n/g,'<br>');
+    if(textEl && state.title.trim().toUpperCase()==='PARTY GOAL COMPLETE!'){
+      const installOffer=window.bpInstallOfferV2597?.create('tutorial_party_goal');
+      if(installOffer)textEl.appendChild(installOffer);
+    }
     const countdown=document.getElementById('v451TutorialCountdown');
     if(countdown)countdown.style.display='none';
 
@@ -64126,6 +64165,10 @@ window.bpBarrierResolverV825=Object.freeze({
     if(difficultyEl) card.appendChild(difficultyEl);
     card.appendChild(groups);
     card.appendChild(footerEl);
+    if(complete){
+      const installOffer=window.bpInstallOfferV2597?.create('ordinary_party_goal');
+      if(installOffer)card.appendChild(installOffer);
+    }
     card.appendChild(ok);
     shell.appendChild(card);
 
@@ -84741,4 +84784,24 @@ body.v2238-shared-hud #v742PartyGoalTop#v742PartyGoalTop > .v606-party-goal-pane
   box-shadow: inset 0 0 0 1px rgba(255,240,207,.06),
               0 0 4px rgba(255,216,106,.16) !important;
 }
+</style>
+
+<style id="v2597-install-offer-style">
+#movementTutorialText .bp2597-install-offer, #v812PartyGoalTakeover .bp2597-install-offer {
+  display:flex !important; flex-direction:column !important; align-items:center !important; justify-content:center !important;
+  gap:4px !important; margin:8px auto 4px !important; padding:6px 0 2px !important; width:100% !important;
+  border-top:1px solid rgba(255,218,148,.28) !important; box-sizing:border-box !important; pointer-events:auto !important;
+}
+#movementTutorialText .bp2597-install-copy, #v812PartyGoalTakeover .bp2597-install-copy {
+  display:block !important; color:#f7dfb1 !important; font:600 clamp(12px,3.2vw,15px)/1.25 Arial,sans-serif !important;
+  text-shadow:none !important; letter-spacing:0 !important; text-transform:none !important;
+}
+#movementTutorialText .bp2597-install-link, #v812PartyGoalTakeover .bp2597-install-link {
+  display:inline-flex !important; align-items:center !important; justify-content:center !important; box-sizing:border-box !important;
+  min-height:44px !important; width:min(100%,220px) !important; padding:6px 16px !important;
+  border:1.5px solid #dbb77a !important; border-radius:12px !important; background:linear-gradient(180deg,#563445,#39243a) !important;
+  color:#ffe2a4 !important; font:800 clamp(13px,3.5vw,16px)/1.1 Arial,sans-serif !important;
+  text-decoration:none !important; text-shadow:none !important; letter-spacing:.02em !important; cursor:pointer !important; pointer-events:auto !important;
+}
+#movementTutorialCard:has(.bp2597-install-offer) { max-height:calc(74dvh - 12px) !important; overflow-y:auto !important; overscroll-behavior:contain !important; }
 </style>
